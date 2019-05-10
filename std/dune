@@ -1,0 +1,3 @@
+(library
+ (name duniverse_std)
+ (libraries fpath))

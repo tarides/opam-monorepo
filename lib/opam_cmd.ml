@@ -28,12 +28,6 @@ let split_opam_name_and_version name =
   | None -> { name; version = None }
   | Some (name, version) -> { name; version = Some version }
 
-let strip_ext fname =
-  let open Fpath in
-  let fname = v fname |> rem_ext in
-  let fname = if has_ext "tar" fname then rem_ext fname else fname in
-  to_string fname
-
 let find_local_opam_packages dir =
   Bos.OS.Dir.contents ~rel:true dir
   >>| List.filter (Fpath.has_ext ".opam")
@@ -54,7 +48,7 @@ let tag_from_archive archive =
     None
   in
   let tag_of_file ?(prefix = "") f =
-    match strip_ext f |> String.cut ~rev:true ~sep:"-" with
+    match Duniverse_std.File.strip_ext f |> String.cut ~rev:true ~sep:"-" with
     | None -> parse_err ()
     | Some (_n, v) -> Some (prefix ^ v)
   in
@@ -70,14 +64,14 @@ let tag_from_archive archive =
     | Some "github.com" -> (
       match path with
       | [ _u; _r; "releases"; "download"; v; _archive ] -> Some v
-      | [ _u; _r; "archive"; archive ] -> Some (strip_ext archive)
+      | [ _u; _r; "archive"; archive ] -> Some (Duniverse_std.File.strip_ext archive)
       | [ _u; _r; "archive"; tag; _ ] -> Some tag
       | _ -> if Uri.scheme uri = Some "git+https" then None else parse_err () )
     | Some "ocaml.janestreet.com" -> (
       match path with
       | [ "ocaml-core"; _ver; "files"; f ] -> tag_of_file f
       | [ "janestreet"; _r; "releases"; "download"; v; _f ] -> Some v
-      | [ "janestreet"; _r; "archive"; f ] -> Some (strip_ext f)
+      | [ "janestreet"; _r; "archive"; f ] -> Some (Duniverse_std.File.strip_ext f)
       | _ -> parse_err () )
     | Some "gitlab.camlcity.org" | Some "download.camlcity.org" -> tag_of_last_path ()
     | Some "ocamlgraph.lri.fr" | Some "erratique.ch" -> tag_of_last_path ~prefix:"v" ()
@@ -114,7 +108,7 @@ let classify_package ~package ~dev_repo ~archive ~pins () =
           | Some "github.com" -> (
             match String.cuts ~empty:false ~sep:"/" (Uri.path uri) with
             | [ user; repo ] ->
-                let repo = strip_ext repo in
+                let repo = Duniverse_std.File.strip_ext repo in
                 (`Github (user, repo), tag)
             | _ -> err "weird github url" )
           | Some host -> (

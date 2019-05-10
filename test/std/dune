@@ -1,0 +1,5 @@
+(test
+ (name test_duniverse_std)
+ (libraries alcotest duniverse_std)
+ (action
+  (run %{test} -e)))
