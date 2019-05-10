@@ -23,20 +23,21 @@ let pp_header = Fmt.(styled `Blue string)
 
 let header = "==> "
 
+let get_or_default_branch ~upstream git_ref =
+  match git_ref with
+  | Some git_ref -> Ok git_ref
+  | None -> Exec.git_default_branch ~remote:upstream () >>= fun ref -> Ok (Git_ref.make ref)
+
 let dune_repo_of_opam opam =
   let dir = Opam.(opam.package.name) in
   match opam.Opam.dev_repo with
   | `Github (user, repo) -> (
       let upstream = Fmt.strf "https://github.com/%s/%s.git" user repo in
-      match opam.Opam.tag with
-      | None ->
-          Exec.git_default_branch ~remote:upstream () >>= fun ref -> Ok { Dune.dir; upstream; ref }
-      | Some ref -> Ok { Dune.dir; upstream; ref } )
+      get_or_default_branch ~upstream opam.Opam.tag >>= fun ref ->
+      Ok { Dune.dir; upstream; ref })
   | `Git upstream -> (
-    match opam.Opam.tag with
-    | None ->
-        Exec.git_default_branch ~remote:upstream () >>= fun ref -> Ok { Dune.dir; upstream; ref }
-    | Some ref -> Ok { Dune.dir; upstream; ref } )
+      get_or_default_branch ~upstream opam.Opam.tag >>= fun ref ->
+      Ok { Dune.dir; upstream; ref })
   | _ -> R.error_msg (Fmt.strf "TODO cannot handle %a" Opam.pp_entry opam)
 
 let dedup_git_remotes dunes =
@@ -61,7 +62,7 @@ let dedup_git_remotes dunes =
       | [] -> assert false
       | [ _ ] -> ()
       | dunes ->
-          let tags = List.map (fun { ref; _ } -> ref) dunes in
+          let tags = List.map (fun { ref; _ } -> Git_ref.to_string ref) dunes in
           let uniq_tags = List.sort_uniq String.compare tags in
           if List.length uniq_tags = 1 then
             Logs.info (fun l ->
@@ -88,7 +89,7 @@ let dedup_git_remotes dunes =
                    some fancier subtree resolution to make it possible to support multiple tags \
                    from the same repository, but not yet." );
             Hashtbl.replace by_repo upstream
-              (List.map (fun d -> { d with ref = latest_tag }) dunes) )
+              (List.map (fun d -> { d with ref = Git_ref.make latest_tag }) dunes) )
     by_repo;
   (* generate filtered dune list *)
   Ok
@@ -135,6 +136,6 @@ let gen_dune_upstream_branches repo () =
           l "%aPulling sources for %a." pp_header header Fmt.(styled `Cyan Fpath.pp) output_dir );
       let message = Fmt.strf "Update vendor for %a" pp_repo r in
       let output_dir = Fpath.(Config.vendor_dir / r.dir) in
-      Exec.git_archive ~output_dir ~remote:r.upstream ~tag:r.ref () >>= fun () ->
+      Exec.git_archive ~output_dir ~remote:r.upstream ~tag:(Git_ref.to_string r.ref) () >>= fun () ->
       Exec.git_add_and_commit ~repo ~message Cmd.(v (p output_dir)) )
     repos

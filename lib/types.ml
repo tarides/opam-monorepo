@@ -39,7 +39,7 @@ module Opam = struct
   type entry = {
     package : package;
     dev_repo : repo;
-    tag : string option; [@default None] [@sexp_drop_default]
+    tag : Git_ref.t option; [@default None] [@sexp_drop_default]
     is_dune : bool [@default true] [@sexp_drop_default]
   }
   [@@deriving sexp]
@@ -47,7 +47,7 @@ module Opam = struct
   type pin = {
     pin : string;
     url : string option; [@default None] [@sexp_drop_default]
-    tag : string option [@default None] [@sexp_drop_default]
+    tag : Git_ref.t option [@default None] [@sexp_drop_default]
   }
   [@@deriving sexp]
 
@@ -83,7 +83,7 @@ module Dune = struct
   type repo = {
     dir : string;
     upstream : string;
-    ref : string [@default "master"] [@sexp_drop_default]
+    ref : Git_ref.t [@default Git_ref.master] [@sexp_drop_default]
   }
   [@@deriving sexp]
 

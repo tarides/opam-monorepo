@@ -40,46 +40,6 @@ let find_local_opam_packages dir =
           pkgs );
   pkgs
 
-let tag_from_archive archive =
-  let uri = Uri.of_string archive in
-  let path = String.cuts ~empty:false ~sep:"/" (Uri.path uri) in
-  let parse_err () =
-    Logs.err (fun l -> l "Unable to classify archive %s" archive);
-    None
-  in
-  let tag_of_file ?(prefix = "") f =
-    match Duniverse_std.File.strip_ext f |> String.cut ~rev:true ~sep:"-" with
-    | None -> parse_err ()
-    | Some (_n, v) -> Some (prefix ^ v)
-  in
-  let tag_of_last_path ?prefix () = List.rev path |> List.hd |> tag_of_file ?prefix in
-  match Uri.scheme uri with
-  | Some "git+http" | Some "git+https" | Some "git+ssh" | Some "git" -> (
-    match String.cuts ~empty:false ~sep:"#" archive with
-    | [ _repo; tag ] -> Some tag
-    | _ -> Some "master" )
-  | Some "git+file" -> None
-  | _ -> (
-    match Uri.host uri with
-    | Some "github.com" -> (
-      match path with
-      | [ _u; _r; "releases"; "download"; v; _archive ] -> Some v
-      | [ _u; _r; "archive"; archive ] -> Some (Duniverse_std.File.strip_ext archive)
-      | [ _u; _r; "archive"; tag; _ ] -> Some tag
-      | _ -> if Uri.scheme uri = Some "git+https" then None else parse_err () )
-    | Some "ocaml.janestreet.com" -> (
-      match path with
-      | [ "ocaml-core"; _ver; "files"; f ] -> tag_of_file f
-      | [ "janestreet"; _r; "releases"; "download"; v; _f ] -> Some v
-      | [ "janestreet"; _r; "archive"; f ] -> Some (Duniverse_std.File.strip_ext f)
-      | _ -> parse_err () )
-    | Some "gitlab.camlcity.org" | Some "download.camlcity.org" -> tag_of_last_path ()
-    | Some "ocamlgraph.lri.fr" | Some "erratique.ch" -> tag_of_last_path ~prefix:"v" ()
-    | _ ->
-        Logs.info (fun l ->
-            l "Attempting to guess tag for %s from the final part of the URL" archive );
-        tag_of_last_path () )
-
 let classify_package ~package ~dev_repo ~archive ~pins () =
   let err msg = (`Error msg, None) in
   if List.mem package.name base_packages then (`Virtual, None)
@@ -101,22 +61,22 @@ let classify_package ~package ~dev_repo ~archive ~pins () =
           (`Virtual, None)
       | Some archive -> (
           let uri = Uri.of_string dev_repo in
-          let tag = tag_from_archive archive in
+          let git_ref = Git_ref.from_archive_url archive in
           Logs.debug (fun l ->
-              l "Mapped %s -> %s" archive (match tag with None -> "??" | Some v -> v) );
+              l "Mapped %s -> %s" archive (match git_ref with None -> "??" | Some v -> Git_ref.to_string v) );
           match Uri.host uri with
           | Some "github.com" -> (
             match String.cuts ~empty:false ~sep:"/" (Uri.path uri) with
             | [ user; repo ] ->
                 let repo = Duniverse_std.File.strip_ext repo in
-                (`Github (user, repo), tag)
+                (`Github (user, repo), git_ref)
             | _ -> err "weird github url" )
           | Some host -> (
             match String.is_prefix ~affix:"git" archive with
             | true ->
                 let base_repo = String.cuts ~empty:false ~sep:"#" archive |> List.hd in
-                (`Git base_repo, tag)
-            | false -> (`Unknown host, tag) )
+                (`Git base_repo, git_ref)
+            | false -> (`Unknown host, git_ref) )
           | None -> err "dev-repo without host" ) )
 
 let check_if_dune ~root package =
@@ -126,18 +86,18 @@ let check_if_dune ~root package =
 let get_opam_info ~root ~pins package =
   Exec.get_opam_dev_repo ~root (string_of_package package) >>= fun dev_repo ->
   Exec.get_opam_archive_url ~root (string_of_package package) >>= fun archive ->
-  let dev_repo, tag = classify_package ~package ~dev_repo ~archive ~pins () in
+  let dev_repo, git_ref = classify_package ~package ~dev_repo ~archive ~pins () in
   check_if_dune ~root package >>= fun is_dune ->
   Logs.info (fun l ->
       l "Classified %a as %a with tag %a"
         Fmt.(styled `Yellow pp_package)
         package pp_repo dev_repo
-        Fmt.(option string)
-        tag );
+        Fmt.(option Git_ref.pp)
+        git_ref );
   let tag =
     match List.find_opt (fun { pin; _ } -> package.name = pin) pins with
     | Some { tag; _ } -> tag
-    | None -> tag
+    | None -> git_ref
   in
   Ok { package; dev_repo; tag; is_dune }
 

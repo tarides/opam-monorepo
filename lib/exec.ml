@@ -202,7 +202,7 @@ let add_opam_dev_pin ~root { Opam.pin; url; tag } =
   let targ =
     match (url, tag) with
     | None, _ -> "--dev"
-    | Some url, Some tag -> Fmt.strf "%s#%s" url tag
+    | Some url, Some tag -> Fmt.strf "%s#%s" url (Git_ref.to_string tag)
     | Some url, None -> url
   in
   run_and_log Cmd.(opam_cmd ~root "pin" % "add" % "-yn" % (pin ^ ".dev") % targ)

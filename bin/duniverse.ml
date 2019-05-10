@@ -80,14 +80,14 @@ let pins_t =
     | [] -> failwith "unexpected pin error"
     | [ pin ] -> Ok { pin; url = None; tag = None }
     | [ pin; url ] -> Ok { pin; url = Some url; tag = None }
-    | [ pin; url; tag ] -> Ok { pin; url = Some url; tag = Some tag }
+    | [ pin; url; tag ] -> Ok { pin; url = Some url; tag = Some (Git_ref.make tag) }
     | _ -> failwith "pins must have maximum of 3 commas"
   in
   let fout ppf { pin; url; tag } =
     match (url, tag) with
     | None, _ -> Fmt.(pf ppf "%s" pin)
     | Some url, None -> Fmt.(pf ppf "%s,%s" pin url)
-    | Some url, Some tag -> Fmt.(pf ppf "%s,%s,%s" pin url tag)
+    | Some url, Some tag -> Fmt.(pf ppf "%s,%s,%s" pin url (Git_ref.to_string tag))
   in
   let t = Arg.conv ~docv:"PIN" (fin, fout) in
   Arg.(value & opt_all t [] & info [ "pin"; "p" ] ~docv:"PIN" ~doc)
