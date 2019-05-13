@@ -25,12 +25,7 @@ module Opam = struct
     let pp = pp_sexp sexp_of_t
   end
 
-  type repo =
-    [ `Github of string * string
-    | `Git of string
-    | `Unknown of string
-    | `Virtual
-    | `Error of string ]
+  type repo = [ `Github of string * string | `Git of string | `Virtual | `Error of string ]
   [@@deriving sexp]
 
   type package = { name : string; version : string option [@default None] [@sexp_drop_default] }

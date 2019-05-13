@@ -122,7 +122,13 @@ let classify_package ~package ~dev_repo ~archive ~pins () =
             | true ->
                 let base_repo = String.cuts ~empty:false ~sep:"#" archive |> List.hd in
                 (`Git base_repo, tag)
-            | false -> (`Unknown host, tag) )
+            | false ->
+                Logs.debug (fun l ->
+                    l
+                      "Mapped %s to a virtual package as its source url (%s) is not understood by \
+                       duniverse"
+                      package.name host );
+                (`Virtual, tag) )
           | None -> err "dev-repo without host" ) )
 
 let check_if_dune ~root package =
@@ -151,8 +157,6 @@ let package_is_valid { package; dev_repo; _ } =
   match dev_repo with
   | `Error msg ->
       R.error_msg (Fmt.strf "Do not know how to deal with %a: %s" pp_package package msg)
-  | `Unknown msg ->
-      R.error_msg (Fmt.strf "Need a Duniverse fork for %a: %s" pp_package package msg)
   | _ -> R.ok ()
 
 let check_packages_are_valid pkgs =
