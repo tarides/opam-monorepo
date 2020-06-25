@@ -44,7 +44,13 @@ let run (`Repo repo)
   let open Rresult.R.Infix in
   init_local_opam_repo opam_repo >>= fun local_opam_repo ->
   Opam_cmd.find_local_opam_packages repo >>= fun local_paths ->
-  Pins.read_from_config Fpath.(repo // Config.duniverse_file) >>= fun pins ->
+
+  Pins.read_from_config Fpath.(repo // Config.duniverse_file) >>= fun config_pins ->
+  let opam_pin_depends =
+    String.Map.fold (fun _ opam_file acc -> acc @ Pins.read_from_opam opam_file) local_paths [] in
+  (* TODO: What if we have duplicates? *)
+  let pins = config_pins @ opam_pin_depends in
+
   let local_packages = List.map fst (String.Map.bindings local_paths) in
   build_config ~local_packages ~pins ~pull_mode ~opam_repo
   >>= fun config ->
