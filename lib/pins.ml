@@ -1,6 +1,5 @@
 open Astring
-open Rresult.R
-
+open Rresult.R.Infix
 
 let compute_deps ~opam_entries =
   Dune_cmd.log_invalid_packages opam_entries;
@@ -19,6 +18,30 @@ let read_from_config duniverse_file =
   if not exists then Ok [] else
   Duniverse.load ~file:duniverse_file >>= fun duniverse ->
   Ok duniverse.config.pins
+
+let read_from_opam opam_file =
+  let open OpamParserTypes in
+  let pin_of_opam_pin_depend value =
+    match value with
+    | List (_, [String (_, pkg_nv); String (_, url)]) ->
+      let url = Uri.of_string url in
+      let tag = Uri.fragment url in
+      let url = Some Uri.(with_fragment url None |> to_string) in
+      begin
+        match String.cut ~sep:"." pkg_nv with
+        | Some (pin, "") -> Some { Types.Opam.pin; tag; url }
+        | Some (pin, tag) -> Some { pin; tag = Some tag; url }
+        | None -> None
+      end
+    | _ -> None
+  in
+  OpamParser.file (Fpath.to_string opam_file) |> fun { file_contents; _ } ->
+  file_contents
+  |> List.filter_map (function
+      | Variable (_, "pin-depends", List (_, pin_depends)) ->
+        Some (List.filter_map pin_of_opam_pin_depend pin_depends)
+      | _ -> None)
+  |> List.flatten
 
 let to_package (pin : Types.Opam.pin) : Types.Opam.package =
   let name = pin.pin in
