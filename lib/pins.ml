@@ -29,8 +29,9 @@ let read_from_opam opam_file =
       let url = Some Uri.(with_fragment url None |> to_string) in
       begin
         match String.cut ~sep:"." pkg_nv with
-        | Some (pin, "") -> Some { Types.Opam.pin; tag; url }
-        | Some (pin, tag) -> Some { pin; tag = Some tag; url }
+        | Some (pin, ("" | "dev")) -> Some { Types.Opam.pin; tag; url }
+        | Some (pin, version) when tag = None -> Some { pin; tag = Some version; url }
+        | Some (pin, version) -> Some { pin; tag = Some version; url }
         | None -> None
       end
     | _ -> None
