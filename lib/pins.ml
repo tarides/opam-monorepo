@@ -1,5 +1,5 @@
 open Astring
-open Rresult.R.Infix
+open Rresult
 
 let compute_deps ~opam_entries =
   Dune_cmd.log_invalid_packages opam_entries;
@@ -43,6 +43,36 @@ let read_from_opam opam_file =
         Some (List.filter_map pin_of_opam_pin_depend pin_depends)
       | _ -> None)
   |> List.flatten
+  |> List.map (fun pin -> (pin.Types.Opam.pin, (opam_file, pin)))
+  |> String.Map.of_list
+
+
+let merge ~opam_files ~config_pins =
+  let merge_or_fail_on_dup =
+    String.Map.union (fun name (file1, _pin1) (file2, _pin2) ->
+      Fmt.failwith "@[<2>Found duplicate pin entries for `%s`:@;- %a@;- %a@]"
+        name Fpath.pp file1 Fpath.pp file2)
+  in
+  let opam_pin_depends =
+    String.Map.fold
+      (fun _ opam_file acc -> merge_or_fail_on_dup (read_from_opam opam_file) acc)
+      opam_files String.Map.empty
+    |> String.Map.map snd
+  in
+  let add_config_pin opam_pins config_pin =
+    String.Map.update config_pin.Types.Opam.pin
+      begin function
+        | None -> Some config_pin
+        | opam_pin -> opam_pin
+      end opam_pins
+  in
+  let all = List.fold_left add_config_pin opam_pin_depends config_pins in
+  String.Map.fold (fun _ pin acc -> pin :: acc) all []
+
+let read ~opam_files ~config =
+  read_from_config config >>= fun config_pins ->
+  try Ok (merge ~opam_files ~config_pins)
+  with Failure msg -> R.error_msg msg
 
 let to_package (pin : Types.Opam.pin) : Types.Opam.package =
   let name = pin.pin in
