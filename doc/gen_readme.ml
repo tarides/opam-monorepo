@@ -1,6 +1,6 @@
 (* Generate a README including the man pages *)
 
-open Rresult
+open Rresult.R.Infix
 open Bos
 open Printf
 

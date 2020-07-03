@@ -15,7 +15,7 @@
  *)
 
 open Types.Opam
-open Rresult
+open Rresult.R.Infix
 open Astring
 open Config
 
@@ -35,11 +35,13 @@ let strip_ext fname =
   to_string fname
 
 let find_local_opam_packages dir =
-  Bos.OS.Dir.exists dir >>= fun exists -> if not exists then Ok String.Map.empty else
-  Bos.OS.Dir.contents ~rel:true dir
-  >>| List.filter (Fpath.has_ext ".opam")
-  >>| List.map (fun path -> Fpath.(to_string (rem_ext path), dir // path))
-  >>| String.Map.of_list
+  Bos.OS.Dir.exists dir >>= fun exists ->
+  if not exists then Ok String.Map.empty
+  else
+    Bos.OS.Dir.contents ~rel:true dir
+    >>| List.filter (Fpath.has_ext ".opam")
+    >>| List.map (fun path -> Fpath.(to_string (rem_ext path), dir // path))
+    >>| String.Map.of_list
 
 let tag_from_archive archive =
   let uri = Uri.of_string archive in
@@ -139,8 +141,7 @@ let compute_depexts ~get_opam_path pkgs =
     let opam_file = get_opam_path pkg in
     Bos.OS.File.read opam_file >>| fun opam_contents ->
     let opam = OpamFile.OPAM.read_from_string opam_contents in
-    OpamFile.OPAM.depexts opam |>
-    List.map (fun (s, f) -> (s, OpamFilter.to_string f))
+    OpamFile.OPAM.depexts opam |> List.map (fun (s, f) -> (s, OpamFilter.to_string f))
   in
   let open Rresult.R in
   Exec.map opam_depexts_of_pkg pkgs >>| fun depexts ->
@@ -210,18 +211,14 @@ let filter_duniverse_packages pkgs =
       l "%aFiltering out packages that are irrelevant to the Duniverse." pp_header header);
   let rec fn acc = function
     | hd :: tl ->
-        let filter =
-             List.mem hd.package.name Config.base_packages
-          || hd.dev_repo = `Virtual
-        in
+        let filter = List.mem hd.package.name Config.base_packages || hd.dev_repo = `Virtual in
         if filter then fn acc tl else fn (hd :: acc) tl
     | [] -> List.rev acc
   in
   fn [] pkgs
 
 let calculate_opam ~packages ~get_opam_path ~local_opam_repo =
-  let opam_files =
-    List.map (fun pkg -> Fpath.to_string (get_opam_path pkg)) packages in
+  let opam_files = List.map (fun pkg -> Fpath.to_string (get_opam_path pkg)) packages in
   Opam_solve.calculate ~opam_repo:local_opam_repo ~opam_files
   >>| List.map OpamPackage.to_string
   >>| List.map split_opam_name_and_version
@@ -275,7 +272,7 @@ let report_packages_stats packages =
 let choose_root_packages ~local_packages =
   match local_packages with
   | [] ->
-      R.error_msg
+      Rresult.R.error_msg
         "Cannot find any packages to vendor.\n\
          Either create some *.opam files in the local repository, or specify them manually via \
          'duniverse opam <packages>'."

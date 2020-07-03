@@ -1,9 +1,10 @@
 open Duniverse_lib
 open Duniverse_lib.Types
 open Astring
+open Rresult.R.Infix
+open Cmdliner
 
 let build_config ~local_packages ~pins ~pull_mode ~opam_repo =
-  let open Rresult.R.Infix in
   Opam_cmd.choose_root_packages ~local_packages >>= fun root_packages ->
   let ocaml_compilers =
     match Dune_file.Project.supported_ocaml_compilers () with
@@ -29,46 +30,45 @@ let resolve_ref deps =
   Duniverse.Deps.resolve ~resolve_ref deps
 
 let init_local_opam_repo opam_repo =
-  let open Rresult.R.Infix in
-  (match Cloner.get_cache_dir () with
-  | None -> Ok (Fpath.v ".")
-  | Some t -> t) >>= fun cache_dir ->
+  (match Cloner.get_cache_dir () with None -> Ok (Fpath.v ".") | Some t -> t) >>= fun cache_dir ->
   let local_opam_repo = Fpath.(cache_dir / "opam-repository.git") in
   let opam_repo_url = Uri.with_fragment opam_repo None |> Uri.to_string in
   let opam_repo_branch = match Uri.fragment opam_repo with None -> "master" | Some b -> b in
-  Exec.git_clone_or_pull ~remote:opam_repo_url ~branch:opam_repo_branch ~output_dir:local_opam_repo >>= fun () ->
-  Ok local_opam_repo
+  Exec.git_clone_or_pull ~remote:opam_repo_url ~branch:opam_repo_branch ~output_dir:local_opam_repo
+  >>= fun () -> Ok local_opam_repo
 
-let run (`Repo repo)
-    (`Opam_repo opam_repo) (`Pull_mode pull_mode) () =
-  let open Rresult.R.Infix in
+let run (`Repo repo) (`Opam_repo opam_repo) (`Pull_mode pull_mode) () =
   init_local_opam_repo opam_repo >>= fun local_opam_repo ->
   Opam_cmd.find_local_opam_packages repo >>= fun local_paths ->
   Pins.read_from_config Fpath.(repo // Config.duniverse_file) >>= fun pins ->
   let local_packages = List.map fst (String.Map.bindings local_paths) in
-  build_config ~local_packages ~pins ~pull_mode ~opam_repo
-  >>= fun config ->
+  build_config ~local_packages ~pins ~pull_mode ~opam_repo >>= fun config ->
   if pins <> [] then
-    Common.Logs.app (fun l -> l "Using %a pins from %a: %a."
-        Fmt.(styled `Green int) (List.length pins)
-        Styled_pp.path (Fpath.normalize Config.duniverse_file)
-        Fmt.(list ~sep:(unit " ") (styled `Yellow string))
-        (List.map (fun pin -> pin.Types.Opam.pin) pins));
+    Common.Logs.app (fun l ->
+        l "Using %a pins from %a: %a."
+          Fmt.(styled `Green int)
+          (List.length pins) Styled_pp.path
+          (Fpath.normalize Config.duniverse_file)
+          Fmt.(list ~sep:(unit " ") (styled `Yellow string))
+          (List.map (fun pin -> pin.Types.Opam.pin) pins));
   Pins.init ~repo ~pull_mode ~pins >>= fun pin_deps ->
   let opam_paths =
-    List.fold_left (fun acc pin -> String.Map.add (pin.Types.Opam.pin) (Pins.path pin) acc)
-      local_paths pins in
-  let get_opam_path {Types.Opam.name; version} =
+    List.fold_left
+      (fun acc pin -> String.Map.add pin.Types.Opam.pin (Pins.path pin) acc)
+      local_paths pins
+  in
+  let get_opam_path { Types.Opam.name; version } =
     match String.Map.find name opam_paths with
     | Some path -> path
     | None ->
-      let version = match version with None -> "dev" | Some v -> v in
-      Fpath.(local_opam_repo / "packages" / name / (name ^ "." ^ version) / "opam")
+        let version = match version with None -> "dev" | Some v -> v in
+        Fpath.(local_opam_repo / "packages" / name / (name ^ "." ^ version) / "opam")
   in
   let packages = config.root_packages @ List.map Pins.to_package pins in
   Opam_cmd.calculate_opam ~packages ~get_opam_path ~local_opam_repo >>= fun opam_entries ->
   Opam_cmd.report_packages_stats opam_entries;
-  Opam_cmd.compute_depexts ~get_opam_path (List.map (fun entry -> entry.Types.Opam.package) opam_entries)
+  Opam_cmd.compute_depexts ~get_opam_path
+    (List.map (fun entry -> entry.Types.Opam.package) opam_entries)
   >>= fun depexts ->
   Common.Logs.app (fun l ->
       l "Recording %a depext formulae for %a packages."
@@ -76,7 +76,9 @@ let run (`Repo repo)
         (List.length depexts)
         Fmt.(styled `Green int)
         (List.length opam_entries));
-  List.iter (fun (k, v) -> Logs.info (fun l -> l "depext %s %s" (String.concat ~sep:"," k) v)) depexts;
+  List.iter
+    (fun (k, v) -> Logs.info (fun l -> l "depext %s %s" (String.concat ~sep:"," k) v))
+    depexts;
   Common.Logs.app (fun l -> l "Calculating Git repositories to vendor source code.");
   compute_deps ~opam_entries >>= resolve_ref >>= fun deps ->
   let deps = { deps with duniverse = deps.duniverse @ pin_deps } in
@@ -91,8 +93,6 @@ let run (`Repo repo)
         Fmt.(styled `Blue string)
         "duniverse pull");
   Ok ()
-
-open Cmdliner
 
 let pull_mode =
   let doc =
@@ -117,9 +117,8 @@ let info =
   Term.info "init" ~doc ~exits ~man ~envs:Common.Arg.caches
 
 let term =
-  let open Term in
-  term_result
-    ( const run $ Common.Arg.repo $ Common.Arg.opam_repo $ pull_mode
-    $ Common.Arg.setup_logs () )
+  Term.(
+    term_result
+      (const run $ Common.Arg.repo $ Common.Arg.opam_repo $ pull_mode $ Common.Arg.setup_logs ()))
 
 let cmd = (term, info)

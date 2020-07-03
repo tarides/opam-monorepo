@@ -1,15 +1,14 @@
-open Stdune
 open Duniverse_lib
+open Rresult.R.Infix
+open Cmdliner
 
 let run (`Repo repo) () =
-  let open Rresult.R in
   let duniverse_file = Fpath.(repo // Config.duniverse_file) in
   Duniverse.load ~file:duniverse_file >>= fun config ->
-  print_endline (String.concat ~sep:" " config.Duniverse.config.ocaml_compilers);
+  print_endline (String.concat " " config.Duniverse.config.ocaml_compilers);
   Ok ()
 
 let info =
-  let open Cmdliner in
   let doc = "print OCaml compilers that are supported for this duniverse" in
   let exits = Term.default_exits in
   let man =
@@ -23,6 +22,6 @@ let info =
   in
   Term.info "print-ocaml-compilers" ~doc ~exits ~man
 
-let term = Cmdliner.Term.(term_result (const run $ Common.Arg.repo $ Common.Arg.setup_logs ()))
+let term = Term.(term_result (const run $ Common.Arg.repo $ Common.Arg.setup_logs ()))
 
 let cmd = (term, info)

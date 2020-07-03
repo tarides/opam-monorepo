@@ -1,6 +1,6 @@
-module Fmt_ext = Fmt
-open Stdune
 open Duniverse_lib
+open Rresult.R.Infix
+open Cmdliner
 
 let debug_update ~src_dep ~new_ref =
   let repo = src_dep.Duniverse.Deps.Source.dir in
@@ -12,10 +12,9 @@ let debug_update ~src_dep ~new_ref =
         Styled_pp.commit old_commit Styled_pp.commit new_commit)
 
 let should_update ~to_update src_dep =
-  match to_update with None -> true | Some set -> List.mem ~set src_dep
+  match to_update with None -> true | Some set -> List.mem src_dep set
 
 let update ~total ~updated ~to_update src_dep =
-  let open Result.O in
   let ref : Duniverse.resolved = src_dep.Duniverse.Deps.Source.ref in
   if should_update ~to_update src_dep then (
     incr total;
@@ -26,7 +25,6 @@ let update ~total ~updated ~to_update src_dep =
   else Ok src_dep
 
 let run (`Repo repo) (`Duniverse_repos duniverse_repos) () =
-  let open Result.O in
   let duniverse_file = Fpath.(repo // Config.duniverse_file) in
   Common.Logs.app (fun l ->
       l "Updating %a to track the latest commits" Styled_pp.path duniverse_file);
@@ -41,26 +39,29 @@ let run (`Repo repo) (`Duniverse_repos duniverse_repos) () =
       | None -> Ok None
       | _ -> Common.filter_duniverse ~to_consider:duniverse_repos duniverse >>| Option.some )
       >>= fun to_update ->
-      Result.List.map ~f:(update ~total ~updated ~to_update) duniverse >>= fun duniverse ->
+      List.fold_left
+        (fun acc e ->
+          acc >>= fun acc ->
+          update ~total ~updated ~to_update e >>| fun e -> e :: acc)
+        (Ok []) (List.rev duniverse)
+      >>= fun duniverse ->
       if !updated = 0 then (
         Common.Logs.app (fun l -> l "%a is already up-to-date!" Styled_pp.path duniverse_file);
         Ok () )
       else (
         Common.Logs.app (fun l ->
-            l "%a/%a source repositories tracked branch were updated" (Styled_pp.good Fmt_ext.int)
+            l "%a/%a source repositories tracked branch were updated" (Styled_pp.good Fmt.int)
               !updated
-              Fmt_ext.(styled `Blue int)
+              Fmt.(styled `Blue int)
               !total);
         let dune_get = { dune_get with deps = { dune_get.deps with duniverse } } in
         Duniverse.save ~file:duniverse_file dune_get )
 
 let term =
-  let open Cmdliner in
   Term.(
     term_result (const run $ Common.Arg.repo $ Common.Arg.duniverse_repos $ Common.Arg.setup_logs ()))
 
 let info =
-  let open Cmdliner in
   let doc =
     "update the commit hash corresponding to the tracked branch/tag for each source dependency"
   in

@@ -82,7 +82,7 @@ module Deps = struct
 
     let test_aggregate_list =
       let make_test ~name ~l ~expected () =
-        let test_name = Printf.sprintf "Deps.Source.aggregate_list: %s" name in
+        let test_name = Printf.sprintf "Deps.Source.aggregate_packages: %s" name in
         let test_fun () =
           let actual = Duniverse_lib.Duniverse.Deps.Source.aggregate_packages l in
           Alcotest.(check (list Testable.Deps.Source.unresolved)) test_name expected actual

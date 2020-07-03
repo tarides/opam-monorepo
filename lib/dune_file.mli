@@ -1,5 +1,3 @@
-open Stdune
-
 module Raw : sig
   val comment : string -> string
 
@@ -16,7 +14,7 @@ end
 module Lang : sig
   type version = int * int
 
-  val compare_version : version -> version -> Ordering.t
+  val compare_version : version -> version -> [ `Lt | `Eq | `Gt ]
 
   val pp_version : version Fmt.t
 

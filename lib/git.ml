@@ -1,5 +1,13 @@
-open Stdune
+open Astring
 open Sexplib.Conv
+open Rresult.R.Infix
+
+let result_list_map f t =
+  let rec loop acc = function
+    | [] -> Ok (List.rev acc)
+    | x :: xs -> f x >>= fun x -> loop (x :: acc) xs
+  in
+  loop [] t
 
 module Ls_remote = struct
   let non_packed_suffix = "^{}"
@@ -7,7 +15,7 @@ module Ls_remote = struct
   let ref_arg ref = Bos.Cmd.(v ref % (ref ^ non_packed_suffix))
 
   let parse_output_line s =
-    match String.extract_blank_separated_words s with
+    match String.fields ~empty:false s with
     | [ commit; ref ] -> Ok (commit, ref)
     | _ -> Error (`Msg (Printf.sprintf "Invalid git ls-remote output line: %S" s))
 
@@ -27,14 +35,13 @@ module Ls_remote = struct
       else if String.equal full_ref target_not_packed then { acc with not_packed = Some commit }
       else acc
     in
-    List.fold_left ~f ~init:{ maybe_packed = None; not_packed = None } lines
+    List.fold_left f { maybe_packed = None; not_packed = None } lines
 
   let commit_pointed_by ~ref output_lines =
-    let open Result.O in
     match output_lines with
     | [ "" ] -> Error `No_such_ref
     | _ -> (
-        Result.List.map ~f:parse_output_line output_lines >>= fun parsed_lines ->
+        result_list_map parse_output_line output_lines >>= fun parsed_lines ->
         let search prefix =
           let result = search_ref (prefix ^ ref) parsed_lines in
           interpret_search_result result

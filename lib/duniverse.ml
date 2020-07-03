@@ -1,5 +1,21 @@
-open Stdune
+open Astring
 open Sexplib.Conv
+open Rresult.R.Infix
+
+let rec list_equal eq xs ys =
+  match (xs, ys) with
+  | [], [] -> true
+  | x :: xs, y :: ys -> eq x y && list_equal eq xs ys
+  | _, _ -> false
+
+let list_filter_opt l = List.filter_map (fun x -> x) l
+
+let result_list_all =
+  let rec loop acc = function
+    | [] -> Ok (List.rev acc)
+    | t :: l -> t >>= fun x -> loop (x :: acc) l
+  in
+  fun l -> loop [] l
 
 type unresolved = Git.Ref.t
 
@@ -49,7 +65,7 @@ module Deps = struct
         t'
       in
       String.equal dir dir' && String.equal upstream upstream' && equal_ref ref ref'
-      && List.equal Opam.equal provided_packages provided_packages'
+      && list_equal Opam.equal provided_packages provided_packages'
 
     let raw_pp pp_ref fmt { dir; upstream; ref; provided_packages } =
       let open Pp_combinators.Ocaml in
@@ -67,14 +83,11 @@ module Deps = struct
     let aggregate t package =
       let package_name = package.Package.opam.name in
       let new_dir =
-        match String.compare t.dir package_name with
-        | Lt | Eq -> t.dir
-        | Gt -> dir_name_from_package package.Package.opam
+        if String.compare t.dir package_name <= 0 then t.dir
+        else dir_name_from_package package.Package.opam
       in
       let new_ref =
-        match Ordering.of_int (OpamVersionCompare.compare t.ref package.ref) with
-        | Gt | Eq -> t.ref
-        | Lt -> package.ref
+        if OpamVersionCompare.compare t.ref package.ref >= 0 then t.ref else package.ref
       in
       {
         t with
@@ -85,15 +98,14 @@ module Deps = struct
 
     let aggregate_packages l =
       let update map ({ Package.upstream; _ } as package) =
-        String.Map.update map upstream ~f:(function
-          | None -> Some (from_package package)
-          | Some t -> Some (aggregate t package))
+        String.Map.update upstream
+          (function None -> Some (from_package package) | Some t -> Some (aggregate t package))
+          map
       in
-      let aggregated_map = List.fold_left ~init:String.Map.empty ~f:update l in
-      String.Map.values aggregated_map
+      let aggregated_map = List.fold_left update String.Map.empty l in
+      String.Map.fold (fun _ v acc -> v :: acc) aggregated_map [] |> List.rev
 
     let resolve ~resolve_ref ({ upstream; ref; _ } as t) =
-      let open Result.O in
       resolve_ref ~upstream ~ref >>= fun resolved_ref -> Ok { t with ref = resolved_ref }
   end
 
@@ -113,7 +125,6 @@ module Deps = struct
 
     let from_opam_entry ~get_default_branch entry =
       let open Types.Opam in
-      let open Result.O in
       match entry with
       | { dev_repo = `Virtual; _ } | { dev_repo = `Error _; _ } -> Ok None
       | { is_dune = false; package = { name; version }; _ } -> Ok (Some (Opam { name; version }))
@@ -127,8 +138,8 @@ module Deps = struct
   type 'ref t = { opamverse : Opam.t list; duniverse : 'ref Source.t list } [@@deriving sexp]
 
   let equal equal_ref t t' =
-    List.equal Opam.equal t.opamverse t'.opamverse
-    && List.equal (Source.equal equal_ref) t.duniverse t'.duniverse
+    list_equal Opam.equal t.opamverse t'.opamverse
+    && list_equal (Source.equal equal_ref) t.duniverse t'.duniverse
 
   let raw_pp pp_ref fmt t =
     let open Pp_combinators.Ocaml in
@@ -137,27 +148,28 @@ module Deps = struct
       (list (Source.raw_pp pp_ref))
       t.duniverse
 
-  let from_classified (l : Classified.t list) =
+  let from_classified l =
     let opamverse, source_deps =
-      List.partition_map ~f:(function Opam o -> Left o | Source s -> Right s) l
+      List.fold_left
+        (fun (opamverse, sources) -> function Classified.Opam o -> (o :: opamverse, sources)
+          | Source s -> (opamverse, s :: sources))
+        ([], []) l
     in
-    let duniverse = Source.aggregate_packages source_deps in
+    let opamverse = List.rev opamverse in
+    let duniverse = Source.aggregate_packages (List.rev source_deps) in
     { opamverse; duniverse }
 
   let classify ~get_default_branch entries =
-    let open Result.O in
-    let results = List.map ~f:(Classified.from_opam_entry ~get_default_branch) entries in
-    Result.List.all results >>= fun dep_options -> Ok (List.filter_opt dep_options)
+    let results = List.map (Classified.from_opam_entry ~get_default_branch) entries in
+    result_list_all results >>= fun dep_options -> Ok (list_filter_opt dep_options)
 
   let from_opam_entries ~get_default_branch entries =
-    let open Result.O in
     classify ~get_default_branch entries >>= fun classified -> Ok (from_classified classified)
 
   let count { opamverse; duniverse } = List.length opamverse + List.length duniverse
 
   let resolve ~resolve_ref t =
-    let open Result.O in
-    Parallel.map ~f:(Source.resolve ~resolve_ref) t.duniverse |> Result.List.all
+    Parallel.map ~f:(Source.resolve ~resolve_ref) t.duniverse |> result_list_all
     >>= fun duniverse -> Ok { t with duniverse }
 end
 
@@ -168,47 +180,45 @@ end
 (** duniverse knows about which tools to use, and can calculate a set of allowable versions
     by inspecting the repo metadata *)
 module Tools = struct
-
-  type version =
-     | Eq of string
-     | Latest
-     | Min of string
-  [@@deriving sexp]
+  type version = Eq of string | Latest | Min of string [@@deriving sexp]
 
   type t = {
-    opam: version;
-    ocamlformat: version;
-    dune: version;
-    odoc: version;
-    mdx: version;
-    lsp: version;
-    merlin: version;
-   } [@@deriving sexp]
+    opam : version;
+    ocamlformat : version;
+    dune : version;
+    odoc : version;
+    mdx : version;
+    lsp : version;
+    merlin : version;
+  }
+  [@@deriving sexp]
 
-  let tools = [
-    ("base", ["opam"; "odoc"; "mdx"]);
-    ("ocamlformat", ["ocamlformat"]);
-    (* ("lsp", ["ocaml-lsp-server"]); TODO broken *)
-    ("merlin", ["merlin"])]
+  let tools =
+    [
+      ("base", [ "opam"; "odoc"; "mdx" ]);
+      ("ocamlformat", [ "ocamlformat" ]);
+      (* ("lsp", ["ocaml-lsp-server"]); TODO broken *)
+      ("merlin", [ "merlin" ]);
+    ]
 
   (** Calculate a version of this tool by looking at repo metadata *)
-  let of_repo () = (* TODO expose CLI overrides *)
-     let ocamlformat =
-       match Bos.OS.File.read_lines (Fpath.v ".ocamlformat") with
-       | Ok f -> begin
-               List.filter_map ~f:(Astring.String.cut ~sep:"=") f |>
-               List.assoc_opt "version" |> begin
-                function
-               | Some v -> Eq v
-               | None -> Latest
-               end
-              end
-       | Error (`Msg _) -> Latest
-     in
-    let dune = Latest in (* TODO check for minimum in dune-project *)
-    let odoc = Latest in (* No real version constraints on odoc *)
-    let opam = Latest in (* No real version constraints on opam *)
-    let mdx = Latest in 
+  let of_repo () =
+    (* TODO expose CLI overrides *)
+    let ocamlformat =
+      match Bos.OS.File.read_lines (Fpath.v ".ocamlformat") with
+      | Ok f -> (
+          List.filter_map (String.cut ~sep:"=") f |> List.assoc_opt "version" |> function
+          | Some v -> Eq v
+          | None -> Latest )
+      | Error (`Msg _) -> Latest
+    in
+    let dune = Latest in
+    (* TODO check for minimum in dune-project *)
+    let odoc = Latest in
+    (* No real version constraints on odoc *)
+    let opam = Latest in
+    (* No real version constraints on opam *)
+    let mdx = Latest in
     let lsp = Latest in
     let merlin = Latest in
     { ocamlformat; dune; odoc; opam; mdx; lsp; merlin }
@@ -218,14 +228,14 @@ module Config = struct
   type pull_mode = Submodules | Source [@@deriving sexp]
 
   type t = {
-    version: string;
+    version : string;
     root_packages : Types.Opam.package list;
     pins : Types.Opam.pin list; [@default []] [@sexp_drop_default.sexp]
     pull_mode : pull_mode; [@default Source]
     opam_repo : Uri_sexp.t;
         [@default Uri.of_string Config.duniverse_opam_repo] [@sexp_drop_default.sexp]
     ocaml_compilers : string list; [@default []]
-    tools: Tools.t;
+    tools : Tools.t;
   }
   [@@deriving sexp] [@@sexp.allow_extra_fields]
 end
@@ -238,12 +248,12 @@ let sort ({ deps = { opamverse; duniverse }; _ } as t) =
   let sorted_opamverse =
     let open Deps.Opam in
     let compare opam opam' = String.compare opam.name opam'.name in
-    List.sort ~compare opamverse
+    List.sort compare opamverse
   in
   let sorted_duniverse =
     let open Deps.Source in
     let compare source source' = String.compare source.dir source'.dir in
-    List.sort ~compare duniverse
+    List.sort compare duniverse
   in
   { t with deps = { opamverse = sorted_opamverse; duniverse = sorted_duniverse } }
 

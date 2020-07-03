@@ -1,4 +1,4 @@
-open Stdune
+let ( >>= ) x f = match x with None -> None | Some x -> f x
 
 module Dev_repo = struct
   type vcs = Git | Other of string
@@ -29,7 +29,6 @@ module Dev_repo = struct
       Uri.pp uri
 
   let fallback_vcs_from_uri uri =
-    let open Option.O in
     let vcs_from_scheme = Uri.scheme uri >>= known_vcs_from_string in
     match vcs_from_scheme with
     | Some vcs -> Some vcs

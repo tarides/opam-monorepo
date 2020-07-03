@@ -1,33 +1,34 @@
-open Stdune
+open Astring
+open Rresult.R.Infix
 
 module Lang = struct
   type version = int * int
 
+  let ord = function 0 -> `Eq | i when i < 0 -> `Lt | _ -> `Gt
+
   let compare_version (major, minor) (major', minor') =
-    match Int.compare major major' with Eq -> Int.compare minor minor' | _ as ord -> ord
+    match Int.compare major major' with 0 -> ord (Int.compare minor minor') | x -> ord x
 
   let pp_version fmt (major, minor) = Format.fprintf fmt "%d.%d" major minor
 
   let parse_version s =
     let err () = Error (`Msg (Printf.sprintf "Invalid dune lang version: %s" s)) in
-    match String.split ~on:'.' s with
+    match String.cuts ~sep:"." s with
     | [ major; minor ] -> (
-        match (Int.of_string major, Int.of_string minor) with
-        | Some major, Some minor -> Ok (major, minor)
-        | _ -> err () )
+        match (int_of_string major, int_of_string minor) with
+        | major, minor -> Ok (major, minor)
+        | exception _ -> err () )
     | _ -> err ()
 
   let parse_stanza s =
     let content =
-      let open Option.O in
-      String.drop_prefix ~prefix:"(" s >>= String.drop_suffix ~suffix:")" >>| fun content ->
-      String.split ~on:' ' content
+      String.cuts ~sep:" " (String.trim ~drop:(function '(' | ')' -> true | _ -> false) s)
     in
     match content with
-    | Some [ "lang"; "dune"; version ] -> parse_version version
+    | [ "lang"; "dune"; version ] -> parse_version version
     | _ -> Error (`Msg (Printf.sprintf "Invalid lang stanza: %s" s))
 
-  let is_stanza s = String.is_prefix ~prefix:"(lang " s
+  let is_stanza s = String.is_prefix ~affix:"(lang " s
 
   let duniverse_minimum_version = (1, 11)
 
@@ -60,9 +61,7 @@ module Project = struct
 
   let check_opam_generation =
     let open Sexplib.Sexp in
-    List.exists ~f:(function
-      | List [ Atom "generate_opam_files"; Atom "true" ] -> true
-      | _ -> false)
+    List.exists (function List [ Atom "generate_opam_files"; Atom "true" ] -> true | _ -> false)
 
   let compare_ov a b op =
     let b = OV.of_string_exn b in
@@ -76,8 +75,8 @@ module Project = struct
   let eval_ocaml_bcomp sxp ov =
     let open Sexplib.Sexp in
     let rec eval = function
-      | List (Atom "and" :: tl) -> List.fold_left ~f:(fun a b -> eval b && a) ~init:true tl
-      | List (Atom "or" :: tl) -> List.fold_left ~f:(fun a b -> eval b || a) ~init:false tl
+      | List (Atom "and" :: tl) -> List.fold_left (fun a b -> eval b && a) true tl
+      | List (Atom "or" :: tl) -> List.fold_left (fun a b -> eval b || a) false tl
       | List [ Atom "not"; a ] -> not (eval a)
       | List [ Atom ((">=" | ">" | "=" | "<" | "<=" | "<>") as op); Atom a ] -> compare_ov ov a op
       | List _ -> failwith "unexpected list atoms, only ne/and/or/not supported"
@@ -86,7 +85,6 @@ module Project = struct
     eval sxp
 
   let supported_ocaml_compilers () =
-    let open Result.O in
     let open Sexplib.Sexp in
     load_dune_project () >>= fun sxp ->
     (* Check that opam file generation is on, and warn otherwise *)
@@ -100,16 +98,16 @@ module Project = struct
     | true ->
         let constr =
           List.filter_map
-            ~f:(function
+            (function
               | List (Atom "package" :: prsxp) -> (
                   List.filter_map
-                    ~f:(function List (Atom "depends" :: depsxp) -> Some depsxp | _ -> None)
+                    (function List (Atom "depends" :: depsxp) -> Some depsxp | _ -> None)
                     prsxp
                   |> function
                   | [] -> None
                   | depsxp :: _ -> (
                       List.filter_map
-                        ~f:(function
+                        (function
                           | Atom "ocaml" -> Some []
                           | List (Atom "ocaml" :: ocsxp) -> Some ocsxp
                           | _ -> None)
@@ -122,8 +120,6 @@ module Project = struct
           |> List.flatten
         in
         let constr = List (Atom "and" :: constr) in
-        let r =
-          List.filter ~f:(eval_ocaml_bcomp constr) OV.Releases.all
-        in
+        let r = List.filter (eval_ocaml_bcomp constr) OV.Releases.all in
         Ok r
 end

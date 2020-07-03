@@ -1,5 +1,3 @@
-open Stdune
-
 let n_threads = 24
 
 (** Creates a thread-safe list with a pop function. *)
@@ -27,11 +25,11 @@ let map ~f l =
         result := f hd :: !result;
         worker result
   in
-  List.init n_threads ~f:(fun _ ->
+  List.init n_threads (fun _ ->
       let result = ref [] in
       (Thread.create worker result, result))
   |> List.fold_left
-       ~f:(fun acc (thread, result_ref) ->
+       (fun acc (thread, result_ref) ->
          Thread.join thread;
          !result_ref @ acc)
-       ~init:[]
+       []

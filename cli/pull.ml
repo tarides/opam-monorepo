@@ -1,13 +1,14 @@
-module Fmt_ext = Fmt
-open Stdune
 open Duniverse_lib
-open Rresult
+open Rresult.R.Infix
+open Cmdliner
 
 let min_dune_ver = Dune_file.Lang.duniverse_minimum_version
 
 let update_lang ~content =
-  List.map content ~f:(fun line ->
+  List.map
+    (fun line ->
       if Dune_file.Lang.is_stanza line then Dune_file.Raw.duniverse_minimum_lang else line)
+    content
 
 let should_update_lang ~yes () =
   Prompt.confirm ~question:(fun l -> l "Should I update your dune-project?") ~yes
@@ -37,27 +38,24 @@ let suggest_setting_version ~yes ~dune_project_path ~content =
   else Ok ()
 
 let check_dune_lang_version ~yes ~repo =
-  let open Result.O in
   let dune_project_path = Fpath.(repo / "dune-project") in
   Logs.debug (fun l -> l "Looking for dune-project file in %a" Styled_pp.path dune_project_path);
   Bos.OS.File.exists dune_project_path >>= fun found_dune_project ->
   if found_dune_project then
     Bos.OS.File.read_lines dune_project_path >>= fun content ->
-    let lang_stanza = List.find ~f:Dune_file.Lang.is_stanza content in
+    let lang_stanza = List.find_opt Dune_file.Lang.is_stanza content in
     match lang_stanza with
     | None -> suggest_setting_version ~yes ~dune_project_path ~content
     | Some s -> (
         Dune_file.Lang.parse_stanza s >>= fun version ->
         match Dune_file.Lang.(compare_version version duniverse_minimum_version) with
-        | Eq | Gt -> Ok ()
-        | Lt -> suggest_updating_version ~yes ~version ~dune_project_path ~content )
+        | `Eq | `Gt -> Ok ()
+        | `Lt -> suggest_updating_version ~yes ~version ~dune_project_path ~content )
   else (
     Logs.debug (fun l -> l "No dune-project found");
     Ok () )
 
-
 let run (`Yes yes) (`No_cache no_cache) (`Repo repo) (`Duniverse_repos duniverse_repos) () =
-  let open Result.O in
   let duniverse_file = Fpath.(repo // Config.duniverse_file) in
   Duniverse.load ~file:duniverse_file >>= function
   | { deps = { duniverse = []; _ }; _ } ->
@@ -73,7 +71,6 @@ let run (`Yes yes) (`No_cache no_cache) (`Repo repo) (`Duniverse_repos duniverse
       Pull.duniverse ~cache ~pull_mode:config.Duniverse.Config.pull_mode ~repo duniverse
 
 let info =
-  let open Cmdliner in
   let doc = "fetch the latest archives of the vendored libraries" in
   let exits = Term.default_exits in
   let man =
@@ -97,7 +94,7 @@ let info =
 let term =
   Cmdliner.Term.(
     term_result
-      ( const run $ Common.Arg.yes $ Common.Arg.no_cache $ Common.Arg.repo $ Common.Arg.duniverse_repos
-      $ Common.Arg.setup_logs () ))
+      ( const run $ Common.Arg.yes $ Common.Arg.no_cache $ Common.Arg.repo
+      $ Common.Arg.duniverse_repos $ Common.Arg.setup_logs () ))
 
 let cmd = (term, info)
