@@ -63,7 +63,12 @@ let submodule_add ~repo ~duniverse_dir src_dep =
   let open Duniverse.Deps.Source in
   let { dir; upstream; ref = { Git.Ref.t = _ref; commit }; _ } = src_dep in
   let remote_name = match Astring.String.cut ~sep:"." dir with Some (p, _) -> p | None -> dir in
-  let target_path = Fpath.(normalize (duniverse_dir / dir)) in
+  let target_path =
+    let submodule_dir = Fpath.(duniverse_dir / dir) in
+    match Fpath.relativize ~root:repo submodule_dir with
+    | Some path -> Fpath.normalize path
+    | None -> Fpath.normalize submodule_dir
+  in
   let frag =
     Printf.sprintf "[submodule %S]\n  path=%s\n  url=%s" remote_name (Fpath.to_string target_path)
       upstream
