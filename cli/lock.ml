@@ -187,7 +187,7 @@ let info =
 let term =
   let open Term in
   term_result
-    ( const run $ Common.Arg.repo $ pull_mode $ recurse_opam $ build_only $ packages
-    $ Common.Arg.setup_logs () )
+    (const run $ Common.Arg.repo $ pull_mode $ recurse_opam $ build_only $ packages
+   $ Common.Arg.setup_logs ())
 
 let cmd = (term, info)

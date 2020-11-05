@@ -25,7 +25,7 @@ let suggest_updating_version ~yes ~version ~dune_project_path ~content =
   if should_update_lang ~yes () then (
     let updated = update_lang ~content @ [ "" ] in
     log_version_update ~dune_project_path;
-    Bos.OS.File.write_lines dune_project_path updated )
+    Bos.OS.File.write_lines dune_project_path updated)
   else Ok ()
 
 let suggest_setting_version ~yes ~dune_project_path ~content =
@@ -33,7 +33,7 @@ let suggest_setting_version ~yes ~dune_project_path ~content =
   if should_update_lang ~yes () then (
     let updated = Dune_file.Raw.duniverse_minimum_lang :: content in
     log_version_update ~dune_project_path;
-    Persist.write_lines_hum dune_project_path updated )
+    Persist.write_lines_hum dune_project_path updated)
   else Ok ()
 
 let check_dune_lang_version ~yes ~repo =
@@ -50,10 +50,10 @@ let check_dune_lang_version ~yes ~repo =
         Dune_file.Lang.parse_stanza s >>= fun version ->
         match Dune_file.Lang.(compare_version version duniverse_minimum_version) with
         | Eq | Gt -> Ok ()
-        | Lt -> suggest_updating_version ~yes ~version ~dune_project_path ~content )
+        | Lt -> suggest_updating_version ~yes ~version ~dune_project_path ~content)
   else (
     Logs.debug (fun l -> l "No dune-project found");
-    Ok () )
+    Ok ())
 
 let run (`Yes yes) (`No_cache no_cache) (`Repo repo) (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
@@ -96,7 +96,7 @@ let info =
 let term =
   Cmdliner.Term.(
     term_result
-      ( const run $ Common.Arg.yes $ Common.Arg.no_cache $ Common.Arg.repo
-      $ Common.Arg.duniverse_repos $ Common.Arg.setup_logs () ))
+      (const run $ Common.Arg.yes $ Common.Arg.no_cache $ Common.Arg.repo
+     $ Common.Arg.duniverse_repos $ Common.Arg.setup_logs ()))
 
 let cmd = (term, info)

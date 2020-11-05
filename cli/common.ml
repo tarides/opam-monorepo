@@ -54,7 +54,7 @@ module Arg = struct
       | { vcs = Some Git; uri = dev_repo_uri } -> (
           match Uri.host dev_repo_uri with
           | Some _host -> Ok dev_repo_uri
-          | None -> Error (`Msg "dev-repo without host") )
+          | None -> Error (`Msg "dev-repo without host"))
       | { vcs = None | Some (Other _); _ } -> Error (`Msg "dev-repo doesn't use git as a VCS")
     in
     Cmdliner.Arg.conv ~docv:"DEV_REPO" (parse, Uri.pp_hum)
@@ -127,6 +127,6 @@ let filter_duniverse ~to_consider (src_deps : _ Duniverse.Deps.Source.t list) =
           let sep fmt () = Ffmt.pf fmt " " in
           Rresult.R.error_msgf "The following repos are not in your duniverse: %a"
             Ffmt.(list ~sep string)
-            unmatched )
+            unmatched)
 
 let get_cache ~no_cache = if no_cache then Ok Cloner.no_cache else Cloner.get_cache ()

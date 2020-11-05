@@ -14,7 +14,7 @@ module Lang = struct
     | [ major; minor ] -> (
         match (Int.of_string major, Int.of_string minor) with
         | Some major, Some minor -> Ok (major, minor)
-        | _ -> err () )
+        | _ -> err ())
     | _ -> err ()
 
   let parse_stanza s =
@@ -126,7 +126,7 @@ module Project = struct
                         depsxp
                       |> function
                       | [] -> None
-                      | res :: _ -> Some res ) )
+                      | res :: _ -> Some res))
               | _ -> None)
             sxp
           |> List.flatten

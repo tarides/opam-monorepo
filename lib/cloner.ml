@@ -123,8 +123,7 @@ module Uncached = struct
     if String.equal commit head_commit then Ok ()
     else (
       warn_about_head_commit ~ref ~commit ();
-      Exec.git_unshallow ~repo:output_dir () >>= fun () -> Exec.git_checkout ~repo:output_dir commit
-      )
+      Exec.git_unshallow ~repo:output_dir () >>= fun () -> Exec.git_checkout ~repo:output_dir commit)
 
   let clone_to ~output_dir ~remote ~ref ~commit () =
     let open Result.O in

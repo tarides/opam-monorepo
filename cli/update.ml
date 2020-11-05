@@ -22,7 +22,7 @@ let update ~total ~updated ~to_update src_dep =
     Exec.git_resolve ~remote:src_dep.upstream ~ref:ref.t >>= fun new_ref ->
     if not (String.equal ref.commit new_ref.commit) then incr updated;
     debug_update ~src_dep ~new_ref;
-    Ok { src_dep with ref = new_ref } )
+    Ok { src_dep with ref = new_ref })
   else Ok src_dep
 
 let run (`Repo repo) (`Duniverse_repos duniverse_repos) () =
@@ -37,14 +37,14 @@ let run (`Repo repo) (`Duniverse_repos duniverse_repos) () =
   | { deps = { duniverse; _ }; _ } as dune_get ->
       let total = ref 0 in
       let updated = ref 0 in
-      ( match duniverse_repos with
+      (match duniverse_repos with
       | None -> Ok None
-      | _ -> Common.filter_duniverse ~to_consider:duniverse_repos duniverse >>| Option.some )
+      | _ -> Common.filter_duniverse ~to_consider:duniverse_repos duniverse >>| Option.some)
       >>= fun to_update ->
       Result.List.map ~f:(update ~total ~updated ~to_update) duniverse >>= fun duniverse ->
       if !updated = 0 then (
         Common.Logs.app (fun l -> l "%a is already up-to-date!" Pp.Styled.path duniverse_file);
-        Ok () )
+        Ok ())
       else (
         Common.Logs.app (fun l ->
             l "%a/%a source repositories tracked branch were updated" (Pp.Styled.good Fmt_ext.int)
@@ -52,7 +52,7 @@ let run (`Repo repo) (`Duniverse_repos duniverse_repos) () =
               Fmt_ext.(styled `Blue int)
               !total);
         let dune_get = { dune_get with deps = { dune_get.deps with duniverse } } in
-        Duniverse.save ~file:duniverse_file dune_get )
+        Duniverse.save ~file:duniverse_file dune_get)
 
 let term =
   let open Cmdliner in

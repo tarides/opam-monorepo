@@ -83,7 +83,7 @@ let tag_from_archive archive =
   | Some "git+http" | Some "git+https" | Some "git+ssh" | Some "git" -> (
       match String.cuts ~empty:false ~sep:"#" archive with
       | [ _repo; tag ] -> Some tag
-      | _ -> Some "master" )
+      | _ -> Some "master")
   | Some "git+file" -> None
   | _ -> (
       match Uri.host uri with
@@ -92,22 +92,22 @@ let tag_from_archive archive =
           | [ _u; _r; "releases"; "download"; v; _archive ] -> Some v
           | [ _u; _r; "archive"; archive ] -> Some (strip_ext archive)
           | [ _u; _r; "archive"; tag; _ ] -> Some tag
-          | _ -> if Uri.scheme uri = Some "git+https" then None else parse_err () )
+          | _ -> if Uri.scheme uri = Some "git+https" then None else parse_err ())
       | Some "ocaml.janestreet.com" -> (
           match path with
           | [ "ocaml-core"; _ver; "files"; f ] | [ "ocaml-core"; _ver; "individual"; f ] ->
               tag_of_file f
           | [ "janestreet"; _r; "releases"; "download"; v; _f ] -> Some v
           | [ "janestreet"; _r; "archive"; f ] -> Some (strip_ext f)
-          | _ -> parse_err () )
+          | _ -> parse_err ())
       | Some "gitlab.camlcity.org" | Some "download.camlcity.org" -> tag_of_last_path ()
       | Some "gitlab.inria.fr" -> (
-          match path with [ _u; _r; "repository"; v; _archive ] -> Some v | _ -> parse_err () )
+          match path with [ _u; _r; "repository"; v; _archive ] -> Some v | _ -> parse_err ())
       | Some "ocamlgraph.lri.fr" | Some "erratique.ch" -> tag_of_last_path ~prefix:"v" ()
       | _ ->
           Logs.info (fun l ->
               l "Attempting to guess tag for %s from the final part of the URL" archive);
-          tag_of_last_path () )
+          tag_of_last_path ())
 
 let classify_from_url_src src =
   let src = match String.cut ~sep:"#" src with None -> src | Some (src, _) -> src in
@@ -118,8 +118,8 @@ let classify_from_url_src src =
       | { vcs = Some Git; uri = dev_repo_uri } -> (
           match Uri.host dev_repo_uri with
           | Some _host -> Some (`Git (Uri.to_string dev_repo_uri))
-          | None -> Some (`Error "url.src without host") )
-      | { vcs = None | Some (Other _); _ } -> None )
+          | None -> Some (`Error "url.src without host"))
+      | { vcs = None | Some (Other _); _ } -> None)
 
 let classify_from_dev_repo ~name src =
   match src with
@@ -131,8 +131,8 @@ let classify_from_dev_repo ~name src =
       | { vcs = Some Git; uri = dev_repo_uri } -> (
           match Uri.host dev_repo_uri with
           | Some _host -> `Git (Uri.to_string dev_repo_uri)
-          | None -> `Error "dev-repo without host" )
-      | { vcs = None | Some (Other _); _ } -> `Error "dev-repo doesn't use git as a VCS" )
+          | None -> `Error "dev-repo without host")
+      | { vcs = None | Some (Other _); _ } -> `Error "dev-repo doesn't use git as a VCS")
 
 let get_git_url ~src ~dev_repo ~name =
   Logs.debug (fun l -> l "Parsing git url from url.src (%s)" name);
@@ -156,4 +156,4 @@ let classify_package ~package ~dev_repo ~archive () =
             Logs.debug (fun l ->
                 l "Mapped %s -> %s" archive (match tag with None -> "??" | Some v -> v));
             (kind, tag)
-        | x -> (x, None) )
+        | x -> (x, None))
