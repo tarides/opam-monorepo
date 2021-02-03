@@ -111,6 +111,7 @@ let root_pin_depends local_opam_files =
 
 let pull_pin_depends (pin_depends : (OpamPackage.t * OpamUrl.t) list) =
   let hashes = [] in
+  let pins_tmp_dir = Fpath.v "/tmp/opam-monorepo/pins/" in
   OpamGlobalState.with_ `Lock_none (fun global_state ->
       let cache_dir = OpamRepositoryPath.download_cache global_state.OpamStateTypes.root in
       Logs.debug (fun l ->
@@ -118,17 +119,23 @@ let pull_pin_depends (pin_depends : (OpamPackage.t * OpamUrl.t) list) =
             Fmt.(list ~sep:(unit " ") Fmt.(styled `Yellow string))
             (List.map ~f:(fun (pkg, _) -> OpamPackage.to_string pkg) pin_depends));
       let open Result.O in
-      let pull (pkg, url) =
+      let command (pkg, url) =
         let label = OpamPackage.to_string pkg in
-        let out_dir = OpamFilename.Dir.of_string ("/tmp/opam-monorepo/pins/" ^ label) in
+        let out_dir = Fpath.(pins_tmp_dir / label) in
         let open OpamProcess.Job.Op in
-        OpamRepository.pull_tree ~cache_dir label out_dir hashes [ url ] @@| function
-        | Result _ | Up_to_date _ -> Ok ()
+        OpamRepository.pull_tree ~cache_dir label
+          (OpamFilename.Dir.of_string (Fpath.to_string out_dir))
+          hashes [ url ]
+        @@| function
+        | Result _ | Up_to_date _ ->
+            let opam_path = Fpath.(out_dir / OpamPackage.name_to_string pkg |> add_ext "opam") in
+            read_opam opam_path >>= fun opam ->
+            Ok (OpamPackage.name pkg, (OpamPackage.version pkg, opam))
         | Not_available (_, long_msg) ->
             Error (`Msg (Printf.sprintf "Failed to pull %s: %s" label long_msg))
       in
       let jobs = !OpamStateConfig.r.dl_jobs in
-      OpamParallel.map ~jobs ~command:pull pin_depends |> Result.List.all >>= fun _ -> Ok ())
+      Result.List.all (OpamParallel.map ~jobs ~command pin_depends) >>| OpamPackage.Name.Map.of_list)
 
 let run (`Repo repo) (`Recurse_opam recurse) (`Build_only build_only) (`Local_packages lp) () =
   let open Rresult.R.Infix in
@@ -140,8 +147,11 @@ let run (`Repo repo) (`Recurse_opam recurse) (`Build_only build_only) (`Local_pa
   check_root_packages ~local_packages >>= fun () ->
   local_paths_to_opam_map local_paths >>= fun local_opam_files ->
   let root_pin_depends = root_pin_depends local_opam_files in
-  pull_pin_depends root_pin_depends >>= fun () ->
+  pull_pin_depends root_pin_depends >>= fun pin_opam_files ->
   Repo.lockfile ~local_packages repo >>= fun lockfile_path ->
+  let local_opam_files =
+    OpamPackage.Name.Map.union (fun _local pin -> pin) local_opam_files pin_opam_files
+  in
   calculate_opam ~build_only ~local_opam_files ~local_packages >>= fun package_summaries ->
   Common.Logs.app (fun l -> l "Calculating exact pins for each of them.");
   compute_duniverse ~package_summaries >>= resolve_ref >>= fun duniverse ->
