@@ -4,7 +4,7 @@
 
 (source (github ocamllabs/opam-monorepo))
 (license ISC)
-(authors "Anil Madhavapeddy" "Nathan Rebours" "Lucas Pluvinage" "Jules Aguillon")
+(authors "Anil Madhavapeddy" "Nathan Rebours" "Lucas Pluvinage" "Jules Aguillon" "Sonja Heinze" "Rizo Isrof")
 (maintainers "anil@recoil.org")
 
 (package
