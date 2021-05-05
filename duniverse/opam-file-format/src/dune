@@ -3,8 +3,8 @@
   (public_name opam-file-format)
   (synopsis "Parser and printer for the opam file syntax")
   (wrapped false)
-  (flags :standard (:include flags.sexp))
-  (modules_without_implementation opamParserTypes))
+  (modules :standard \ flags)
+  (flags :standard (:include flags.sexp)))
 
 (rule
   (with-stdout-to flags.ml
@@ -16,3 +16,6 @@
 
 (ocamlyacc opamBaseParser)
 (ocamllex opamLexer)
+
+(env (dev
+ (flags (:standard -warn-error -A))))

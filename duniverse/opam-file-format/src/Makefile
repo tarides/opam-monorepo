@@ -17,16 +17,18 @@ endif
 show:
 	echo $(OCAML_VERSION)
 
+opamParserTypes.cmi: opamParserTypes.cmo
+
 %.ml %.mli: %.mly
 	ocamlyacc $<
 
 %.cmi: %.mli
 	ocamlc -c $(PP) $<
 
-%.cmo: %.ml %.cmi
+%.cmo: %.ml
 	ocamlc -c $(PP) $<
 
-%.cmx: %.ml %.cmi
+%.cmx: %.ml
 	ocamlopt -c $(PP) $<
 
 MODULES = $(sort $(basename $(wildcard *.ml *.mll *.mly)))

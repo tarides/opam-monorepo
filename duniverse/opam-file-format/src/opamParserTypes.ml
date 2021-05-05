@@ -42,7 +42,7 @@ type env_update_op = Eq       (** [=] *)
                    | EqPlusEq (** [=+=] *)
 
 (** [OpamParserTypes] transitional module with full position types *)
-module FullPos : sig
+module FullPos = struct
 
   (** Source file positions *)
   type file_name = string

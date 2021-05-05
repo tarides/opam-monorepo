@@ -1,3 +1,15 @@
+2.1.2 [07 Jan 2021]
+* Some hash-consing for strings [#27 @AltGr]
+* Fix named section position [#31 @rjbou]
+* Don't include build system Flags module in installation [#34 @dra27]
+* Allow compilation with Dune 1.x [#35 @kit-ty-kate]
+* Fix compilation of OpamParserTypes [#36 @dra27]
+
+2.1.1 [17 Nov 2020]
+* New types with more complete positions [#24 @rjbou]
+* Deprecation of all old functions [#24 @rjbou]
+* Add tests [#28 @rjbou]
+
 2.1.0 [26 Aug 2020]
 * Don't add a newline at the start of strings with newlines [#18 @dra27]
 * Report starting position of strings correctly [#19 @rjbou]

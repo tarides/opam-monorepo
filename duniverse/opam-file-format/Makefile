@@ -25,7 +25,7 @@ LIBDIR ?= $(PREFIX)/lib
 install:
 	mkdir -p $(DESTDIR)$(LIBDIR)/opam-file-format
 	install -m 0644 \
-	  $(wildcard $(addprefix src/*.,cmi cmo cmx cmti lib a cma cmxa cmxs)) \
+	  $(wildcard $(addprefix src/*.,cmi cmo cmx cmt cmti lib a cma cmxa cmxs)) \
 	    src/META \
 	  $(DESTDIR)$(LIBDIR)/opam-file-format/
 

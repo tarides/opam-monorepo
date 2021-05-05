@@ -423,6 +423,15 @@ module Opamfile = struct
     in
     A.testable opamfile_fmt opamfile_equals
 
+  let ofile_pos_testable =
+    let opamfile_fmt : opamfile Fmt.t = fun ppf f ->
+      Format.fprintf ppf "%s" (OpamPrinter.FullPos.opamfile f)
+    in
+    let opamfile_equals o1 o2 =
+       o1.file_contents = o2.file_contents
+    in
+    A.testable opamfile_fmt opamfile_equals
+
   let test_printer t () =
     List.iter (fun (name, str, ofile) ->
         A.check A.string name str (print_ofile ofile))
@@ -470,7 +479,7 @@ module Opamfile = struct
                   Some { pos = spos (4, 8) (4, 15);
                          pelem = "thing" };
                 section_items =
-                  { pos = spos (4, 8) (5, 29);
+                  { pos = spos (4, 16) (6, 1);
                     pelem =
                       [{ pos = spos (5, 2) (5, 29);
                          pelem =
@@ -485,7 +494,7 @@ module Opamfile = struct
       ];
     in
     let content = {file_contents; file_name = filename} in
-    A.check ofile_testable "sample" content (OpamParser.FullPos.file filename)
+    A.check ofile_pos_testable "sample" content (OpamParser.FullPos.file filename)
 
   let tests =
     [
