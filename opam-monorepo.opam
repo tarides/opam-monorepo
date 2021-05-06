@@ -19,15 +19,15 @@ homepage: "https://github.com/ocamllabs/opam-monorepo"
 bug-reports: "https://github.com/ocamllabs/opam-monorepo/issues"
 depends: [
   "dune" {>= "2.6"}
-  "ocaml" {>= "4.08.0" & < "4.13"}
+  "ocaml" {>= "4.08.0" & < "4.12.1"}
   "dune-build-info"
   "bos"
   "cmdliner"
   "fmt"
   "logs"
   "opam-file-format" {>= "2.1.0"}
-  "opam-format" {= "2.1.0~beta2"}
-  "opam-state" {= "2.1.0~beta2"}
+  "opam-format" {>= "2.1.0~beta4"}
+  "opam-state" {>= "2.1.0~beta4"}
   "opam-0install"
   "ocaml-version"
   "sexplib"
