@@ -126,7 +126,7 @@ let repository rt repo =
       (Printexc.to_string e)
   | None ->
     let opams =
-      OpamRepositoryState.load_opams_from_dir repo.repo_name repo_root
+      OpamRepositoryState.load_opams_from_dir_lazy repo.repo_name repo_root
     in
     let local_dir = OpamRepositoryPath.root gt.root repo.repo_name in
     if OpamFilename.exists_dir local_dir then
@@ -239,6 +239,7 @@ let pinned_package st ?version ?(working_dir=false) name =
         Some (snd (OpamPackage.Map.min_binding above))
       | _ -> None
     in
+    let repo_opam = Option.map Lazy.force repo_opam in
     (if working_dir then Done () else
        (match url.OpamUrl.hash with
         | None -> Done true
@@ -381,7 +382,7 @@ let pinned_package st ?version ?(working_dir=false) name =
          confirm, but use it still (e.g. descr may have changed) *)
       let opam = save_overlay new_opam in
       Done
-        ((fun st -> {st with opams = OpamPackage.Map.add nv opam st.opams}),
+        ((fun st -> {st with opams = OpamPackage.Map.add nv (lazy opam) st.opams}),
          true)
     | Result  _, _ ->
       Done ((fun st -> st), true)

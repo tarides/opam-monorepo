@@ -77,7 +77,7 @@ type +'lock repos_state = {
   repos_definitions: OpamFile.Repo.t repository_name_map;
   (** The contents of each repo's [repo] file *)
 
-  repo_opams: OpamFile.OPAM.t package_map repository_name_map;
+  repo_opams: OpamFile.OPAM.t Lazy.t package_map repository_name_map;
   (** All opam files that can be found in the configured repositories *)
 
   repos_tmp: (OpamRepositoryName.t, OpamFilename.Dir.t Lazy.t) Hashtbl.t;
@@ -108,11 +108,11 @@ type +'lock switch_state = {
   switch_config: OpamFile.Switch_config.t;
   (** The configuration file for this switch *)
 
-  repos_package_index: OpamFile.OPAM.t package_map;
+  repos_package_index: OpamFile.OPAM.t Lazy.t package_map;
   (** Metadata of all packages that could be found in the configured
       repositories (ignoring installed or pinned packages) *)
 
-  opams: OpamFile.OPAM.t package_map;
+  opams: OpamFile.OPAM.t Lazy.t package_map;
   (** The metadata of all packages, gathered from repo, local cache and pinning
       overlays. This includes URL and descr data (even if they were originally
       in separate files), as well as the original metadata directory (that can

@@ -16,7 +16,7 @@ let parse_from_string parse_fun str filename =
   parse_fun OpamLexer.token lexbuf
 
 let parse_from_channel parse_fun ic filename =
-  let lexbuf = Lexing.from_channel ic in
+  let lexbuf = Lexing.from_channel ~with_positions:false ic in
   lexbuf.Lexing.lex_curr_p <-
     { lexbuf.Lexing.lex_curr_p with Lexing.pos_fname = filename };
   parse_fun OpamLexer.token lexbuf

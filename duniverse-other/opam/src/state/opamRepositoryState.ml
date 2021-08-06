@@ -55,7 +55,12 @@ module Cache = struct
             (filter_out_nourl rt.repos_definitions);
         cached_opams =
           OpamRepositoryName.Map.bindings
-            (filter_out_nourl rt.repo_opams);
+            (filter_out_nourl rt.repo_opams)
+          |> List.map (fun (n, m) ->
+              (n,
+               OpamPackage.Map.map Lazy.force m
+              ))
+      ;
       }
     in
     remove ();
@@ -72,28 +77,21 @@ module Cache = struct
 
 end
 
-let load_opams_from_dir repo_name repo_root =
+let load_opams_from_dir_lazy repo_name repo_root =
   (* FIXME: why is this different from OpamPackage.list ? *)
   let rec aux r dir =
     if OpamFilename.exists_dir dir then
       let fnames = Sys.readdir (OpamFilename.Dir.to_string dir) in
       if Array.fold_left (fun a f -> a || f = "opam") false fnames then
-        match OpamFileTools.read_repo_opam ~repo_name ~repo_root dir with
-        | Some opam ->
-          (try
-             let nv =
-               OpamPackage.of_string
-                 OpamFilename.(Base.to_string (basename_dir dir))
-             in
-             OpamPackage.Map.add nv opam r
-           with Failure _ ->
-             log "ERR: directory name not a valid package: ignored %s"
-               OpamFilename.(to_string Op.(dir // "opam"));
-             r)
-        | None ->
-          log "ERR: Could not load %s, ignored"
-            OpamFilename.(to_string Op.(dir // "opam"));
-          r
+        let nv =
+          OpamPackage.of_string
+            OpamFilename.(Base.to_string (basename_dir dir))
+        in
+OpamPackage.Map.add nv
+  (
+        lazy (
+        OpamFileTools.read_repo_opam ~repo_name ~repo_root dir |> Option.get
+      )) r
       else
         Array.fold_left (fun r name -> aux r OpamFilename.Op.(dir / name))
           r fnames
@@ -101,13 +99,16 @@ let load_opams_from_dir repo_name repo_root =
   in
   aux OpamPackage.Map.empty (OpamRepositoryPath.packages_dir repo_root)
 
+let load_opams_from_dir repo_name repo_root =
+  load_opams_from_dir_lazy repo_name repo_root |> OpamPackage.Map.map Lazy.force
+
 let load_repo repo repo_root =
   let t = OpamConsole.timer () in
   let repo_def =
     OpamFile.Repo.safe_read (OpamRepositoryPath.repo repo_root)
     |> OpamFile.Repo.with_root_url repo.repo_url
   in
-  let opams = load_opams_from_dir repo.repo_name repo_root in
+  let opams = load_opams_from_dir_lazy repo.repo_name repo_root in
   log "loaded opam files from repo %s in %.3fs"
     (OpamRepositoryName.to_string repo.repo_name)
     (t ());
@@ -202,21 +203,23 @@ let load lock_kind gt =
   match Cache.load gt.root with
   | Some (repofiles, opams) when OpamRepositoryName.Map.is_empty uncached ->
     log "Cache found";
-    make_rt repofiles opams
+    assert false
+    (*make_rt repofiles opams*)
   | Some (repofiles, opams) ->
     log "Cache found, loading repositories without remote only";
-    OpamFilename.with_flock_upgrade `Lock_read lock @@ fun _ ->
-    let repofiles, opams =
-      OpamRepositoryName.Map.fold (fun name url (defs, opams) ->
-          let repo = mk_repo name url in
-          let repo_def, repo_opams =
-            load_repo repo (get_root_raw gt.root repos_tmp name)
-          in
-          OpamRepositoryName.Map.add name repo_def defs,
-          OpamRepositoryName.Map.add name repo_opams opams)
-        uncached (repofiles, opams)
-    in
-    make_rt repofiles opams
+    assert false
+    (*OpamFilename.with_flock_upgrade `Lock_read lock @@ fun _ ->*)
+    (*let repofiles, opams =*)
+      (*OpamRepositoryName.Map.fold (fun name url (defs, opams) ->*)
+          (*let repo = mk_repo name url in*)
+          (*let repo_def, repo_opams =*)
+            (*load_repo repo (get_root_raw gt.root repos_tmp name)*)
+          (*in*)
+          (*OpamRepositoryName.Map.add name repo_def defs,*)
+          (*OpamRepositoryName.Map.add name repo_opams opams)*)
+        (*uncached (repofiles, opams)*)
+    (*in*)
+    (*make_rt repofiles opams*)
   | None ->
     log "No cache found";
     OpamFilename.with_flock_upgrade `Lock_read lock @@ fun _ ->
@@ -231,7 +234,7 @@ let load lock_kind gt =
         repos_map (OpamRepositoryName.Map.empty, OpamRepositoryName.Map.empty)
     in
     let rt = make_rt repofiles opams in
-    Cache.save rt;
+    (*Cache.save rt;*)
     rt
 
 let find_package_opt rt repo_list nv =
@@ -241,7 +244,7 @@ let find_package_opt rt repo_list nv =
           OpamStd.Option.Op.(
             OpamRepositoryName.Map.find_opt repo_name rt.repo_opams >>=
             OpamPackage.Map.find_opt nv >>| fun opam ->
-            repo_name, opam
+            repo_name, Lazy.force opam
           )
       | some -> fun _ -> some)
     None repo_list
@@ -249,7 +252,8 @@ let find_package_opt rt repo_list nv =
 let build_index rt repo_list =
   List.fold_left (fun acc repo_name ->
       try
-        let repo_opams = OpamRepositoryName.Map.find repo_name rt.repo_opams in
+        let repo_opams = OpamRepositoryName.Map.find repo_name rt.repo_opams
+        in
         OpamPackage.Map.union (fun a _ -> a) acc repo_opams
       with Not_found ->
         (* A repo is unavailable, error should have been already reported *)
@@ -301,4 +305,3 @@ let check_last_update () =
     OpamConsole.note "It seems you have not updated your repositories \
                       for a while. Consider updating them with:\n%s\n"
       (OpamConsole.colorise `bold "opam update");
-

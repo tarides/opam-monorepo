@@ -52,7 +52,7 @@ val load_selections:
     precomputed in global_state.available_packages once the state is loaded) *)
 val compute_available_packages:
   'a global_state -> switch -> OpamFile.Switch_config.t ->
-  pinned:package_set -> opams:OpamFile.OPAM.t package_map ->
+  pinned:package_set -> opams:OpamFile.OPAM.t Lazy.t package_map ->
   package_set
 
 (** Raw function to compute the conflicts for all packages, given
@@ -61,7 +61,7 @@ val compute_available_packages:
     a universe manually. *)
 val get_conflicts_t:
   (package -> OpamFilter.env) -> package_set ->
-  OpamFile.OPAM.t package_map -> formula package_map
+  OpamFile.OPAM.t Lazy.t package_map -> formula package_map
 
 (** Infer a switch invariant from a switch state with compiler_packages and
     roots set, using some heuristics. Useful for migration from pre-2.1 opam *)
