@@ -90,7 +90,13 @@ let load_opams_from_dir_lazy repo_name repo_root =
 OpamPackage.Map.add nv
   (
         lazy (
-        OpamFileTools.read_repo_opam ~repo_name ~repo_root dir |> Option.get
+        match OpamFileTools.read_repo_opam ~repo_name ~repo_root dir
+                with
+                | Some o -> o
+                | None -> 
+          Printf.ksprintf failwith
+          "ERR: Could not load %s, ignored"
+            OpamFilename.(to_string Op.(dir // "opam"))
       )) r
       else
         Array.fold_left (fun r name -> aux r OpamFilename.Op.(dir / name))
