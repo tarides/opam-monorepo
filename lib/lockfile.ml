@@ -4,9 +4,7 @@ module Pos = struct
   open OpamParserTypes.FullPos
 
   let default = { filename = "None"; start = (0, 0); stop = (0, 0) }
-
   let from_value { pos; _ } = pos
-
   let with_default_pos pelem = { pos = default; pelem }
 
   let errorf ~pos fmt =
@@ -55,9 +53,7 @@ module Version = struct
   type t = int * int
 
   let current = (0, 2)
-
   let pp fmt (major, minor) = Format.fprintf fmt "%d.%d" major minor
-
   let to_string (major, minor) = Printf.sprintf "%d.%d" major minor
 
   let from_string s =

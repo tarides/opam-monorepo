@@ -32,5 +32,4 @@ let info =
     ~man
 
 let term = Cmdliner.Term.(ret (const run $ pure ()))
-
 let cmd = (term, info)

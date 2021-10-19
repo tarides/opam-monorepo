@@ -4,11 +4,8 @@ module Url : sig
   (* This includes archives, other VCS and rsync opam src URLs *)
 
   val equal : t -> t -> bool
-
   val pp : t Fmt.t
-
   val from_opam_field : OpamFile.URL.t -> t
-
   val from_opam : OpamUrl.t -> t
 end
 
@@ -23,9 +20,7 @@ module Package_summary : sig
   }
 
   val equal : t -> t -> bool
-
   val pp : t Fmt.t
-
   val from_opam : pkg:OpamPackage.t -> OpamFile.OPAM.t -> t
 
   val is_virtual : t -> bool
@@ -40,9 +35,7 @@ end
 
 module Pp : sig
   val package : OpamPackage.t Fmt.t
-
   val hash : OpamHash.t Fmt.t
-
   val url : OpamUrl.t Fmt.t
 end
 
