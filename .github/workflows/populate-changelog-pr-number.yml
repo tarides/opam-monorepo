@@ -1,0 +1,24 @@
+name: Populate GitHub PR number in Changelog
+on: [pull_request]
+jobs:
+  Populate-Changelog-Action:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Determine whether <PR_NUMBER> needs to be replaced
+        run: |
+          MATCHES=$(mktemp)
+          grep "#<PR_NUMBER>" CHANGES.md >> "${MATCHES}" || true
+          if [ -s "${MATCHES}" ] ; then echo "needs_replacement=1" >> $GITHUB_ENV; else echo "needs_replacement=0" >> $GITHUB_ENV; fi
+          rm "${MATCHES}"
+      - name: Replacing the <PR_NUMBER> variable
+        run: |
+          sed -i -e "s/#<PR_NUMBER>/#${{ github.event.pull_request.number }}/" CHANGES.md
+        if: ${{ env.needs_replacement == 1 }}
+      - uses: EndBug/add-and-commit@v7
+        if: ${{ env.needs_replacement == 1 }}
+        with:
+          author_name: PR Number Action
+          author_email: pr-number-action@users.noreply.github.com
+          message: "Substitution of PR#${{ github.event.pull_request.number }}"
