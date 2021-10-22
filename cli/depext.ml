@@ -51,7 +51,11 @@ let dry_run =
 let term =
   let open Term in
   term_result
-    (const run $ Common.Arg.repo $ Common.Arg.lockfile $ dry_run
-   $ Common.Arg.yes $ Common.Arg.setup_logs ())
+    (const run
+    $ Common.Arg.repo
+    $ Common.Arg.lockfile
+    $ dry_run
+    $ Common.Arg.yes
+    $ Common.Arg.setup_logs ())
 
 let cmd = (term, info)

@@ -101,12 +101,21 @@ let install_dune_to ~prefix ~src () =
       run_and_log Cmd.(v "ocaml" % "bootstrap.ml") >>= fun () ->
       run_and_log
         Cmd.(
-          v "./dune.exe" % "build" % "-p" % "dune" % "--profile"
+          v "./dune.exe"
+          % "build"
+          % "-p"
+          % "dune"
+          % "--profile"
           % "dune-bootstrap")
       >>= fun () ->
       run_and_log
         Cmd.(
-          v "./dune.exe" % "install" % "--root" % p src % "--prefix" % p prefix
+          v "./dune.exe"
+          % "install"
+          % "--root"
+          % p src
+          % "--prefix"
+          % p prefix
           % "dune"))
     ()
   >>= fun x -> x
@@ -134,8 +143,15 @@ let dune_install ~root ~prefix ~sections targets =
   let sections = String.concat ~sep:"," sections in
   run_and_log
     Cmd.(
-      v "dune" % "install" % "--root" % p root % "--prefix" % p prefix
-      % "--sections" % sections %% of_list targets)
+      v "dune"
+      % "install"
+      % "--root"
+      % p root
+      % "--prefix"
+      % p prefix
+      % "--sections"
+      % sections
+      %% of_list targets)
 
 let is_git_repo_clean ~repo () =
   let cmd = Cmd.(v "git" % "-C" % p repo % "diff" % "--quiet") in
@@ -146,8 +162,14 @@ let is_git_repo_clean ~repo () =
 let git_shallow_clone ~output_dir ~remote ~ref () =
   let cmd =
     Cmd.(
-      v "git" % "clone" % "--recurse-submodules" % "--depth=1" % "-b" % ref
-      % remote % p output_dir)
+      v "git"
+      % "clone"
+      % "--recurse-submodules"
+      % "--depth=1"
+      % "-b"
+      % ref
+      % remote
+      % p output_dir)
   in
   run_and_log cmd
 
@@ -219,9 +241,16 @@ let git_submodule_add ~repo ~remote_name ~ref ~branch ~target_path
     ?(force = false) () =
   run_git ~repo
     Cmd.(
-      v "submodule" % "add"
+      v "submodule"
+      % "add"
       %% on force (v "-f")
-      % "-b" % branch % "--name" % remote_name % "--" % ref % target_path)
+      % "-b"
+      % branch
+      % "--name"
+      % remote_name
+      % "--"
+      % ref
+      % target_path)
 
 let git_update_index ~repo ?(add = false) ~cacheinfo () =
   let mode, hash, path = cacheinfo in
@@ -229,15 +258,25 @@ let git_update_index ~repo ?(add = false) ~cacheinfo () =
     Cmd.(
       v "update-index"
       %% on add (v "--add")
-      % "--cacheinfo" % string_of_int mode % hash % p path)
+      % "--cacheinfo"
+      % string_of_int mode
+      % hash
+      % p path)
 
 let git_init_bare ~repo = run_and_log Cmd.(v "git" % "init" % "--bare" % p repo)
 
 let git_clone ~branch ~remote ~output_dir =
   run_and_log
     Cmd.(
-      v "git" % "clone" % "--recurse-submodules" % "--depth" % "1" % "--branch"
-      % branch % remote % p output_dir)
+      v "git"
+      % "clone"
+      % "--recurse-submodules"
+      % "--depth"
+      % "1"
+      % "--branch"
+      % branch
+      % remote
+      % p output_dir)
 
 let git_clone_or_pull ~branch ~remote ~output_dir =
   OS.Dir.exists output_dir >>= function
@@ -247,7 +286,11 @@ let git_clone_or_pull ~branch ~remote ~output_dir =
       >>= fun () ->
       run_and_log
         Cmd.(
-          v "git" % "-C" % p output_dir % "reset" % "--hard"
+          v "git"
+          % "-C"
+          % p output_dir
+          % "reset"
+          % "--hard"
           % ("origin/" ^ branch))
 
 let git_rename_branch_to ~repo ~branch =

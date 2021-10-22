@@ -90,8 +90,12 @@ let info =
 let term =
   Cmdliner.Term.(
     term_result
-      (const run $ Common.Arg.yes $ Common.Arg.repo $ Common.Arg.lockfile
-     $ Common.Arg.keep_git_dir $ Common.Arg.duniverse_repos
-     $ Common.Arg.setup_logs ()))
+      (const run
+      $ Common.Arg.yes
+      $ Common.Arg.repo
+      $ Common.Arg.lockfile
+      $ Common.Arg.keep_git_dir
+      $ Common.Arg.duniverse_repos
+      $ Common.Arg.setup_logs ()))
 
 let cmd = (term, info)

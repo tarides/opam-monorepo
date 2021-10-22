@@ -4,13 +4,9 @@ module Package_argument : sig
   type t
 
   val make : name:string -> version:OpamPackage.Version.t option -> t
-
   val name : t -> OpamPackage.Name.t
-
   val version : t -> OpamPackage.Version.t option
-
   val converter : t Cmdliner.Arg.converter
-
   val pp_styled : t Fmt.t
 end = struct
   type t = { name : OpamPackage.Name.t; version : OpamPackage.Version.t option }
@@ -20,7 +16,6 @@ end = struct
     { name; version }
 
   let name { name; _ } = name
-
   let version { version; _ } = version
 
   let from_string name =
@@ -349,7 +344,14 @@ let info =
 let term =
   let open Term in
   term_result
-    (const run $ Common.Arg.repo $ recurse_opam $ build_only $ allow_jbuilder
-   $ ocaml_version $ packages $ Common.Arg.lockfile $ Common.Arg.setup_logs ())
+    (const run
+    $ Common.Arg.repo
+    $ recurse_opam
+    $ build_only
+    $ allow_jbuilder
+    $ ocaml_version
+    $ packages
+    $ Common.Arg.lockfile
+    $ Common.Arg.setup_logs ())
 
 let cmd = (term, info)

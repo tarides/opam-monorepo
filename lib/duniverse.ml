@@ -2,7 +2,6 @@ open Import
 module O = Opam
 
 type unresolved = Git.Ref.t
-
 type resolved = Git.Ref.resolved
 
 module Opam = struct

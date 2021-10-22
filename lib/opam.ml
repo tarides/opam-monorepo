@@ -181,7 +181,6 @@ module Pp = struct
     Format.fprintf fmt "%s" (OpamPackage.Name.to_string p)
 
   let hash = Hash.pp
-
   let url fmt url = Format.fprintf fmt "%s" (OpamUrl.to_string url)
 end
 

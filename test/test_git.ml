@@ -199,5 +199,6 @@ end
 
 let suite =
   ( "Git",
-    Ls_remote.test_parse_output_line @ Ls_remote.test_commit_pointed_by
+    Ls_remote.test_parse_output_line
+    @ Ls_remote.test_commit_pointed_by
     @ Ls_remote.test_branch_of_symref )

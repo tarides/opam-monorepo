@@ -15,9 +15,7 @@
  *)
 
 val map : ('a -> ('b, 'c) result) -> 'a list -> ('b list, 'c) result
-
 val iter : ('a -> (unit, 'b) result) -> 'a list -> (unit, 'b) result
-
 val opam_version : unit -> (string, [> Rresult.R.msg ]) result
 
 val ocaml_version :
@@ -46,8 +44,8 @@ val install_dune_to :
 
 val git_default_branch :
   remote:string -> unit -> (string, [> Rresult.R.msg ]) result
-(** Return the default branch for the given remote name by running git remote show [remote] and
-    parsing the output looking for HEAD branch: <branch_name> *)
+(** Return the default branch for the given remote name by running git remote
+    show [remote] and parsing the output looking for HEAD branch: <branch_name> *)
 
 val git_shallow_clone :
   output_dir:Fpath.t ->
@@ -66,26 +64,28 @@ val git_add_and_commit :
   message:string ->
   Bos.Cmd.t ->
   (unit, [> Rresult.R.msg ]) result
-(** [git_add_and_commit ~repo ~message files] adds [files] to [repo] and commits them with
-    [message]. *)
+(** [git_add_and_commit ~repo ~message files] adds [files] to [repo] and commits
+    them with [message]. *)
 
 val is_git_repo_clean :
   repo:Fpath.t -> unit -> (bool, [> Rresult.R.msg ]) result
-(** Return whether the given repo is clean, ie return true if there is no uncommitted changes *)
+(** Return whether the given repo is clean, ie return true if there is no
+    uncommitted changes *)
 
 val git_checkout :
   ?args:Bos.Cmd.t -> repo:Fpath.t -> string -> (unit, [> Rresult.R.msg ]) result
-(** [git_checkout ~args ~repo branch] checks out the git repository in [repo] to branch [branch]
-    with the extra arguments [args]. *)
+(** [git_checkout ~args ~repo branch] checks out the git repository in [repo] to
+    branch [branch] with the extra arguments [args]. *)
 
 val git_checkout_or_branch :
   repo:Fpath.t -> string -> (unit, [> Rresult.R.msg ]) result
-(** [git_checkout ~repo branch] checks out the git repository in [repo] to branch [branch] creating
-    it if it doesn't exist yet. *)
+(** [git_checkout ~repo branch] checks out the git repository in [repo] to
+    branch [branch] creating it if it doesn't exist yet. *)
 
 val git_add_all_and_commit :
   repo:Fpath.t -> message:string -> unit -> (unit, [> Rresult.R.msg ]) result
-(** [git_add_all_and_commit ~repo ~message ()] runs git add -am [message] in [repo]. *)
+(** [git_add_all_and_commit ~repo ~message ()] runs git add -am [message] in
+    [repo]. *)
 
 val git_merge :
   ?args:Bos.Cmd.t ->
@@ -93,12 +93,13 @@ val git_merge :
   repo:Fpath.t ->
   unit ->
   (unit, [> Rresult.R.msg ]) result
-(** [git_merge ~args ~repo branch] merges [from] into [repo]'s current active branch with the extra
-    arguments [args]. *)
+(** [git_merge ~args ~repo branch] merges [from] into [repo]'s current active
+    branch with the extra arguments [args]. *)
 
 val git_resolve :
   remote:string -> ref:Git.Ref.t -> (Git.Ref.resolved, Rresult.R.msg) result
-(** [git_resolve ~remote ~ref] runs git ls-remote to resolve the given ref to a commit hash *)
+(** [git_resolve ~remote ~ref] runs git ls-remote to resolve the given ref to a
+    commit hash *)
 
 val git_branch :
   repo:Fpath.t ->
@@ -115,8 +116,9 @@ val git_submodule_add :
   ?force:bool ->
   unit ->
   (unit, [> Rresult.R.msg ]) result
-(** [git_submodule_add] will run [git submodule] for [remote_name] and initialise
-   it into [target_path] for commit [ref] and on the remote [branch]. *)
+(** [git_submodule_add] will run [git submodule] for [remote_name] and
+    initialise it into [target_path] for commit [ref] and on the remote
+    [branch]. *)
 
 val git_update_index :
   repo:Fpath.t ->
@@ -124,8 +126,8 @@ val git_update_index :
   cacheinfo:int * string * Fpath.t ->
   unit ->
   (unit, [> Rresult.R.msg ]) result
-(** [git_update_index] will add the [cacheinfo] (a tuple of mode, hash and target path)
-  to the index, and append it to the cache if [add] is [true]. *)
+(** [git_update_index] will add the [cacheinfo] (a tuple of mode, hash and
+    target path) to the index, and append it to the cache if [add] is [true]. *)
 
 val git_remote_add :
   repo:Fpath.t ->
@@ -146,7 +148,8 @@ val git_fetch_to :
   ?force:bool ->
   unit ->
   (unit, [> Rresult.R.msg ]) result
-(** [git_fetch_to ~remote_name ~tag ~branch] Fetches tag from remote_name into a given branch **)
+(** [git_fetch_to ~remote_name ~tag ~branch] Fetches tag from remote_name into a
+    given branch **)
 
 val git_init_bare : repo:Fpath.t -> (unit, [> Rresult.R.msg ]) result
 (** [git_init path] Initialize Git as a bare repo in given path **)
@@ -156,7 +159,8 @@ val git_clone :
   remote:string ->
   output_dir:Fpath.t ->
   (unit, [> Rresult.R.msg ]) result
-(** [git_clone ~branch ~remote ~output_dir] Git clone branch from remote in output_dir **)
+(** [git_clone ~branch ~remote ~output_dir] Git clone branch from remote in
+    output_dir **)
 
 val git_clone_or_pull :
   branch:string ->
