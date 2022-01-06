@@ -4,11 +4,8 @@ module Package_argument : sig
   type t
 
   val name : t -> OpamPackage.Name.t
-
   val version : t -> OpamPackage.Version.t option
-
   val converter : t Cmdliner.Arg.converter
-
   val pp_styled : t Fmt.t
 end = struct
   type t = { name : OpamPackage.Name.t; version : OpamPackage.Version.t option }
@@ -18,7 +15,6 @@ end = struct
     { name; version }
 
   let name { name; _ } = name
-
   let version { version; _ } = version
 
   let from_string name =

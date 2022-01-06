@@ -123,9 +123,7 @@ end
 
 module Pp = struct
   let package = Fmt.using OpamPackage.to_string Fmt.string
-
   let package_name = Fmt.using OpamPackage.Name.to_string Fmt.string
-
   let version = Fmt.using OpamPackage.Version.to_string Fmt.string
 
   let raw_package fmt pkg =
@@ -133,7 +131,6 @@ module Pp = struct
       pkg.OpamPackage.name version pkg.version
 
   let hash = Hash.pp
-
   let url = Fmt.using OpamUrl.to_string Fmt.string
 end
 
@@ -211,8 +208,6 @@ module Extra_field = struct
     }
 
   let name t = t.name
-
   let set t a opam = OpamFile.OPAM.add_extension opam t.name (t.to_opam_value a)
-
   let get t opam = OpamFile.OPAM.extended opam t.name t.from_opam_value
 end

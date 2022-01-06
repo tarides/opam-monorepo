@@ -1,16 +1,12 @@
 include Stdlib.Result
 
 let bind ~f = function Error _ as err -> err | Ok x -> f x
-
 let map ~f = function Error _ as err -> err | Ok x -> Ok (f x)
 
 module O = struct
   let ( >>= ) res f = bind ~f res
-
   let ( >>| ) res f = map ~f res
-
   let ( let* ) = ( >>= )
-
   let ( let+ ) = ( >>| )
 end
 
