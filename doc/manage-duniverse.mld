@@ -1,0 +1,116 @@
+{1 Considerations}
+
+When using opam-monorepo the question arises: how to manage it in comparison to
+the regular opam workflow? Compared to regular opam usage using opam-monorepo
+brings lockfiles and a duniverse folder into the repository. There are multiple
+ways to handle this, with multiple advantages and disadvantages. This document
+explains the considerations behind dealing with each of those, along with our
+recommendations.
+
+{1 Methods}
+
+We assume the opam file is committed to the repository. Running [opam monorepo
+lock] will create a [.locked] opam file in addition to the original opam file.
+Calling [opam monorepo pull] will create a [duniverse] folder into which it
+will unpack the sources of the packages that are mentioned in the lockfile.
+
+{2 Not locked}
+
+While this is not a [opam-monorepo] workflow per se, projects that do not use
+[opam-monorepo] can still be used with [opam-monorepo]. As such every
+contributor is responsible for creating and maintianing their own lockfile and
+duniverse.
+
+Advantages include:
+
+{ul
+{- No opt-in to [opam-monorepo] required, every developer can chose to use it
+   or not}
+}
+
+Unfortunately, in this approach the disadvantages dominate:
+
+{ul
+{- Everyone might end up with different packages in their duniverse, thus low
+   reproducability}
+{- Everyone needs to have opam-monorepo installed}
+}
+
+The [opam-monorepo] maintainers don't recommend this approach, as is has hardly
+any advantages over an [opam-monorepo]-less approach.
+
+{2:lockfile-in-git Lockfile in Git}
+
+Another approach is very similar to the regular opam workflow, but in addition
+to having the [opam] file committed to the repository, also the lockfile that
+[opam monorepo lock] generates is added.
+
+Advantages include:
+
+{ul
+{- The git repostitory does not grow by much, only one file}
+{- The packages to be installed are reproducible}
+{- Installation on the packages regularly into the Opam switch is still
+   possible}
+}
+
+Disadvantages might be
+
+{ul
+{- Everyone needs to have opam-monorepo installed to pull the dependencies}
+}
+
+[opam-monorepo] maintainers encourage people to adopt this pattern, since it
+provides a good practical compromise between reproducibility and
+practicability.
+
+{2:duniverse-in-git Duniverse in Git}
+
+The most extreme approach is to create a lockfile with [opam monorepo lock],
+download all the dependencies via [opam monorepo pull] and then commit both the
+lockfile as well as the pulled sources.
+
+This appraoch has some advantages:
+
+{ul
+{- Only the person that creates the lockfile and duniverse must have
+   [opam-monorepo] installed}
+{- The repository can be immediately used after cloning as everything is
+   self-contained}
+{- Can be used offline}
+}
+
+Yet unfortunately it also has some disadvantages:
+
+{ul
+{- Contributors unaware of [opam-monorepo] might wonder where the sources
+   come from}
+{- Can lead to lots of files in repository}
+{- Potentially complicated merge conflicts if multiple contributors update
+   versions of locked packages}
+{- Users might modify the committed sources, yet those patches will be
+   overwritten when [opam monorepo pull] is run, leading to changes
+   disappearing}
+{- Imported packages can interact with version control in unexpected ways,
+   see {!label-git-add}}
+}
+
+For ease of collaboration and to keep the repositories manageable
+[opam-monorepo] maintainers recommend against this approach and suggest the
+approach in {!label-lockfile-in-git} instead.
+
+{3:git-add Making sure the duniverse is properly added}
+
+When deciding to store the duniverse in Git, some things need to be kept in
+mind. Since [opam-monorepo] unpacks source tarballs, the content of them might
+interfere with the repository, e.g. by including large files or [.gitignore]
+files.
+
+Thus it is important to force [git] to include {e all} files that were unpacked
+by [opam-monorepo], i.e. ignoring [.gitignore] files that might exist in
+subfolders:
+
+{[
+$ git add -A duniverse/
+$ git commit -m "Import duniverse"
+]}

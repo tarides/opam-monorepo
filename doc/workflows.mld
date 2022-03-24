@@ -26,6 +26,9 @@ We recommend using the {e lockfile-in-git} workflow. To enable it, first
 generate a lock file (using [opam monorepo lock]), add it to your Git repository,
 together with [project.opam], and add [duniverse/] in [.gitignore].
 
+{{!page-manage-duniverse}Manage duniverse} explains in more depth how to best
+manage the files that [opam-monorepo] generates.
+
 {2 Setting Up Continuous Integration}
 
 Note: if you use {{: https://ci.ocamllabs.io/} ocaml-ci}, you don't have
