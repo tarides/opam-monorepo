@@ -50,14 +50,22 @@ Disadvantages might be
 
 {3 Adoption}
 
-To adopt this workflow, the initial lockfiles needs to be created:
+To adopt this workflow, the initial lockfiles needs to be created. Because not
+all packages build with Dune, most likely the [opam-overlays] repository has to
+be added initially to supply Dune ports for some packages:
+
+{[
+$ opam repository add dune-universe git+https://github.com/dune-universe/opam-overlays.git
+]}
+
+From here on, a lockfile can be created.
 
 {[
 $ opam monorepo lock
 ]}
 
-This creates one [.opam.locked] file for each [.opam] file, thus these need to
-be added to the repository
+This creates a [.opam.locked] file for the project, this has to be added to the
+repository:
 
 {[
 $ git add *.opam.locked
