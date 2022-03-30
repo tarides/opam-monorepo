@@ -18,11 +18,16 @@ lock] will create a [.locked] opam file in addition to the original opam file.
 Calling [opam monorepo pull] will create a [duniverse] folder into which it
 will unpack the sources of the packages that are mentioned in the lockfile.
 
+In either case, the regular way of installing dependencies via Opam is not
+compromised, as the [.opam] files stay untouched. Only in the case of
+{!label-duniverse-in-git} [dune] will prefer the vendored dependencies over the
+installed ones.
+
 {2:lockfile-in-git Lockfile in Git}
 
-Another approach is very similar to the regular opam workflow, but in addition
-to having the [.opam] file committed to the repository, also the lockfile that
-[opam monorepo lock] generates is added.
+This approach is very similar to the regular opam workflow, but in addition
+to having the [.opam] file committed to the repository, the lockfile that
+[opam monorepo lock] generates is committed as well.
 
 Advantages include:
 
