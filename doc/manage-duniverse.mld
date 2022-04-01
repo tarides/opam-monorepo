@@ -37,7 +37,9 @@ Advantages include:
    and contributors}
 {- Easier management of dependencies over dependencies installed in opam
    switches}
-{- Having the dependencies built by Dune makes cross-compilation easier}
+{- Having the dependencies built by Dune enables additional Dune features like
+   simplified cross-compilation, using a shared Dune cache between projects,
+   etc.}
 }
 
 Disadvantages might be
@@ -45,7 +47,7 @@ Disadvantages might be
 {ul
 {- Everyone who wants to build the dependencies with Dune needs to have
    [opam-monorepo] installed to pull the dependencies first}
-{- Not self-contained}
+{- Not self-contained - contributors need to [pull] the sources themselves}
 }
 
 {3 Adoption}
@@ -97,9 +99,10 @@ The most extreme approach is to create a lockfile with [opam monorepo lock],
 download all the dependencies via [opam monorepo pull] and then commit both the
 lockfile as well as the pulled sources.
 
-This appraoch has some advantages:
+This approach has some advantages:
 
 {ul
+{- Does not require [opam] to be installed or set-up: only [ocaml] and [dune]}
 {- Only the person that creates the lockfile and duniverse must have
    [opam-monorepo] installed}
 {- The repository can be immediately used after cloning as everything is
@@ -111,8 +114,6 @@ This appraoch has some advantages:
 Yet unfortunately it also has some disadvantages:
 
 {ul
-{- Contributors unaware of [opam-monorepo] might wonder where the sources
-   come from}
 {- Can lead to lots of files in repository}
 {- Potentially complicated merge conflicts if multiple contributors update
    versions of locked packages}
