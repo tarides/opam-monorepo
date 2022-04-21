@@ -33,7 +33,7 @@ depends: [
   "ocaml-options-vanilla" {= "1"}
   "ocaml-syntax-shims" {= "1.0.0"}
   "ocaml-version" {= "3.4.0"}
-  "ocamlfind" {= "1.8.1"}
+  "ocamlfind" {= "1.9.3"}
   "ocamlgraph" {= "2.0.0"}
   "ocplib-endian" {= "1.2"}
   "opam-0install" {= "dev" & ?vendor}
