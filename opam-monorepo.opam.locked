@@ -21,7 +21,6 @@ depends: [
   "dune" {= "3.0.3"}
   "dune-build-info" {= "3.0.3"}
   "dune-configurator" {= "3.0.3"}
-  "findlib" {= "1.8.1"}
   "fmt" {= "0.9.0"}
   "fpath" {= "0.7.3"}
   "logs" {= "0.7.02"}
