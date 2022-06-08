@@ -155,43 +155,43 @@ let split_list s =
   let open Result.O in
   let buf = tokbuf_of_string s in
   let tokens = tokenize [] buf in
-  let level, acc =
+  let level, buffer, lst =
     List.fold_left
-      ~f:(fun (level, res) token ->
+      ~f:(fun (level, buffer, res) token ->
         match res with
-        | Error _ -> (level, res)
-        | Ok (buffer, acc) -> (
+        | Error _ -> (level, buffer, res)
+        | Ok acc -> (
             match token with
             | OPEN_PAREN ->
                 Buffer.add_char buffer '[';
-                (level + 1, Ok (buffer, acc))
+                (level + 1, buffer, Ok acc)
             | CLOSE_PAREN -> (
                 match level > 0 with
                 | true ->
                     Buffer.add_char buffer ']';
-                    (level - 1, Ok (buffer, acc))
-                | false -> (level, unmatched_list_delimiter ~delim:']'))
+                    (level - 1, buffer, Ok acc)
+                | false -> (level, buffer, unmatched_list_delimiter ~delim:']'))
             | COMMA -> (
                 match level = 0 with
                 | true ->
                     let contents = Buffer.contents buffer in
                     Buffer.clear buffer;
                     let acc = contents :: acc in
-                    (level, Ok (buffer, acc))
+                    (level, buffer, Ok acc)
                 | false ->
                     Buffer.add_char buffer ',';
-                    (level, Ok (buffer, acc)))
+                    (level, buffer, Ok acc))
             | TEXT s ->
                 Buffer.add_string buffer s;
-                (level, Ok (buffer, acc))))
-      ~init:(0, Ok (Buffer.create 16, []))
+                (level, buffer, Ok acc)))
+      ~init:(0, Buffer.create 16, Ok [])
       tokens
   in
-  let* buf, lst = acc in
+  let* lst = lst in
   match level = 0 with
   | false -> unmatched_list_delimiter ~delim:'['
   | true ->
-      let lst = match Buffer.contents buf with "" -> lst | e -> e :: lst in
+      let lst = match Buffer.contents buffer with "" -> lst | e -> e :: lst in
       Ok (List.rev lst)
 
 let parse_list s =
