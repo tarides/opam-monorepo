@@ -108,16 +108,14 @@ let rec to_opam_val : type a. a t -> a -> OpamParserTypes.FullPos.value =
 let unmatched_list_delimiter ~delim =
   Rresult.R.error_msgf "unmatched list delimiter '%c'" delim
 
-type tokbuf = { buffer : string; mutable pos : int }
+type tokbuf = { buffer : string; pos : int }
 
 let tokbuf_of_string buffer = { buffer; pos = 0 }
 
 let peek_char { buffer; pos } =
   match buffer.[pos] with c -> Some c | exception Invalid_argument _ -> None
 
-let next tokbuf =
-  tokbuf.pos <- tokbuf.pos + 1;
-  tokbuf
+let next tokbuf = { tokbuf with pos = tokbuf.pos + 1 }
 
 type token = OPEN_PAREN | CLOSE_PAREN | COMMA | TEXT of string
 
@@ -130,16 +128,16 @@ let until_next ~chars ({ buffer; pos } as tokbuf) =
     | c -> (
         match List.mem c ~set:chars with
         | true ->
-            tokbuf.pos <- index;
-            Some index
+            let tokbuf = { buffer; pos = index } in
+            (Some index, tokbuf)
         | false -> find (index + 1))
-    | exception Invalid_argument _ -> None
+    | exception Invalid_argument _ -> (None, tokbuf)
   in
   match find pos with
-  | Some index ->
+  | Some index, tokbuf ->
       let text = String.sub buffer ~pos ~len:(index - pos) in
-      Some (TEXT text)
-  | None -> None
+      (Some (TEXT text), tokbuf)
+  | None, tokbuf -> (None, tokbuf)
 
 let rec tokenize acc s =
   match peek_char s with
@@ -149,8 +147,8 @@ let rec tokenize acc s =
   | Some ',' -> tokenize (COMMA :: acc) (next s)
   | Some _ -> (
       match until_next ~chars:[ '['; ']'; ',' ] s with
-      | Some t -> tokenize (t :: acc) s
-      | None ->
+      | Some token, s -> tokenize (token :: acc) s
+      | None, s ->
           let t = TEXT (remaining s) in
           List.rev (t :: acc))
 
