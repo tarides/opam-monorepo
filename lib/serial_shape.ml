@@ -151,53 +151,48 @@ let rec tokenize acc buf =
           let t = TEXT (remaining buf) in
           List.rev (t :: acc))
 
-let add_to_front_buffer s = function
-  | [] ->
-      let buf = Buffer.create 16 in
-      Buffer.add_string buf s;
-      [ buf ]
-  | buf :: _ as v ->
-      Buffer.add_string buf s;
-      v
-
 let split_list s =
   let open Result.O in
   let buf = tokbuf_of_string s in
   let tokens = tokenize [] buf in
-  let level, lst =
+  let level, acc =
     List.fold_left
       ~f:(fun (level, res) token ->
         match res with
         | Error _ -> (level, res)
-        | Ok acc -> (
+        | Ok (buffer, acc) -> (
             match token with
             | OPEN_PAREN ->
-                let acc = add_to_front_buffer "[" acc in
-                (level + 1, Ok acc)
+                Buffer.add_char buffer '[';
+                (level + 1, Ok (buffer, acc))
             | CLOSE_PAREN -> (
                 match level > 0 with
                 | true ->
-                    let acc = add_to_front_buffer "]" acc in
-                    (level - 1, Ok acc)
+                    Buffer.add_char buffer ']';
+                    (level - 1, Ok (buffer, acc))
                 | false -> (level, unmatched_list_delimiter ~delim:']'))
             | COMMA -> (
                 match level = 0 with
                 | true ->
-                    let buf = Buffer.create 16 in
-                    let acc = buf :: acc in
-                    (level, Ok acc)
+                    let contents = Buffer.contents buffer in
+                    Buffer.clear buffer;
+                    let acc = contents :: acc in
+                    (level, Ok (buffer, acc))
                 | false ->
-                    let acc = add_to_front_buffer "," acc in
-                    (level, Ok acc))
+                    Buffer.add_char buffer ',';
+                    (level, Ok (buffer, acc)))
             | TEXT s ->
-                let acc = add_to_front_buffer s acc in
-                (level, Ok acc)))
-      ~init:(0, Ok []) tokens
+                Buffer.add_string buffer s;
+                (level, Ok (buffer, acc))))
+      ~init:(0, Ok (Buffer.create 16, []))
+      tokens
   in
-  let* lst = lst in
+  let* buf, lst = acc in
   match level = 0 with
   | false -> unmatched_list_delimiter ~delim:'['
-  | true -> Ok (List.rev_map ~f:Buffer.contents lst)
+  | true ->
+      let lst = match Buffer.contents buf with "" -> lst | e -> e :: lst in
+      Ok (List.rev lst)
 
 let parse_list s =
   let len = String.length s in
