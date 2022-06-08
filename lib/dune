@@ -1,5 +1,3 @@
-(ocamllex serial_shape_list)
-
 (library
  (name duniverse_lib)
  (libraries base bos cmdliner fmt logs ocaml-version opam-0install

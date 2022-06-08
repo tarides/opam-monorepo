@@ -108,6 +108,36 @@ let rec to_opam_val : type a. a t -> a -> OpamParserTypes.FullPos.value =
 let unmatched_list_delimiter ~delim =
   Rresult.R.error_msgf "unmatched list delimiter '%c'" delim
 
+type tokbuf = { buffer : string; mutable pos : int }
+
+let tokbuf_of_string buffer = { buffer; pos = 0 }
+
+let next_char ({ buffer; pos } as buf) =
+  match buffer.[pos] with
+  | c ->
+      buf.pos <- pos + 1;
+      Some c
+  | exception Invalid_argument _ -> None
+
+type token = OPEN_PAREN | CLOSE_PAREN | COMMA | TEXT of Buffer.t
+
+let rec tokenize acc s =
+  match next_char s with
+  | None -> List.rev acc
+  | Some '[' -> tokenize (OPEN_PAREN :: acc) s
+  | Some ']' -> tokenize (CLOSE_PAREN :: acc) s
+  | Some ',' -> tokenize (COMMA :: acc) s
+  | Some c -> (
+      match acc with
+      | TEXT buffer :: _ as acc ->
+          Buffer.add_char buffer c;
+          tokenize acc s
+      | acc ->
+          let buffer = Buffer.create 16 in
+          Buffer.add_char buffer c;
+          let token = TEXT buffer in
+          tokenize (token :: acc) s)
+
 let add_to_front_buffer s = function
   | [] ->
       let buf = Buffer.create 16 in
@@ -119,15 +149,15 @@ let add_to_front_buffer s = function
 
 let split_list s =
   let open Result.O in
-  let buf = Lexing.from_string s in
-  let tokens = Serial_shape_list.tokenize [] buf in
+  let buf = tokbuf_of_string s in
+  let tokens = tokenize [] buf in
   let level, lst =
     List.fold_left
       ~f:(fun (level, res) token ->
         match res with
         | Error _ -> (level, res)
         | Ok acc -> (
-            match (token : Serial_shape_list.t) with
+            match token with
             | OPEN_PAREN ->
                 let acc = add_to_front_buffer "[" acc in
                 (level + 1, Ok acc)
