@@ -138,17 +138,17 @@ let until_next ~chars { buffer; pos } =
   let text = String.sub buffer ~pos ~len:(index - pos) in
   Some (TEXT text, tokbuf)
 
-let rec tokenize acc s =
-  match peek_char s with
+let rec tokenize acc buf =
+  match peek_char buf with
   | None -> List.rev acc
-  | Some '[' -> tokenize (OPEN_PAREN :: acc) (next s)
-  | Some ']' -> tokenize (CLOSE_PAREN :: acc) (next s)
-  | Some ',' -> tokenize (COMMA :: acc) (next s)
+  | Some '[' -> tokenize (OPEN_PAREN :: acc) (next buf)
+  | Some ']' -> tokenize (CLOSE_PAREN :: acc) (next buf)
+  | Some ',' -> tokenize (COMMA :: acc) (next buf)
   | Some _ -> (
-      match until_next ~chars:[ '['; ']'; ',' ] s with
+      match until_next ~chars:[ '['; ']'; ',' ] buf with
       | Some (token, s) -> tokenize (token :: acc) s
       | None ->
-          let t = TEXT (remaining s) in
+          let t = TEXT (remaining buf) in
           List.rev (t :: acc))
 
 let add_to_front_buffer s = function
