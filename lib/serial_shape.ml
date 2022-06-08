@@ -122,22 +122,21 @@ type token = OPEN_PAREN | CLOSE_PAREN | COMMA | TEXT of string
 let remaining { buffer; pos } =
   String.sub ~pos ~len:(String.length buffer - pos) buffer
 
-let until_next ~chars ({ buffer; pos } as tokbuf) =
+let until_next ~chars { buffer; pos } =
   let rec find index =
     match buffer.[index] with
     | c -> (
         match List.mem c ~set:chars with
         | true ->
             let tokbuf = { buffer; pos = index } in
-            (Some index, tokbuf)
+            Some (index, tokbuf)
         | false -> find (index + 1))
-    | exception Invalid_argument _ -> (None, tokbuf)
+    | exception Invalid_argument _ -> None
   in
-  match find pos with
-  | Some index, tokbuf ->
-      let text = String.sub buffer ~pos ~len:(index - pos) in
-      (Some (TEXT text), tokbuf)
-  | None, tokbuf -> (None, tokbuf)
+  let open Option.O in
+  let* index, tokbuf = find pos in
+  let text = String.sub buffer ~pos ~len:(index - pos) in
+  Some (TEXT text, tokbuf)
 
 let rec tokenize acc s =
   match peek_char s with
@@ -147,8 +146,8 @@ let rec tokenize acc s =
   | Some ',' -> tokenize (COMMA :: acc) (next s)
   | Some _ -> (
       match until_next ~chars:[ '['; ']'; ',' ] s with
-      | Some token, s -> tokenize (token :: acc) s
-      | None, s ->
+      | Some (token, s) -> tokenize (token :: acc) s
+      | None ->
           let t = TEXT (remaining s) in
           List.rev (t :: acc))
 
