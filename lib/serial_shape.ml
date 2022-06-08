@@ -112,31 +112,47 @@ type tokbuf = { buffer : string; mutable pos : int }
 
 let tokbuf_of_string buffer = { buffer; pos = 0 }
 
-let next_char ({ buffer; pos } as buf) =
-  match buffer.[pos] with
-  | c ->
-      buf.pos <- pos + 1;
-      Some c
-  | exception Invalid_argument _ -> None
+let peek_char { buffer; pos } =
+  match buffer.[pos] with c -> Some c | exception Invalid_argument _ -> None
 
-type token = OPEN_PAREN | CLOSE_PAREN | COMMA | TEXT of Buffer.t
+let next tokbuf =
+  tokbuf.pos <- tokbuf.pos + 1;
+  tokbuf
+
+type token = OPEN_PAREN | CLOSE_PAREN | COMMA | TEXT of string
+
+let remaining { buffer; pos } =
+  String.sub ~pos ~len:(String.length buffer - pos) buffer
+
+let until_next ~chars ({ buffer; pos } as tokbuf) =
+  let rec find index =
+    match buffer.[index] with
+    | c -> (
+        match List.mem c ~set:chars with
+        | true ->
+            tokbuf.pos <- index;
+            Some index
+        | false -> find (index + 1))
+    | exception Invalid_argument _ -> None
+  in
+  match find pos with
+  | Some index ->
+      let text = String.sub buffer ~pos ~len:(index - pos) in
+      Some (TEXT text)
+  | None -> None
 
 let rec tokenize acc s =
-  match next_char s with
+  match peek_char s with
   | None -> List.rev acc
-  | Some '[' -> tokenize (OPEN_PAREN :: acc) s
-  | Some ']' -> tokenize (CLOSE_PAREN :: acc) s
-  | Some ',' -> tokenize (COMMA :: acc) s
-  | Some c -> (
-      match acc with
-      | TEXT buffer :: _ as acc ->
-          Buffer.add_char buffer c;
-          tokenize acc s
-      | acc ->
-          let buffer = Buffer.create 16 in
-          Buffer.add_char buffer c;
-          let token = TEXT buffer in
-          tokenize (token :: acc) s)
+  | Some '[' -> tokenize (OPEN_PAREN :: acc) (next s)
+  | Some ']' -> tokenize (CLOSE_PAREN :: acc) (next s)
+  | Some ',' -> tokenize (COMMA :: acc) (next s)
+  | Some _ -> (
+      match until_next ~chars:[ '['; ']'; ',' ] s with
+      | Some t -> tokenize (t :: acc) s
+      | None ->
+          let t = TEXT (remaining s) in
+          List.rev (t :: acc))
 
 let add_to_front_buffer s = function
   | [] ->
@@ -176,8 +192,7 @@ let split_list s =
                 | false ->
                     let acc = add_to_front_buffer "," acc in
                     (level, Ok acc))
-            | TEXT b ->
-                let s = Buffer.contents b in
+            | TEXT s ->
                 let acc = add_to_front_buffer s acc in
                 (level, Ok acc)))
       ~init:(0, Ok []) tokens
