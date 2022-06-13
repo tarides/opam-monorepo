@@ -224,18 +224,37 @@ let interpret_solver_error ~repositories solver = function
 
 (** Turns each repository URL into a path to the repository's sources,
     eventually fetching them from the remote. *)
-let make_repository_locally_available url =
+let make_repository_locally_available global_state url =
+  let open OpamProcess.Job.Op in
   match OpamUrl.local_dir url with
   | Some path when Opam.Url.is_local_filesystem url ->
-      Ok (OpamFilename.Dir.to_string OpamFilename.Op.(path / "packages"))
-  | _ ->
-      (* TODO before release *)
-      Rresult.R.error_msg
-        "Only non git, local filesystem URLs (file://) are supported at the \
-         moment"
+      Done (Ok (OpamFilename.Dir.to_string OpamFilename.Op.(path / "packages")))
+  | _ -> (
+      (* the URL might contain all kind of invalid characters like slashes -> hash *)
+      let repo_dir =
+        url |> OpamUrl.to_string |> Digest.string |> Digest.to_hex
+      in
+      let dir =
+        Fpath.(Bos.OS.Dir.default_tmp () / "opam-monorepo" / "repos" / repo_dir)
+      in
+      let url =
+        match OpamUrl.backend_of_string url.transport with
+        | `http -> OpamUrl.Op.(url / "index.tar.gz")
+        | `rsync | #OpamUrl.version_control -> url
+      in
+      match Bos.OS.Dir.create dir with
+      | Error (`Msg msg) -> Done (Rresult.R.error_msg msg)
+      | Ok _ -> (
+          Opam.pull_tree ~url ~hashes:[] ~dir global_state @@| function
+          | Error (`Msg msg) -> Rresult.R.error_msg msg
+          | Ok () ->
+              let packages = Fpath.(dir / "packages" |> to_string) in
+              Ok packages))
 
-let make_repositories_locally_available repositories =
-  Result.List.map ~f:make_repository_locally_available repositories
+let make_repositories_locally_available global_state repositories =
+  repositories
+  |> OpamProcess.Job.seq_map (make_repository_locally_available global_state)
+  |> OpamProcess.Job.run |> Result.List.all
 
 let opam_env_from_global_state global_state =
   let vars = global_state.OpamStateTypes.global_variables in
@@ -270,7 +289,7 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
                 Fmt.(list ~sep:(const char '\n') Opam.Pp.url)
                 repositories);
           let* local_repo_dirs =
-            make_repositories_locally_available repositories
+            make_repositories_locally_available global_state repositories
           in
           let opam_env = extract_opam_env ~source_config global_state in
           let solver = Opam_solve.explicit_repos_solver in
