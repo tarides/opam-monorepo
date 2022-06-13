@@ -191,7 +191,7 @@ let split_list s =
   match level = 0 with
   | false -> unmatched_list_delimiter ~delim:'['
   | true ->
-      let lst = match Buffer.contents buffer with "" -> lst | e -> e :: lst in
+      let lst = Buffer.contents buffer :: lst in
       Ok (List.rev lst)
 
 let parse_list s =
