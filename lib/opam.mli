@@ -170,6 +170,16 @@ val pull_tree :
     if sucessful and an error otherwise.
     This benefits from opam's global cache.*)
 
+val pull_tree_with_cache :
+  cache_dir:Fpath.t ->
+  url:OpamUrl.t ->
+  hashes:OpamHash.t list ->
+  dir:Fpath.t ->
+  (unit, [> `Msg of string ]) result OpamProcess.job
+(** Pulls the sources from [url] to [dir] using opam's library. Returns the target directory path
+    if sucessful and an error otherwise.
+    Uses a dedicated path for caching. *)
+
 val local_package_version :
   OpamFile.OPAM.t ->
   explicit_version:OpamTypes.version option ->

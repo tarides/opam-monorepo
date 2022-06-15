@@ -56,11 +56,8 @@ let has_cross_compile_tag opam =
   let tags = OpamFile.OPAM.tags opam in
   List.mem ~set:tags "cross-compile"
 
-let pull_tree ~url ~hashes ~dir global_state =
+let pull_tree_with_cache' ~cache_dir ~url ~hashes ~dir =
   let dir_str = Fpath.to_string dir in
-  let cache_dir =
-    OpamRepositoryPath.download_cache global_state.OpamStateTypes.root
-  in
   let label = dir_str in
   (* Opam requires a label for the pull, it's only used for logging *)
   let opam_dir = OpamFilename.Dir.of_string dir_str in
@@ -69,6 +66,16 @@ let pull_tree ~url ~hashes ~dir global_state =
   | Result _ | Up_to_date _ -> Ok ()
   | Not_available (_, long_msg) ->
       Error (`Msg (Printf.sprintf "Failed to pull %s: %s" label long_msg))
+
+let pull_tree ~url ~hashes ~dir global_state =
+  let cache_dir =
+    OpamRepositoryPath.download_cache global_state.OpamStateTypes.root
+  in
+  pull_tree_with_cache' ~cache_dir ~url ~hashes ~dir
+
+let pull_tree_with_cache ~cache_dir =
+  let cache_dir = cache_dir |> Fpath.to_string |> OpamFilename.Dir.of_string in
+  pull_tree_with_cache' ~cache_dir
 
 module Url = struct
   type t = Git of { repo : string; ref : string option } | Other of string
