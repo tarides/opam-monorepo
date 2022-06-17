@@ -26,8 +26,7 @@ the minimal repository created locally:
   $ cat >git-repository/repo <<EOF
   > opam-version: "2.0"
   > EOF
-  $ (cd git-repository ; git init ; git add -A ; git commit -m "initial commit" > /dev/null)
-  Initialized empty Git repository in $TESTCASE_ROOT/git-repository/.git/
+  $ (cd git-repository ; git init ; git add -A ; git commit -m "initial commit") > /dev/null 2>&1
   $ SHORT_HASH=$(git -C git-repository rev-parse --short HEAD)
 
 To find this package, we need to have the git repository in our
