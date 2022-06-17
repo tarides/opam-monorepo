@@ -59,3 +59,9 @@ let compare ~compare l l' =
     | [], [] -> 0
   in
   aux l l'
+
+let unzip l =
+  let xs, ys =
+    fold_left ~f:(fun (xs, ys) (x, y) -> (x :: xs, y :: ys)) ~init:([], []) l
+  in
+  (rev xs, rev ys)
