@@ -260,25 +260,32 @@ let make_repository_locally_available url =
       in
       let dir = Fpath.(tmp_dir / "repos" / repo_dir) in
       let cache_dir = Fpath.(tmp_dir / "cache") in
-      let url =
+      let url_result =
         match url.backend with
         | `http when String.equal url.path "opam.ocaml.org" ->
             (* replace OPAM repo with git url *)
             OpamUrl.parse ~backend:`git
               "git+https://github.com/ocaml/opam-repository.git"
-        | `git -> url
+            |> Result.ok
+        | `git -> Ok url
         | `http | `rsync | #OpamUrl.version_control ->
-            failwith "TODO unsupported"
+            Rresult.R.error_msgf
+              "Only git and local file systems (file://) are supported at the \
+               moment, got %a"
+              Opam.Pp.url url
       in
-      match Result.List.map ~f:Bos.OS.Dir.create [ cache_dir; dir ] with
-      | Error (`Msg msg) -> Done (Rresult.R.error_msg msg)
-      | Ok _ -> (
-          fetch_git_url ~cache_dir dir url @@| function
-          | Error (`Msg msg) -> Rresult.R.error_msg msg
-          | Ok version ->
-              let url = git_permanent_url url version in
-              let packages = Fpath.(dir / "packages" |> to_string) in
-              Ok (packages, url)))
+      match url_result with
+      | Error _ as e -> Done e
+      | Ok url -> (
+          match Result.List.map ~f:Bos.OS.Dir.create [ cache_dir; dir ] with
+          | Error (`Msg msg) -> Done (Rresult.R.error_msg msg)
+          | Ok _ -> (
+              fetch_git_url ~cache_dir dir url @@| function
+              | Error (`Msg msg) -> Rresult.R.error_msg msg
+              | Ok version ->
+                  let url = git_permanent_url url version in
+                  let packages = Fpath.(dir / "packages" |> to_string) in
+                  Ok (packages, url))))
 
 let make_repositories_locally_available repositories =
   repositories
