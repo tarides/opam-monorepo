@@ -108,67 +108,98 @@ let rec to_opam_val : type a. a t -> a -> OpamParserTypes.FullPos.value =
 let unmatched_list_delimiter ~delim =
   Rresult.R.error_msgf "unmatched list delimiter '%c'" delim
 
-let str_get_opt s i =
-  match s.[i] with c -> Some c | exception Invalid_argument _ -> None
+type tokbuf = { buffer : string; pos : int }
 
-(* Splits a string on each occurence of the [','] separator.
-   Supports nested lists by ignoring occurences of [',']
-   enclosed within ['['] and [']'] delimiters. *)
-let split_list ~start ~len s =
-  let last = start + len - 1 in
-  let rec search_sep ~openned_nested_lists ~acc ~current_elm_start i =
-    match str_get_opt s i with
-    | _ when i > last && openned_nested_lists > 0 ->
-        (* We reached the end of the string and there are unmatched
-           list openning delimiters. *)
-        unmatched_list_delimiter ~delim:'['
-    | _ when i > last ->
-        (* We reached the end of the string, extract the last element
-           substring, from [current_elm_start] to [last] (included). *)
-        let last =
-          String.sub s ~pos:current_elm_start ~len:(last + 1 - current_elm_start)
-        in
-        Ok (List.rev (last :: acc))
-    | Some '[' ->
-        (* We found a list openning delimiter, we increase the count
-           of nested lists openned and move to the next char. *)
-        search_sep ~openned_nested_lists:(openned_nested_lists + 1) ~acc
-          ~current_elm_start (i + 1)
-    | Some (']' as delim) when openned_nested_lists = 0 ->
-        (* We found a closing delimiter but no list is currently openned,
-           meaning it has no matching open delimiter. *)
-        unmatched_list_delimiter ~delim
-    | Some ']' ->
-        (* We found a closing delimiter, we reduce the count of
-           openned nested lists and move on to the next char. *)
-        search_sep ~openned_nested_lists:(openned_nested_lists - 1) ~acc
-          ~current_elm_start (i + 1)
-    | Some ',' when openned_nested_lists = 0 ->
-        (* We found a separator and no nested list is currently openned,
-           it belongs to the main list. We extract the substring up to this
-           point and move on to the next char. *)
-        let elm =
-          String.sub s ~pos:current_elm_start ~len:(i - current_elm_start)
-        in
-        search_sep ~openned_nested_lists ~acc:(elm :: acc)
-          ~current_elm_start:(i + 1) (i + 1)
-    | Some _ ->
-        (* No notable character, we move on to the next *)
-        search_sep ~openned_nested_lists ~acc ~current_elm_start (i + 1)
-    | None ->
-        (* This is handled through the first two cases where [i] exceeds
-           the range *)
-        assert false
+let tokbuf_of_string buffer = { buffer; pos = 0 }
+
+let peek_char { buffer; pos } =
+  match buffer.[pos] with c -> Some c | exception Invalid_argument _ -> None
+
+let next tokbuf = { tokbuf with pos = tokbuf.pos + 1 }
+
+type token = OPEN_PAREN | CLOSE_PAREN | COMMA | TEXT of string
+
+let remaining { buffer; pos } =
+  String.sub ~pos ~len:(String.length buffer - pos) buffer
+
+let until_next ~chars { buffer; pos } =
+  let rec find index =
+    match buffer.[index] with
+    | c -> (
+        match List.mem c ~set:chars with
+        | true ->
+            let tokbuf = { buffer; pos = index } in
+            Some (index, tokbuf)
+        | false -> find (index + 1))
+    | exception Invalid_argument _ -> None
   in
-  if len = 0 then Ok []
-  else search_sep ~openned_nested_lists:0 ~acc:[] ~current_elm_start:start start
+  let open Option.O in
+  let* index, tokbuf = find pos in
+  let text = String.sub buffer ~pos ~len:(index - pos) in
+  Some (TEXT text, tokbuf)
+
+let rec tokenize acc buf =
+  match peek_char buf with
+  | None -> List.rev acc
+  | Some '[' -> tokenize (OPEN_PAREN :: acc) (next buf)
+  | Some ']' -> tokenize (CLOSE_PAREN :: acc) (next buf)
+  | Some ',' -> tokenize (COMMA :: acc) (next buf)
+  | Some _ -> (
+      match until_next ~chars:[ '['; ']'; ',' ] buf with
+      | Some (token, s) -> tokenize (token :: acc) s
+      | None ->
+          let t = TEXT (remaining buf) in
+          List.rev (t :: acc))
+
+let split_list s =
+  let open Result.O in
+  let buf = tokbuf_of_string s in
+  let tokens = tokenize [] buf in
+  let level, buffer, lst =
+    List.fold_left
+      ~f:(fun (level, buffer, res) token ->
+        match res with
+        | Error _ -> (level, buffer, res)
+        | Ok acc -> (
+            match token with
+            | OPEN_PAREN ->
+                Buffer.add_char buffer '[';
+                (level + 1, buffer, Ok acc)
+            | CLOSE_PAREN -> (
+                match level > 0 with
+                | true ->
+                    Buffer.add_char buffer ']';
+                    (level - 1, buffer, Ok acc)
+                | false -> (level, buffer, unmatched_list_delimiter ~delim:']'))
+            | COMMA -> (
+                match level = 0 with
+                | true ->
+                    let contents = Buffer.contents buffer in
+                    Buffer.clear buffer;
+                    let acc = contents :: acc in
+                    (level, buffer, Ok acc)
+                | false ->
+                    Buffer.add_char buffer ',';
+                    (level, buffer, Ok acc))
+            | TEXT s ->
+                Buffer.add_string buffer s;
+                (level, buffer, Ok acc)))
+      ~init:(0, Buffer.create 16, Ok [])
+      tokens
+  in
+  let* lst = lst in
+  match level = 0 with
+  | false -> unmatched_list_delimiter ~delim:'['
+  | true ->
+      let lst = Buffer.contents buffer :: lst in
+      Ok (List.rev lst)
 
 let parse_list s =
   let len = String.length s in
   if len = 0 then Ok []
   else
     match (s.[0], s.[len - 1]) with
-    | '[', ']' -> split_list ~start:1 ~len:(len - 2) s
+    | '[', ']' -> split_list (String.sub s ~pos:1 ~len:(len - 2))
     | ('[' as delim), _ -> unmatched_list_delimiter ~delim
     | _ -> Rresult.R.error_msg "list or pairs must be delimited by '[' and ']'"
 
