@@ -27,7 +27,7 @@ the minimal repository created locally:
   > opam-version: "2.0"
   > EOF
   $ (cd git-repository ; git init ; git add -A ; git commit -m "initial commit") > /dev/null 2>&1
-  $ SHORT_HASH=$(git -C git-repository rev-parse --short HEAD)
+  $ SHORT_HASH1=$(git -C git-repository rev-parse --short HEAD)
 
 To find this package, we need to have the git repository in our
 `x-opam-monorepo-opam-repositories` list:
@@ -51,7 +51,7 @@ Therefore the list of repositories in the lockfile should have the a git repo
 that's the same as the previous git-repository path but end with "#$SHORT_HASH"
 
   $ opam show --just-file --raw -fx-opam-monorepo-opam-repositories ./explicit-repo.opam.locked > locked-repos
-  $ grep -Po ".+(?=$SHORT_HASH)" locked-repos
+  $ grep -Po ".+(?=$SHORT_HASH1)" locked-repos
   git+file://$OPAM_MONOREPO_CWD/git-repository#
 
 We also need to make sure that the git cache gets updated when the repository is updated:
@@ -64,10 +64,15 @@ We also need to make sure that the git cache gets updated when the repository is
   > ]
   > EOF
   > (cd git-repository ; git add -A ; git commit -m "New release") > /dev/null 2>&1
+  $ SHORT_HASH2=$(git -C git-repository rev-parse --short HEAD)
 
 Thus a new version of the package has been released in the git repo. Locking it
-anew should pick this version of the dependency:
+anew should pick this version of the dependency as well as the recording the
+new version of the git opam repository.
 
   $ opam-monorepo lock explicit-repo > /dev/null
   $ opam show --just-file --raw -fdepends ./explicit-repo.opam.locked | grep git-dep
   "git-dep" {= "2.0"}
+  $ opam show --just-file --raw -fx-opam-monorepo-opam-repositories ./explicit-repo.opam.locked > locked-repos
+  $ grep -Po ".+(?=$SHORT_HASH2)" locked-repos
+  git+file://$OPAM_MONOREPO_CWD/git-repository#
