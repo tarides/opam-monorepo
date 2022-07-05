@@ -222,20 +222,75 @@ let interpret_solver_error ~repositories solver = function
       let verbose = display_verbose_diagnostics (Logs.level ()) in
       Opam_solve.diagnostics_message ~verbose solver d
 
+let dirname_of_fpath fpath =
+  fpath |> Fpath.to_string |> OpamFilename.Dir.of_string
+
+let fetch_git_url ~cache_dir dir url =
+  let open OpamProcess.Job.Op in
+  let cache_dir = dirname_of_fpath cache_dir in
+  let dir = dirname_of_fpath dir in
+  OpamGit.B.pull_url ~cache_dir dir None url @@+ function
+  | Not_available (_always_none, url_string) ->
+      Done
+        (Rresult.R.error_msg
+           (Format.asprintf "Could not fetch URL at %s" url_string))
+  | Result _always_none | Up_to_date _always_none -> (
+      OpamGit.B.revision dir @@| function
+      | None -> Rresult.R.error_msg "Could not determine revision of repo"
+      | Some version -> Ok version)
+
+let git_permanent_url (url : OpamUrl.t) version =
+  { url with hash = Some (OpamPackage.Version.to_string version) }
+
 (** Turns each repository URL into a path to the repository's sources,
     eventually fetching them from the remote. *)
 let make_repository_locally_available url =
+  let open OpamProcess.Job.Op in
   match OpamUrl.local_dir url with
   | Some path when Opam.Url.is_local_filesystem url ->
-      Ok (OpamFilename.Dir.to_string OpamFilename.Op.(path / "packages"))
-  | _ ->
-      (* TODO before release *)
-      Rresult.R.error_msg
-        "Only non git, local filesystem URLs (file://) are supported at the \
-         moment"
+      let packages =
+        OpamFilename.Dir.to_string OpamFilename.Op.(path / "packages")
+      in
+      Done (Ok (packages, url))
+  | _ -> (
+      let tmp_dir = Fpath.(Bos.OS.Dir.default_tmp () / "opam-monorepo") in
+      (* the URL might contain all kind of invalid characters like slashes -> hash *)
+      let repo_dir =
+        url |> OpamUrl.to_string |> Digest.string |> Digest.to_hex
+      in
+      let dir = Fpath.(tmp_dir / "repos" / repo_dir) in
+      let cache_dir = Fpath.(tmp_dir / "cache") in
+      let url_result =
+        match url.backend with
+        | `http when String.equal url.path "opam.ocaml.org" ->
+            (* replace OPAM repo with git url *)
+            OpamUrl.parse ~backend:`git
+              "git+https://github.com/ocaml/opam-repository.git"
+            |> Result.ok
+        | `git -> Ok url
+        | `http | `rsync | #OpamUrl.version_control ->
+            Rresult.R.error_msgf
+              "Only git and local file systems (file://) are supported at the \
+               moment, got %a"
+              Opam.Pp.url url
+      in
+      match url_result with
+      | Error _ as e -> Done e
+      | Ok url -> (
+          match Result.List.map ~f:Bos.OS.Dir.create [ cache_dir; dir ] with
+          | Error (`Msg msg) -> Done (Rresult.R.error_msg msg)
+          | Ok _ -> (
+              fetch_git_url ~cache_dir dir url @@| function
+              | Error (`Msg msg) -> Rresult.R.error_msg msg
+              | Ok version ->
+                  let url = git_permanent_url url version in
+                  let packages = Fpath.(dir / "packages" |> to_string) in
+                  Ok (packages, url))))
 
 let make_repositories_locally_available repositories =
-  Result.List.map ~f:make_repository_locally_available repositories
+  repositories
+  |> OpamProcess.Job.seq_map make_repository_locally_available
+  |> OpamProcess.Job.run |> Result.List.all
 
 let opam_env_from_global_state global_state =
   let vars = global_state.OpamStateTypes.global_variables in
@@ -269,29 +324,43 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
               l "Solve using explicit repositories:\n%a"
                 Fmt.(list ~sep:(const char '\n') Opam.Pp.url)
                 repositories);
-          let* local_repo_dirs =
-            make_repositories_locally_available repositories
+          let* local_repos = make_repositories_locally_available repositories in
+          let local_repo_dirs, source_config =
+            let local_repo_dirs, repo_urls = List.unzip local_repos in
+            let repositories =
+              repo_urls |> OpamUrl.Set.of_list |> Option.some
+            in
+            let source_config = { source_config with repositories } in
+            (local_repo_dirs, source_config)
           in
           let opam_env = extract_opam_env ~source_config global_state in
           let solver = Opam_solve.explicit_repos_solver in
-          Opam_solve.calculate ~build_only ~allow_jbuilder
-            ~require_cross_compile ~preferred_versions ~local_opam_files
-            ~target_packages ~opam_provided ~pin_depends ?ocaml_version solver
-            (opam_env, local_repo_dirs)
-          |> Result.map_error ~f:(interpret_solver_error ~repositories solver)
+          let dependency_entries =
+            Opam_solve.calculate ~build_only ~allow_jbuilder
+              ~require_cross_compile ~preferred_versions ~local_opam_files
+              ~target_packages ~opam_provided ~pin_depends ?ocaml_version solver
+              (opam_env, local_repo_dirs)
+            |> Result.map_error ~f:(interpret_solver_error ~repositories solver)
+          in
+          let* dependency_entries = dependency_entries in
+          Ok (dependency_entries, source_config)
       | { repositories = None; _ } ->
           OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
               Logs.info (fun l ->
                   l "Solve using current opam switch: %s"
                     (OpamSwitch.to_string switch_state.switch));
               let solver = Opam_solve.local_opam_config_solver in
-              Opam_solve.calculate ~build_only ~allow_jbuilder
-                ~require_cross_compile ~preferred_versions ~local_opam_files
-                ~target_packages ~opam_provided ~pin_depends ?ocaml_version
-                solver switch_state
-              |> Result.map_error ~f:(fun err ->
-                     let repositories = current_repos ~switch_state in
-                     interpret_solver_error ~repositories solver err)))
+              let dependency_entries =
+                Opam_solve.calculate ~build_only ~allow_jbuilder
+                  ~require_cross_compile ~preferred_versions ~local_opam_files
+                  ~target_packages ~opam_provided ~pin_depends ?ocaml_version
+                  solver switch_state
+                |> Result.map_error ~f:(fun err ->
+                       let repositories = current_repos ~switch_state in
+                       interpret_solver_error ~repositories solver err)
+              in
+              let* dependency_entries = dependency_entries in
+              Ok (dependency_entries, source_config)))
 
 let select_explicitly_specified ~local_packages ~explicitly_specified =
   List.fold_left
@@ -463,7 +532,7 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
   let* preferred_versions =
     preferred_versions ~minimal_update ~root lockfile_path
   in
-  let* dependency_entries =
+  let* dependency_entries, source_config =
     calculate_opam ~source_config ~build_only ~allow_jbuilder
       ~require_cross_compile ~preferred_versions ~ocaml_version
       ~local_opam_files:opam_files ~target_packages

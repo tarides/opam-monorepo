@@ -1,0 +1,9 @@
+opam-version: "2.0"
+depends: [
+  "dune"
+  "git-dep"
+]
+x-opam-monorepo-opam-repositories: [
+  "file://$OPAM_MONOREPO_CWD/minimal-repo"
+  "git+file://$OPAM_MONOREPO_CWD/git-repository"
+]

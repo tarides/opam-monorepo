@@ -2,6 +2,9 @@
 
 ### Added
 
+- Add support for specifying remote URLs in `x-opam-monorepo-repositories`
+  (#284, #317, @Leonidas-from-XIV)
+
 ### Changed
 
 ### Deprecated
