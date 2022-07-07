@@ -38,7 +38,7 @@ The `-f` is important for two reasons here:
 - The duniverse folder is in our `.gitignore` and can't be added without it
 - We want all of the duniverse folder to be included. It happens that files
   that are included in tarballs are generated and otherwise gitignored in
-  some projects meaning a regular git add could take the subdir `.gitignore`
+  some projects meaning a regular git add could evaluate nested `.gitignore`
   and exclude those files.
 
 ### Preparing the opam file
