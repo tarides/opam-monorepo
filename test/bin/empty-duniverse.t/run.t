@@ -23,8 +23,7 @@ there is nothing to pull and will not create a duniverse:
 
   $ opam-monorepo pull
   ==> Using lockfile $TESTCASE_ROOT/empty-duniverse.opam.locked
-  opam-monorepo: [ERROR] Missing x-opam-monorepo-duniverse-dirs field in opam-monorepo lockfile $TESTCASE_ROOT/empty-duniverse.opam.locked
-  [1]
+  ==> No dependencies to pull, there's nothing to be done here!
   $ ls duniverse
   ls: cannot access 'duniverse': No such file or directory
   [2]

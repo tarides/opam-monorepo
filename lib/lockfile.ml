@@ -3,12 +3,13 @@ open Import
 module Extra_field = struct
   include Opam.Extra_field
 
-  let get ?file t opam =
+  let get ?file ?default t opam =
     let open Result.O in
     let* value_opt = get t opam in
-    match value_opt with
-    | Some result -> Ok result
-    | None ->
+    match (value_opt, default) with
+    | Some result, _ -> Ok result
+    | None, Some default -> Ok default
+    | None, None ->
         let file_suffix_opt = Option.map ~f:(Printf.sprintf " %s") file in
         let file_suffix = Option.value ~default:"" file_suffix_opt in
         Error
@@ -87,6 +88,8 @@ module Root_packages = struct
 
   let field =
     Extra_field.make ~name:"root-packages" ~to_opam_value ~from_opam_value
+
+  let get ?file opam = Extra_field.get ?file field opam
 end
 
 module Depends = struct
@@ -236,6 +239,9 @@ module Duniverse_dirs = struct
 
   let field =
     Extra_field.make ~name:"duniverse-dirs" ~to_opam_value ~from_opam_value
+
+  let default = OpamUrl.Map.empty
+  let get ?file opam = Extra_field.get ?file ~default field opam
 end
 
 module Depexts = struct
@@ -362,10 +368,10 @@ let from_opam ~opam_monorepo_cwd ?file opam =
   let open Result.O in
   let* version = Extra_field.get ?file Version.field opam in
   let* () = Version.compatible version in
-  let* root_packages = Extra_field.get ?file Root_packages.field opam in
+  let* root_packages = Root_packages.get ?file opam in
   let* depends = Depends.from_filtered_formula (OpamFile.OPAM.depends opam) in
   let pin_depends = OpamFile.OPAM.pin_depends opam in
-  let* duniverse_dirs = Extra_field.get ?file Duniverse_dirs.field opam in
+  let* duniverse_dirs = Duniverse_dirs.get ?file opam in
   let depexts = OpamFile.OPAM.depexts opam in
   let* source_config = Source_opam_config.get ~opam_monorepo_cwd opam in
   Ok
