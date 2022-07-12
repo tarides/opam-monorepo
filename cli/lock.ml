@@ -345,6 +345,8 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
           let* dependency_entries = dependency_entries in
           Ok (dependency_entries, source_config)
       | { repositories = None; _ } ->
+          let config = OpamFile.Config.with_depext false global_state.config in
+          let global_state = { global_state with config } in
           OpamSwitchState.with_ `Lock_none global_state (fun switch_state ->
               Logs.info (fun l ->
                   l "Solve using current opam switch: %s"
