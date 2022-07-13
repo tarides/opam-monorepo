@@ -11,6 +11,9 @@
 
 ### Fixed
 
+- Enable locking of packages with depexts even with uninitialized system
+  package manager state (#322, @Leonidas-from-XIV)
+
 ### Removed
 
 ### Security
