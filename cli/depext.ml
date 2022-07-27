@@ -26,22 +26,24 @@ let run (`Root root) (`Lockfile explicit_lockfile) dry_run (`Yes yes) () =
             else acc)
           ~init:OpamSysPkg.Set.empty depexts
       in
-      let pkgs, _ = OpamSysInteract.packages_status pkgs in
-      let pkgs_list = OpamSysPkg.Set.elements pkgs in
-      match pkgs_list with
-      | [] -> Ok ()
-      | _ ->
-          let pkgs_str = List.map ~f:OpamSysPkg.to_string pkgs_list in
-          if dry_run then (
-            Fmt.pr "%s\n%!" (String.concat ~sep:" " pkgs_str);
-            Ok ())
-          else if should_install ~yes pkgs_str then
-            try
-              OpamCoreConfig.update ~confirm_level:`unsafe_yes ();
-              OpamSysInteract.install pkgs;
-              Ok ()
-            with Failure msg -> Error (`Msg msg)
-          else Ok ())
+      try
+        let pkgs, _ = OpamSysInteract.packages_status pkgs in
+        let pkgs_list = OpamSysPkg.Set.elements pkgs in
+        match pkgs_list with
+        | [] -> Ok ()
+        | _ ->
+            let pkgs_str = List.map ~f:OpamSysPkg.to_string pkgs_list in
+            if dry_run then (
+              Fmt.pr "%s\n%!" (String.concat ~sep:" " pkgs_str);
+              Ok ())
+            else if should_install ~yes pkgs_str then
+              try
+                OpamCoreConfig.update ~confirm_level:`unsafe_yes ();
+                OpamSysInteract.install pkgs;
+                Ok ()
+              with Failure msg -> Error (`Msg msg)
+            else Ok ()
+        with Failure msg -> Error (`Msg msg))
 
 open Cmdliner
 
