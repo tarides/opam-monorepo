@@ -43,7 +43,7 @@ let run (`Root root) (`Lockfile explicit_lockfile) dry_run (`Yes yes) () =
                 Ok ()
               with Failure msg -> Error (`Msg msg)
             else Ok ()
-        with Failure msg -> Error (`Msg msg))
+      with Failure msg -> Error (`Msg msg))
 
 open Cmdliner
 
