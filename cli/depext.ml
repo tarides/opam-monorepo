@@ -12,6 +12,11 @@ let should_install ~yes pkgs =
         pkgs)
     ~yes
 
+let available_packages pkgs =
+  match OpamSysInteract.packages_status pkgs with
+  | available_pkgs, _not_found_pkgs -> Ok available_pkgs
+  | exception Failure msg -> Error (`Msg msg)
+
 let run (`Root root) (`Lockfile explicit_lockfile) dry_run (`Yes yes) () =
   let open Result.O in
   let* lockfile = Common.find_lockfile ~explicit_lockfile root in
@@ -26,29 +31,21 @@ let run (`Root root) (`Lockfile explicit_lockfile) dry_run (`Yes yes) () =
             else acc)
           ~init:OpamSysPkg.Set.empty depexts
       in
-      match
-        try let pkgs, _ = OpamSysInteract.packages_status pkgs in
-          Ok pkgs
-        with Failure msg -> Error (`Msg msg)
-      with
-      | Error msg -> Error msg
-      | Ok pkgs ->
-        let pkgs_list = OpamSysPkg.Set.elements pkgs in
-        match pkgs_list with
-        | [] -> Ok ()
-        | _ ->
-            let pkgs_str = List.map ~f:OpamSysPkg.to_string pkgs_list in
-            if dry_run then (
-              Fmt.pr "%s\n%!" (String.concat ~sep:" " pkgs_str);
-              Ok ())
-            else if should_install ~yes pkgs_str then
-              try
-                OpamCoreConfig.update ~confirm_level:`unsafe_yes ();
-                OpamSysInteract.install pkgs;
-                Ok ()
-              with Failure msg -> Error (`Msg msg)
-            else Ok ())
-          
+      let* pkgs = available_packages pkgs in
+      match OpamSysPkg.Set.elements pkgs with
+      | [] -> Ok ()
+      | pkgs_list ->
+          let pkgs_str = List.map ~f:OpamSysPkg.to_string pkgs_list in
+          if dry_run then (
+            Fmt.pr "%s\n%!" (String.concat ~sep:" " pkgs_str);
+            Ok ())
+          else if should_install ~yes pkgs_str then
+            try
+              OpamCoreConfig.update ~confirm_level:`unsafe_yes ();
+              OpamSysInteract.install pkgs;
+              Ok ()
+            with Failure msg -> Error (`Msg msg)
+          else Ok ())
 
 open Cmdliner
 
