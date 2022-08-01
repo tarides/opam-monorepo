@@ -26,8 +26,13 @@ let run (`Root root) (`Lockfile explicit_lockfile) dry_run (`Yes yes) () =
             else acc)
           ~init:OpamSysPkg.Set.empty depexts
       in
-      try
-        let pkgs, _ = OpamSysInteract.packages_status pkgs in
+      match
+        try let pkgs, _ = OpamSysInteract.packages_status pkgs in
+          Ok pkgs
+        with Failure msg -> Error (`Msg msg)
+      with
+      | Error msg -> Error msg
+      | Ok pkgs ->
         let pkgs_list = OpamSysPkg.Set.elements pkgs in
         match pkgs_list with
         | [] -> Ok ()
@@ -42,8 +47,8 @@ let run (`Root root) (`Lockfile explicit_lockfile) dry_run (`Yes yes) () =
                 OpamSysInteract.install pkgs;
                 Ok ()
               with Failure msg -> Error (`Msg msg)
-            else Ok ()
-      with Failure msg -> Error (`Msg msg))
+            else Ok ())
+          
 
 open Cmdliner
 
