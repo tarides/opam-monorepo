@@ -15,6 +15,8 @@
   package manager state (#322, @Leonidas-from-XIV)
 - Fix a bug where `pull` would crash if the lock file contained no package to
   vendor (#321, @NathanReb)
+- Display a better error message when the depext command fails when getting the
+  status of the packages (#258, #323, @RyanGibb, @Julow)
 
 ### Removed
 

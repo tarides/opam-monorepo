@@ -12,6 +12,11 @@ let should_install ~yes pkgs =
         pkgs)
     ~yes
 
+let available_packages pkgs =
+  match OpamSysInteract.packages_status pkgs with
+  | available_pkgs, _not_found_pkgs -> Ok available_pkgs
+  | exception Failure msg -> Error (`Msg msg)
+
 let run (`Root root) (`Lockfile explicit_lockfile) dry_run (`Yes yes) () =
   let open Result.O in
   let* lockfile = Common.find_lockfile ~explicit_lockfile root in
@@ -26,11 +31,10 @@ let run (`Root root) (`Lockfile explicit_lockfile) dry_run (`Yes yes) () =
             else acc)
           ~init:OpamSysPkg.Set.empty depexts
       in
-      let pkgs, _ = OpamSysInteract.packages_status pkgs in
-      let pkgs_list = OpamSysPkg.Set.elements pkgs in
-      match pkgs_list with
+      let* pkgs = available_packages pkgs in
+      match OpamSysPkg.Set.elements pkgs with
       | [] -> Ok ()
-      | _ ->
+      | pkgs_list ->
           let pkgs_str = List.map ~f:OpamSysPkg.to_string pkgs_list in
           if dry_run then (
             Fmt.pr "%s\n%!" (String.concat ~sep:" " pkgs_str);
