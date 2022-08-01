@@ -13,6 +13,8 @@
 
 - Enable locking of packages with depexts even with uninitialized system
   package manager state (#322, @Leonidas-from-XIV)
+- Fix a bug where `pull` would crash if the lock file contained no package to
+  vendor (#321, @NathanReb)
 
 ### Removed
 
