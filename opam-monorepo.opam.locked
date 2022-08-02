@@ -6,9 +6,11 @@ depends: [
   "alcotest" {= "1.6.0" & ?vendor}
   "angstrom" {= "0.15.0" & ?vendor}
   "astring" {= "0.8.5+dune" & ?vendor}
-  "base" {= "v0.15.0" & ?vendor}
+  "base" {= "v0.15.1~5.0preview" & ?vendor}
   "base-bigarray" {= "base"}
   "base-bytes" {= "base"}
+  "base-domains" {= "base"}
+  "base-nnp" {= "base"}
   "base-threads" {= "base"}
   "base-unix" {= "base"}
   "bigstringaf" {= "0.9.0" & ?vendor}
@@ -26,9 +28,9 @@ depends: [
   "logs" {= "0.7.0+dune2" & ?vendor}
   "lwt" {= "5.6.1" & ?vendor}
   "num" {= "1.4+dune2" & ?vendor}
-  "ocaml" {= "4.14.0"}
-  "ocaml-base-compiler" {= "4.14.0"}
-  "ocaml-config" {= "2"}
+  "ocaml" {= "5.0.0"}
+  "ocaml-base-compiler" {= "5.0.0~alpha1"}
+  "ocaml-config" {= "3"}
   "ocaml-options-vanilla" {= "1"}
   "ocaml-syntax-shims" {= "1.0.0" & ?vendor}
   "ocaml-version" {= "3.5.0" & ?vendor}
@@ -90,8 +92,8 @@ pin-depends: [
     "https://github.com/dune-universe/astring/archive/v0.8.5+dune.tar.gz"
   ]
   [
-    "base.v0.15.0"
-    "https://ocaml.janestreet.com/ocaml-core/v0.15/files/base-v0.15.0.tar.gz"
+    "base.v0.15.1~5.0preview"
+    "git+https://github.com/kit-ty-kate/base#423dbad212f55506767d758b1ceb2d6e0ee8e7f5"
   ]
   [
     "bigstringaf.0.9.0"
@@ -219,6 +221,7 @@ pin-depends: [
     "https://github.com/dune-universe/uutf/releases/download/v1.0.3%2Bdune/uutf-1.0.3.dune.tbz"
   ]
 ]
+x-opam-monorepo-cli-args: ["--ocaml-version" "5.0.0"]
 x-opam-monorepo-duniverse-dirs: [
   [
     "https://erratique.ch/software/cmdliner/releases/cmdliner-1.1.1.tbz"
@@ -356,6 +359,10 @@ x-opam-monorepo-duniverse-dirs: [
     ["md5=ab8fd6273f35a792cad48cbb3024a7f9"]
   ]
   [
+    "git+https://github.com/kit-ty-kate/base#423dbad212f55506767d758b1ceb2d6e0ee8e7f5"
+    "base"
+  ]
+  [
     "https://github.com/mirage/alcotest/releases/download/1.6.0/alcotest-1.6.0.tbz"
     "alcotest"
     [
@@ -465,13 +472,6 @@ x-opam-monorepo-duniverse-dirs: [
     [
       "sha256=db41f5d52e9eab17615f110b899dfeb27dd7e7f89cd35ae43827c5119db206ea"
       "sha512=d8ebe40f42b598a9bd99f1ef4b00ba93458385a4accd121af66a0bf3b3f8d7135f576740adf1a43081dd409977c2219fd4bdbb5b3d1308890d301d553ed49900"
-    ]
-  ]
-  [
-    "https://ocaml.janestreet.com/ocaml-core/v0.15/files/base-v0.15.0.tar.gz"
-    "base"
-    [
-      "sha256=8657ae4324a9948457112245c49d97d2da95f157f780f5d97f0b924312a6a53d"
     ]
   ]
   [
