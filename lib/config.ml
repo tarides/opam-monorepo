@@ -16,17 +16,7 @@
 open Import
 
 let base_packages =
-  [
-    "jbuilder";
-    "dune";
-    "ocamlbuild";
-    "ocamlmod";
-    "oasis";
-    "ocamlify";
-    "ocaml";
-    "ocaml-base-compiler";
-    "ocaml-variants";
-  ]
+  [ "jbuilder"; "dune"; "ocamlbuild"; "ocamlmod"; "oasis"; "ocamlify" ]
   |> List.map ~f:OpamPackage.Name.of_string
   |> OpamPackage.Name.Set.of_list
 

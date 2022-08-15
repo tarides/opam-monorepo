@@ -20,6 +20,7 @@ module Package_summary : sig
     hashes : OpamHash.t list;
     dev_repo : string option;
     depexts : (OpamSysPkg.Set.t * OpamTypes.filter) list;
+    flags : OpamTypes.package_flag list;
   }
 
   val pp : t Fmt.t

@@ -25,7 +25,8 @@ let opam_factory ~name ~version =
 let summary_factory ?(name = "undefined") ?(version = "1") ?dev_repo ?url_src
     ?(hashes = []) ?(depexts = []) () =
   let package = opam_factory ~name ~version in
-  { Opam.Package_summary.package; dev_repo; url_src; hashes; depexts }
+  let flags = [] in
+  { Opam.Package_summary.package; dev_repo; url_src; hashes; depexts; flags }
 
 let dependency_factory ?(vendored = true) ?name ?version ?dev_repo ?url_src
     ?hashes ?depexts () =
