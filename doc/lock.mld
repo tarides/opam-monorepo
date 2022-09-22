@@ -48,7 +48,7 @@ in any of your local opam files. For instance:
 
 {[
 x-opam-monorepo-opam-repositories: [
-  "git+https://github.com/ocaml/opam-repositories"
+  "git+https://github.com/ocaml/opam-repository"
   "git+https://github.com/dune-universe/opam-overlays"
 ]
 ]}
@@ -57,7 +57,7 @@ Alternatively you can set it via the command line by running:
 
 {[
 opam monorepo lock --opam-repositories \
-  '[git+https://github.com/ocaml/opam-repositories,git+https://github.com/dune-universe/opam-overlays]'
+  '[git+https://github.com/ocaml/opam-repository,git+https://github.com/dune-universe/opam-overlays]'
 ]}
 
 The [--opam-repositories] option will overwrite any locally defined
