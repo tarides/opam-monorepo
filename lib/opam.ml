@@ -62,7 +62,8 @@ let pull_tree_with_cache' ~cache_dir ~url ~hashes ~dir =
   (* Opam requires a label for the pull, it's only used for logging *)
   let opam_dir = OpamFilename.Dir.of_string dir_str in
   let open OpamProcess.Job.Op in
-  OpamRepository.pull_tree ~cache_dir label opam_dir hashes [ url ] @@| function
+  let cache_urls = OpamFile.Config.dl_cache global_state.config in
+  OpamRepository.pull_tree ~cache_urls ~cache_dir label opam_dir hashes [ url ] @@| function
   | Result _ | Up_to_date _ -> Ok ()
   | Not_available (_, long_msg) ->
       Error (`Msg (Printf.sprintf "Failed to pull %s: %s" label long_msg))
