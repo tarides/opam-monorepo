@@ -108,11 +108,11 @@ By default [opam-monorepo] will use the variables set in your current switch.
 
 You can explicitly set the variables defined along with their value, making
 [opam-monorepo] ignore any variable defined in the switch.
-You can do so by setting the [x-opam-monorepo-opam-global-vars] opam extension.
+You can do so by setting the [x-opam-monorepo-global-opam-vars] opam extension.
 For instance:
 
 {[
-x-opam-monorepo-opam-global-vars: [
+x-opam-monorepo-global-opam-vars: [
   [ "arch" "x86_64" ]
   [ "os-distribution" "debian" ]
   [ "os-family" "debian" ]
@@ -128,7 +128,7 @@ opam monorepo lock \
 ]}
 
 The [--opam-global-vars] option will overwrite any locally defined
-[x-opam-monorepo-opam-global-vars] field. If you simply want to define extra
+[x-opam-monorepo-global-opam-vars] field. If you simply want to define extra
 variables you can use [--add-opam-global-vars] instead:
 
 {[
@@ -144,7 +144,7 @@ The variables can be assigned boolean, string or list of strings values.
 The syntax for the opam field is the following:
 
 {[
-x-opam-monorepo-global-vars: [
+x-opam-monorepo-global-opam-vars: [
   ["boolean_var" true]
   ["string_var" "abc"]
   ["string_list_var" ["abc" "def"]]
