@@ -6,7 +6,8 @@
 with your projects and all of their dependencies, letting you build it all from scratch
 using only `dune` and `ocaml`.
 
-[Documentation on `opam-monorepo`](https://ocamllabs.io/opam-monorepo/opam-monorepo/index.html) is available in the repository as well as available online.
+[Documentation on `opam-monorepo`](https://tarides.github.io/opam-monorepo/opam-monorepo/index.html)
+is available in the repository as well as available online.
 
 ## Installation
 
