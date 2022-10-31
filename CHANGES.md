@@ -17,6 +17,7 @@
   vendor (#321, @NathanReb)
 - Display a better error message when the depext command fails when getting the
   status of the packages (#258, #323, @RyanGibb, @Julow)
+- Respect the "depext" config option when installing depexts (#344, @gridbugs)
 
 ### Removed
 
