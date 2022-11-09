@@ -17,6 +17,8 @@
   vendor (#321, @NathanReb)
 - Display a better error message when the depext command fails when getting the
   status of the packages (#258, #323, @RyanGibb, @Julow)
+- Take `archive-mirrors` from the global opam configuration into account to
+  allow more local caches (#337, @hannesm)
 
 ### Removed
 
