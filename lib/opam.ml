@@ -56,13 +56,12 @@ let has_cross_compile_tag opam =
   let tags = OpamFile.OPAM.tags opam in
   List.mem ~set:tags "cross-compile"
 
-let pull_tree_with_cache' ~cache_dir ~url ~hashes ~dir =
+let pull_tree_with_cache' ~cache_urls ~cache_dir ~url ~hashes ~dir =
   let dir_str = Fpath.to_string dir in
   let label = dir_str in
   (* Opam requires a label for the pull, it's only used for logging *)
   let opam_dir = OpamFilename.Dir.of_string dir_str in
   let open OpamProcess.Job.Op in
-  let cache_urls = OpamFile.Config.dl_cache global_state.config in
   OpamRepository.pull_tree ~cache_urls ~cache_dir label opam_dir hashes [ url ]
   @@| function
   | Result _ | Up_to_date _ -> Ok ()
@@ -73,11 +72,12 @@ let pull_tree ~url ~hashes ~dir global_state =
   let cache_dir =
     OpamRepositoryPath.download_cache global_state.OpamStateTypes.root
   in
-  pull_tree_with_cache' ~cache_dir ~url ~hashes ~dir
+  let cache_urls = OpamFile.Config.dl_cache global_state.config in
+  pull_tree_with_cache' ~cache_urls ~cache_dir ~url ~hashes ~dir
 
 let pull_tree_with_cache ~cache_dir =
   let cache_dir = cache_dir |> Fpath.to_string |> OpamFilename.Dir.of_string in
-  pull_tree_with_cache' ~cache_dir
+  pull_tree_with_cache' ~cache_urls:[] ~cache_dir
 
 module Url = struct
   type t = Git of { repo : string; ref : string option } | Other of string
