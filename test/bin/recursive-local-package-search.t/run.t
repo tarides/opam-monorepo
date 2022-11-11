@@ -10,7 +10,7 @@ sub dir.
 
 Running opam monorepo lock --recurse should only pick those last two as targets
 
-  $ opam-monorepo lock --lockfile test.opam.locked --recurse | grep locally
+  $ opam-monorepo lock --lockfile test.opam.locked --recurse 2>&1 | grep locally
   ==> Using 2 locally scanned packages as the targets.
   $ cat test.opam.locked | grep root-packages
   x-opam-monorepo-root-packages: ["root" "some-local-pkg"]

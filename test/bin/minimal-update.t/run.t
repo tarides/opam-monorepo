@@ -15,7 +15,7 @@ our dependencies:
 
 Now we add a dependency to 'c' to our project
 
-  $ sed -i '/"b"/a "c"' minimal-update.opam 
+  $ sed -i'' '/"b"/a "c"' minimal-update.opam
   $ opam show --just-file -fdepends ./minimal-update.opam
   dune, a, b, c
 
@@ -42,7 +42,7 @@ previous version.
 Now say we want to also update 'b' because we need a feature that is only
 available in the latest version:
 
-  $ sed -i 's/"b"/"b" {>= "0.2"}/' minimal-update.opam
+  $ sed -i'' 's/"b"/"b" {>= "0.2"}/' minimal-update.opam
   $ opam show --just-file -fdepends ./minimal-update.opam
   "dune" "a" "b" {>= "0.2"} "c"
 
@@ -56,7 +56,7 @@ Locking with --minimal-update should update 'b' but not 'a':
 
 Alternatively, if we remove a dependency:
 
-  $ sed -i '/"c"/d' ./minimal-update.opam
+  $ sed -i'' '/"c"/d' ./minimal-update.opam
   $ opam show --just-file -fdepends ./minimal-update.opam
   "dune" "a" "b" {>= "0.2"}
 
