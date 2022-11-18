@@ -58,19 +58,22 @@ module Repo = struct
       dev_repo : string;
       url : unresolved Url.t;
       hashes : OpamHash.t list;
+      pinned : bool;
     }
 
     let equal t t' =
       OpamPackage.equal t.opam t'.opam
       && String.equal t.dev_repo t'.dev_repo
       && Url.equal Git.Ref.equal t.url t'.url
+      && Bool.equal t.pinned t'.pinned
 
-    let pp fmt { opam; dev_repo; url; hashes } =
+    let pp fmt { opam; dev_repo; url; hashes; pinned } =
       let open Pp_combinators.Ocaml in
       Format.fprintf fmt
-        "@[<hov 2>{ opam = %a;@ dev_repo = %a;@ url = %a;@ hashes = %a }@]"
+        "@[<hov 2>{ opam = %a;@ dev_repo = %a;@ url = %a;@ hashes = %a;@ \
+         pinned = %b; }@]"
         Opam.Pp.raw_package opam string dev_repo (Url.pp Git.Ref.pp) url
-        (list Opam.Pp.hash) hashes
+        (list Opam.Pp.hash) hashes pinned
 
     let from_package_summary ~get_default_branch ps =
       let open Opam.Package_summary in
@@ -86,10 +89,18 @@ module Repo = struct
       match ps with
       | _ when is_base_package ps -> Ok None
       | { url_src = None; _ } | { dev_repo = None; _ } -> Ok None
-      | { url_src = Some url_src; package; dev_repo = Some dev_repo; hashes; _ }
-        ->
+      | {
+       url_src = Some url_src;
+       package;
+       dev_repo = Some dev_repo;
+       hashes;
+       pinned;
+       _;
+      } ->
           let* url = url url_src in
-          Ok (Some { opam = package; dev_repo; url; hashes })
+          Ok (Some { opam = package; dev_repo; url; hashes; pinned })
+
+    let is_pinned { pinned; _ } = pinned
   end
 
   type 'ref t = {
@@ -99,7 +110,7 @@ module Repo = struct
     provided_packages : OpamPackage.t list;
   }
 
-  let log_url_selection ~dev_repo ~packages ~highest_version_package =
+  let log_url_selection ~dev_repo ~packages ~reason =
     let url_to_string : unresolved Url.t -> string = function
       | Git { repo; ref } -> Printf.sprintf "%s#%s" repo ref
       | Other s -> s
@@ -109,14 +120,24 @@ module Repo = struct
         version (url_to_string url)
     in
     let sep fmt () = Format.fprintf fmt "\n" in
+    let pp_reason fmt = function
+      | `Highest_version package ->
+          Fmt.pf fmt
+            "The url for the highest versioned package was selected: %a"
+            pp_package package
+      | `Pinned packages ->
+          Fmt.pf fmt "The url for the pinned package(s) was selected: %a"
+            Fmt.(list ~sep pp_package)
+            packages
+    in
     Logs.warn (fun l ->
         l
           "The following packages come from the same repository %s but are \
            associated with different URLs:\n\
            %a\n\
-           The url for the highest versioned package was selected: %a"
+           %a"
           (Dev_repo.to_string dev_repo)
-          (Fmt.list ~sep pp_package) packages pp_package highest_version_package)
+          (Fmt.list ~sep pp_package) packages pp_reason reason)
 
   module Unresolved_url_map = Map.Make (struct
     type t = unresolved Url.t
@@ -139,7 +160,7 @@ module Repo = struct
     in
     match urls with
     | [ (url, hashes) ] -> { dir; url; hashes; provided_packages }
-    | _ ->
+    | _ -> (
         (* If packages from the same repo were resolved to different URLs, we need to pick
            a single one. Here we decided to go with the one associated with the package
            that has the higher version. We need a better long term solution as this won't
@@ -147,14 +168,31 @@ module Repo = struct
            The best solution here would be to use source trimming, so we can pull each individual
            package to its own directory and strip out all the unrelated source code but we would
            need dune to provide that feature. *)
-        let highest_version_package =
-          List.max_exn packages ~compare:(fun p p' ->
-              OpamPackage.Version.compare p.Package.opam.version p'.opam.version)
-        in
-        log_url_selection ~dev_repo ~packages ~highest_version_package;
-        let url = highest_version_package.url in
-        let hashes = highest_version_package.hashes in
-        { dir; url; hashes; provided_packages }
+        match List.filter ~f:Package.is_pinned packages with
+        | [] ->
+            let highest_version_package =
+              List.max_exn packages ~compare:(fun p p' ->
+                  OpamPackage.Version.compare p.Package.opam.version
+                    p'.opam.version)
+            in
+            log_url_selection ~dev_repo ~packages
+              ~reason:(`Highest_version highest_version_package);
+            let url = highest_version_package.url in
+            let hashes = highest_version_package.hashes in
+            { dir; url; hashes; provided_packages }
+        | pinned :: pinneds ->
+            if
+              not
+                (List.for_all pinneds ~f:(fun p ->
+                     String.equal pinned.Package.dev_repo p.Package.dev_repo
+                     && (* not necessary? *)
+                     Url.equal Git.Ref.equal pinned.url p.url))
+            then failwith "multiple pinned packages for same dir";
+            log_url_selection ~dev_repo ~packages
+              ~reason:(`Pinned (pinned :: pinneds));
+            let url = pinned.url in
+            let hashes = pinned.hashes in
+            { dir; url; hashes; provided_packages })
 
   let equal equal_ref t t' =
     let { dir; url; hashes; provided_packages } = t in

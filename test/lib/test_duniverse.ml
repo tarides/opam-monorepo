@@ -23,14 +23,15 @@ let opam_factory ~name ~version =
   OpamPackage.create name version
 
 let summary_factory ?(name = "undefined") ?(version = "1") ?dev_repo ?url_src
-    ?(hashes = []) ?(depexts = []) () =
+    ?(hashes = []) ?(depexts = []) ?(pinned = false) () =
   let package = opam_factory ~name ~version in
-  { Opam.Package_summary.package; dev_repo; url_src; hashes; depexts }
+  { Opam.Package_summary.package; dev_repo; url_src; hashes; depexts; pinned }
 
 let dependency_factory ?(vendored = true) ?name ?version ?dev_repo ?url_src
-    ?hashes ?depexts () =
+    ?hashes ?depexts ?pinned () =
   let package_summary =
-    summary_factory ?name ?version ?dev_repo ?url_src ?hashes ?depexts ()
+    summary_factory ?name ?version ?dev_repo ?url_src ?hashes ?depexts ?pinned
+      ()
   in
   { Opam.Dependency_entry.vendored; package_summary }
 
@@ -75,6 +76,7 @@ module Repo = struct
                     dev_repo = "d";
                     url = Other "u";
                     hashes = [];
+                    pinned = false;
                   }))
           ();
         make_test ~name:"Uses default branch when no tag"
@@ -92,16 +94,17 @@ module Repo = struct
                     dev_repo = "d";
                     url = Git { repo = "r"; ref = "master" };
                     hashes = [];
+                    pinned = false;
                   }))
           ();
       ]
   end
 
   let package_factory ?(name = "") ?(version = "") ?(dev_repo = "")
-      ?(url = Duniverse.Repo.Url.Other "") ?(hashes = []) () =
+      ?(url = Duniverse.Repo.Url.Other "") ?(hashes = []) ?(pinned = false) () =
     let open Duniverse.Repo.Package in
     let opam = opam_factory ~name ~version in
-    { opam; dev_repo; url; hashes }
+    { opam; dev_repo; url; hashes; pinned }
 
   let test_from_packages =
     let make_test ~name ~dev_repo ~packages ~expected () =

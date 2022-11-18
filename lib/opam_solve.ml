@@ -86,7 +86,7 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
     }
 
   let validate_candidate ~allow_jbuilder ~must_cross_compile ~require_dune ~name
-      ~version opam_file =
+      ~version ~pinned opam_file =
     (* this function gets called way too often.. memoize? *)
     let pkg = OpamPackage.create name version in
     let depends = OpamFile.OPAM.depends opam_file in
@@ -95,7 +95,7 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
       Opam.depends_on_dune ~allow_jbuilder depends
       || Opam.depends_on_dune ~allow_jbuilder depopts
     in
-    let summary = Opam.Package_summary.from_opam pkg opam_file in
+    let summary = Opam.Package_summary.from_opam ~pinned pkg opam_file in
     let is_valid_dune_wise =
       Opam.Package_summary.is_base_package summary
       || Opam.Package_summary.is_virtual summary
@@ -141,18 +141,36 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
     OpamFile.OPAM.with_depends depends opam_file
 
   let filter_candidates ~allow_jbuilder ~must_cross_compile ~require_dune ~name
-      versions =
-    List.map
-      ~f:(fun (version, result) ->
-        match result with
-        | Error r -> (version, Error (Base_rejection r))
-        | Ok opam_file ->
-            let res =
-              validate_candidate ~allow_jbuilder ~must_cross_compile
-                ~require_dune ~name ~version opam_file
-            in
-            (version, res))
-      versions
+      ~fixed_packages versions =
+    match OpamPackage.Name.Map.find_opt name fixed_packages with
+    | Some (version, opam) ->
+        List.map
+          ~f:(fun (version, result) ->
+            match result with
+            | Error r -> (version, Error (Base_rejection r))
+            | Ok opam_file ->
+                assert (OpamFile.OPAM.equal opam opam_file);
+                let res =
+                  validate_candidate ~allow_jbuilder ~must_cross_compile
+                    ~require_dune ~name ~version ~pinned:true opam_file
+                in
+                (version, res))
+          (List.filter
+             ~f:(fun (version', _) ->
+               OpamPackage.Version.equal version version')
+             versions)
+    | None ->
+        List.map
+          ~f:(fun (version, result) ->
+            match result with
+            | Error r -> (version, Error (Base_rejection r))
+            | Ok opam_file ->
+                let res =
+                  validate_candidate ~allow_jbuilder ~must_cross_compile
+                    ~require_dune ~name ~version ~pinned:false opam_file
+                in
+                (version, res))
+          versions
 
   let remove_opam_provided ~opam_provided versions =
     match OpamPackage.Name.Set.is_empty opam_provided with
@@ -223,7 +241,7 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
           OpamPackage.Name.Map.find_opt name preferred_versions
         in
         filter_candidates ~allow_jbuilder ~must_cross_compile ~require_dune
-          ~name candidates
+          ~name ~fixed_packages candidates
         |> remove_opam_provided ~opam_provided
         |> demote_candidates_to_avoid
         |> promote_version preferred_version
@@ -538,11 +556,12 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
             | true -> (pkg_name, version_restriction) :: unavailable))
       rolemap []
 
-  let get_opam_info ~context { package; vendored } =
+  let get_opam_info ~context ~pin_depends { package; vendored } =
     match Context.opam_file context package with
     | Ok opam_file ->
+        let pinned = OpamPackage.Name.Map.mem package.name pin_depends in
         let package_summary =
-          Opam.Package_summary.from_opam package opam_file
+          Opam.Package_summary.from_opam package opam_file ~pinned
         in
         Opam.Dependency_entry.{ package_summary; vendored }
     | Error (`Msg msg) ->
@@ -610,7 +629,7 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
         l "%aQuerying opam database for their metadata and Dune compatibility."
           Pp.Styled.header ());
 
-    Ok (List.map ~f:(get_opam_info ~context) deps)
+    Ok (List.map ~f:(get_opam_info ~context ~pin_depends) deps)
 end
 
 type explicit_repos = string list

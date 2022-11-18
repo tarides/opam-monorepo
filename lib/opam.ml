@@ -187,27 +187,29 @@ module Package_summary = struct
     hashes : OpamHash.t list;
     dev_repo : string option;
     depexts : (OpamSysPkg.Set.t * OpamTypes.filter) list;
+    pinned : bool;
   }
 
-  let equal { package; url_src; hashes; dev_repo; depexts } t' =
+  let equal { package; url_src; hashes; dev_repo; depexts; pinned } t' =
     OpamPackage.equal package t'.package
     && Option.equal Url.equal url_src t'.url_src
     && List.equal Hash.equal hashes t'.hashes
     && Option.equal String.equal dev_repo t'.dev_repo
     && Depexts.equal depexts t'.depexts
+    && Bool.equal pinned t'.pinned
 
-  let pp fmt { package; url_src; hashes; dev_repo; depexts } =
+  let pp fmt { package; url_src; hashes; dev_repo; depexts; pinned } =
     let open Pp_combinators.Ocaml in
     Format.fprintf fmt
       "@[<hov 2>{ name = %a;@ version = %a;@ url_src = %a;@ hashes = %a;@ \
-       dev_repo = %a;@ depexts = %a }@]"
+       dev_repo = %a;@ depexts = %a;@ pinned = %b }@]"
       Pp.package_name package.name Pp.version package.version
       (option ~brackets:true Url.pp)
       url_src (list Hash.pp) hashes
       (option ~brackets:true string)
-      dev_repo Depexts.pp depexts
+      dev_repo Depexts.pp depexts pinned
 
-  let from_opam package opam_file =
+  let from_opam package ~pinned opam_file =
     let url_field = OpamFile.OPAM.url opam_file in
     let url_src = Option.map ~f:Url.from_opam_field url_field in
     let hashes =
@@ -217,7 +219,7 @@ module Package_summary = struct
       Option.map ~f:OpamUrl.to_string (OpamFile.OPAM.dev_repo opam_file)
     in
     let depexts = OpamFile.OPAM.depexts opam_file in
-    { package; url_src; hashes; dev_repo; depexts }
+    { package; url_src; hashes; dev_repo; depexts; pinned }
 
   let is_virtual = function
     | { url_src = None; _ } -> true
