@@ -19,6 +19,8 @@
   status of the packages (#258, #323, @RyanGibb, @Julow)
 - Take `archive-mirrors` from the global opam configuration into account to
   allow more local caches (#337, @hannesm)
+- Log at WARN level when opam-monorepo chooses a source for a package that
+  doesn't match the package's version (#352, @reynir)
 
 ### Removed
 

@@ -109,7 +109,7 @@ module Repo = struct
         version (url_to_string url)
     in
     let sep fmt () = Format.fprintf fmt "\n" in
-    Logs.info (fun l ->
+    Logs.warn (fun l ->
         l
           "The following packages come from the same repository %s but are \
            associated with different URLs:\n\
