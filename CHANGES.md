@@ -1,13 +1,9 @@
-## unreleased
+## 0.3.4
 
 ### Added
 
 - Add support for specifying remote URLs in `x-opam-monorepo-repositories`
   (#284, #317, @Leonidas-from-XIV)
-
-### Changed
-
-### Deprecated
 
 ### Fixed
 
@@ -21,10 +17,6 @@
   allow more local caches (#337, @hannesm)
 - Log at WARN level when opam-monorepo chooses a source for a package that
   doesn't match the package's version (#352, @reynir)
-
-### Removed
-
-### Security
 
 ## 0.3.3
 
