@@ -1,0 +1,8 @@
+opam-version: "2.0"
+synopsis: "Dummy package for testing"
+maintainer: ["marek@tarides.com"]
+authors: ["Marek Kubica"]
+dev-repo: "git+http://example.com/opam-monorepo-test-other"
+depends: [
+  "dune"
+]
