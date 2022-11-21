@@ -24,5 +24,4 @@ We lock and expect the OS package to be part of the locked Opam file.
 Then we want to make sure `depext` works. Given the fantasy package does not
 exist, `depext` should not install any packages but still work successfully:
 
-  $ opam-monorepo depext --dry-run
-  ==> Using lockfile $TESTCASE_ROOT/depext.opam.locked
+  $ opam-monorepo depext --dry-run > /dev/null
