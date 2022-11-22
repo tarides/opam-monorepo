@@ -17,21 +17,25 @@ module Testable = struct
   end
 end
 
+module Flag = struct
+  let compiler = OpamTypes.Pkgflag_Compiler
+  let conf = OpamTypes.Pkgflag_Conf
+end
+
 let opam_factory ~name ~version =
   let name = OpamPackage.Name.of_string name in
   let version = OpamPackage.Version.of_string version in
   OpamPackage.create name version
 
 let summary_factory ?(name = "undefined") ?(version = "1") ?dev_repo ?url_src
-    ?(hashes = []) ?(depexts = []) () =
+    ?(hashes = []) ?(depexts = []) ?(flags = []) () =
   let package = opam_factory ~name ~version in
-  let flags = [] in
   { Opam.Package_summary.package; dev_repo; url_src; hashes; depexts; flags }
 
 let dependency_factory ?(vendored = true) ?name ?version ?dev_repo ?url_src
-    ?hashes ?depexts () =
+    ?hashes ?depexts ?flags () =
   let package_summary =
-    summary_factory ?name ?version ?dev_repo ?url_src ?hashes ?depexts ()
+    summary_factory ?name ?version ?dev_repo ?url_src ?hashes ?depexts ?flags ()
   in
   { Opam.Dependency_entry.vendored; package_summary }
 
@@ -273,6 +277,22 @@ let test_from_dependency_entries =
              };
            ])
       ();
+    make_test ~name:"Excludes compilers"
+      ~dependency_entries:
+        [
+          dependency_factory ~name:"mycaml" ~version:"5" ~url_src:(Other "u")
+            ~dev_repo:"d" ~flags:[ Flag.compiler ] ();
+        ]
+      ~expected:(Ok []) ();
+    make_test ~name:"Excludes anything that is a compiler"
+      ~dependency_entries:
+        [
+          dependency_factory ~name:"conf-mycaml" ~version:"5"
+            ~url_src:(Other "u") ~dev_repo:"d"
+            ~flags:[ Flag.compiler; Flag.conf ]
+            ();
+        ]
+      ~expected:(Ok []) ();
   ]
 
 let suite =
