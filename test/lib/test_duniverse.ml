@@ -108,9 +108,7 @@ module Repo = struct
       let test_name = Printf.sprintf "Repo.from_packages: %s" name in
       let test_fun () =
         let dev_repo = Dev_repo.from_string dev_repo in
-        let actual =
-          Duniverse_lib.Duniverse.Repo.from_packages ~dev_repo packages
-        in
+        let actual = Duniverse.Repo.from_packages ~dev_repo packages in
         Alcotest.(check Testable.Repo.unresolved) test_name expected actual
       in
       (test_name, `Quick, test_fun)
@@ -209,8 +207,7 @@ let test_from_dependency_entries =
     let test_name = Printf.sprintf "from_dependency_entries: %s" name in
     let test_fun () =
       let actual =
-        Duniverse_lib.Duniverse.from_dependency_entries ~get_default_branch
-          dependency_entries
+        Duniverse.from_dependency_entries ~get_default_branch dependency_entries
       in
       Alcotest.(check (result (list Testable.Repo.unresolved) Testable.r_msg))
         test_name expected actual
