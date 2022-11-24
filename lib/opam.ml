@@ -130,12 +130,6 @@ module Hash = struct
 end
 
 module Depexts = struct
-  let equal t t' =
-    List.equal
-      (fun (pkg_set, filter) (pkg_set', filter') ->
-        OpamSysPkg.Set.equal pkg_set pkg_set' && filter = filter')
-      t t'
-
   let pp fmt t =
     let pp_filter fmt filter =
       Format.fprintf fmt "%s" (OpamFilter.to_string filter)
@@ -188,13 +182,6 @@ module Package_summary = struct
     dev_repo : string option;
     depexts : (OpamSysPkg.Set.t * OpamTypes.filter) list;
   }
-
-  let equal { package; url_src; hashes; dev_repo; depexts } t' =
-    OpamPackage.equal package t'.package
-    && Option.equal Url.equal url_src t'.url_src
-    && List.equal Hash.equal hashes t'.hashes
-    && Option.equal String.equal dev_repo t'.dev_repo
-    && Depexts.equal depexts t'.depexts
 
   let pp fmt { package; url_src; hashes; dev_repo; depexts } =
     let open Pp_combinators.Ocaml in

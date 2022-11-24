@@ -22,7 +22,6 @@ module Package_summary : sig
     depexts : (OpamSysPkg.Set.t * OpamTypes.filter) list;
   }
 
-  val equal : t -> t -> bool
   val pp : t Fmt.t
   val from_opam : OpamPackage.t -> OpamFile.OPAM.t -> t
 
