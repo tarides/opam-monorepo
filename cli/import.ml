@@ -1,2 +1,2 @@
 include Stdext
-include Duniverse_lib
+module D = Duniverse_lib

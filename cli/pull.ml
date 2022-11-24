@@ -1,6 +1,6 @@
 open Import
 
-let min_dune_ver = Dune_file.Lang.duniverse_minimum_version
+let min_dune_ver = D.Dune_file.Lang.duniverse_minimum_version
 
 let should_update_lang ~yes () =
   Prompt.confirm
@@ -9,37 +9,37 @@ let should_update_lang ~yes () =
 
 let log_version_update ~dune_project_path =
   Common.Logs.app (fun l ->
-      l "Setting dune language version to %a in %a" Dune_file.Lang.pp_version
-        min_dune_ver Pp.Styled.path dune_project_path)
+      l "Setting dune language version to %a in %a" D.Dune_file.Lang.pp_version
+        min_dune_ver D.Pp.Styled.path dune_project_path)
 
 let suggest_updating_version ~yes ~version ~dune_project_path ~content =
-  let pp_current = Pp.Styled.bad Dune_file.Lang.pp_version in
-  let pp_required = Pp.Styled.good Dune_file.Lang.pp_version in
+  let pp_current = D.Pp.Styled.bad D.Dune_file.Lang.pp_version in
+  let pp_required = D.Pp.Styled.good D.Dune_file.Lang.pp_version in
   Common.Logs.app (fun l ->
       l "You are using version %a of the dune language" pp_current version);
   Common.Logs.app (fun l ->
       l "Duniverse requires version %a or above" pp_required min_dune_ver);
   if should_update_lang ~yes () then (
-    let updated = Dune_file.Lang.update ~version:min_dune_ver content in
+    let updated = D.Dune_file.Lang.update ~version:min_dune_ver content in
     log_version_update ~dune_project_path;
     Bos.OS.File.write dune_project_path updated)
   else Ok ()
 
 let check_dune_lang_version ~yes ~root =
   let open Result.O in
-  let dune_project_path = Project.dune_project root in
+  let dune_project_path = D.Project.dune_project root in
   Logs.debug (fun l ->
-      l "Looking for dune-project file in %a" Pp.Styled.path dune_project_path);
+      l "Looking for dune-project file in %a" D.Pp.Styled.path dune_project_path);
   let* found_dune_project = Bos.OS.File.exists dune_project_path in
   if found_dune_project then
     let* content = Bos.OS.File.read dune_project_path in
-    match Dune_file.Lang.from_content content with
+    match D.Dune_file.Lang.from_content content with
     | Error (`Msg msg) ->
         Logs.warn (fun l -> l "%s" msg);
         Ok ()
     | Ok version -> (
         let compared =
-          Dune_file.Lang.(compare_version version duniverse_minimum_version)
+          D.Dune_file.Lang.(compare_version version duniverse_minimum_version)
         in
         match Ordering.of_int compared with
         | Eq | Gt -> Ok ()
@@ -53,7 +53,7 @@ let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
     (`Keep_git_dir keep_git_dir) (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
   let* lockfile = Common.find_lockfile ~explicit_lockfile root in
-  let* duniverse = Lockfile.to_duniverse lockfile in
+  let* duniverse = D.Lockfile.to_duniverse lockfile in
   match duniverse with
   | [] ->
       Common.Logs.app (fun l ->
@@ -67,20 +67,20 @@ let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
       let* () = check_dune_lang_version ~yes ~root in
       OpamGlobalState.with_ `Lock_none @@ fun global_state ->
       let* locked_ocaml_version =
-        Lockfile.ocaml_version lockfile
+        D.Lockfile.ocaml_version lockfile
         |> Result.of_option ~error:(`Msg "OCaml compiler not in lockfile")
       in
       OpamSwitchState.with_ `Lock_none global_state @@ fun switch_state ->
       let switch_ocaml_version =
-        OpamSwitchState.get_package switch_state Config.compiler_package_name
+        OpamSwitchState.get_package switch_state D.Config.compiler_package_name
         |> OpamPackage.version
       in
       let* pulled =
-        Pull.duniverse ~global_state ~root ~full ~trim_clone:(not keep_git_dir)
-          duniverse
+        D.Pull.duniverse ~global_state ~root ~full
+          ~trim_clone:(not keep_git_dir) duniverse
       in
       (match
-         Opam.version_is_at_least locked_ocaml_version switch_ocaml_version
+         D.Opam.version_is_at_least locked_ocaml_version switch_ocaml_version
        with
       | true -> ()
       | false ->
@@ -91,10 +91,10 @@ let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
                  in switch.\n\
                  You might want to change the compiler version of your switch \
                  accordingly:\n\
-                 opam install %a.%a --update-invariant" Opam.Pp.version
-                locked_ocaml_version Opam.Pp.version switch_ocaml_version
-                Opam.Pp.package_name Config.compiler_package_name
-                Opam.Pp.version locked_ocaml_version));
+                 opam install %a.%a --update-invariant" D.Opam.Pp.version
+                locked_ocaml_version D.Opam.Pp.version switch_ocaml_version
+                D.Opam.Pp.package_name D.Config.compiler_package_name
+                D.Opam.Pp.version locked_ocaml_version));
       Ok pulled
 
 let info =

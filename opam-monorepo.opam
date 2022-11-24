@@ -10,11 +10,11 @@ authors: [
   "Anil Madhavapeddy" "Nathan Rebours" "Lucas Pluvinage" "Jules Aguillon"
 ]
 license: "ISC"
-homepage: "https://github.com/ocamllabs/opam-monorepo"
-doc: "https://ocamllabs.github.io/opam-monorepo"
-bug-reports: "https://github.com/ocamllabs/opam-monorepo/issues"
+homepage: "https://github.com/tarides/opam-monorepo"
+doc: "https://tarides.github.io/opam-monorepo"
+bug-reports: "https://github.com/tarides/opam-monorepo/issues"
 depends: [
-  "dune" {>= "2.7"}
+  "dune" {>= "3.5"}
   "ocaml" {>= "4.10.0"}
   "dune-build-info"
   "base"
@@ -36,6 +36,6 @@ conflicts: [
   "dune-build-info" {= "2.7.0" | = "2.7.1"}
   "dune-configurator" {= "2.7.0" | = "2.7.1"}
 ]
-dev-repo: "git+https://github.com/ocamllabs/opam-monorepo.git"
+dev-repo: "git+https://github.com/tarides/opam-monorepo.git"
 build: [ "dune" "build" "-p" name "-j" jobs "@install" "@runtest" {with-test} ]
 flags: [ plugin ]

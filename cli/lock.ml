@@ -34,7 +34,7 @@ end = struct
     let parse s = Ok (from_string s) in
     Cmdliner.Arg.conv ~docv:"PACKAGE" (parse, pp)
 
-  let pp_styled ppf t = Fmt.to_to_string pp t |> Pp.Styled.package_name ppf
+  let pp_styled ppf t = Fmt.to_to_string pp t |> D.Pp.Styled.package_name ppf
 end
 
 let check_target_packages packages =
@@ -49,10 +49,10 @@ let check_target_packages packages =
   | _ ->
       Common.Logs.app (fun l ->
           l "Using %d locally scanned package%a as the target%a." count
-            Pp.plural_int count Pp.plural_int count);
+            D.Pp.plural_int count D.Pp.plural_int count);
       Logs.info (fun l ->
-          l "Target package%a: %a." Pp.plural_int count
-            Fmt.(set ~sep:(any ",@ ") Opam.Pp.package_name)
+          l "Target package%a: %a." D.Pp.plural_int count
+            Fmt.(set ~sep:(any ",@ ") D.Opam.Pp.package_name)
             packages);
       Ok ()
 
@@ -63,15 +63,15 @@ let opam_to_git_remote remote =
 
 let compute_duniverse ~dependency_entries =
   let get_default_branch remote =
-    Exec.git_default_branch ~remote:(opam_to_git_remote remote) ()
+    D.Exec.git_default_branch ~remote:(opam_to_git_remote remote) ()
   in
-  Duniverse.from_dependency_entries ~get_default_branch dependency_entries
+  D.Duniverse.from_dependency_entries ~get_default_branch dependency_entries
 
 let resolve_ref deps =
   let resolve_ref ~repo ~ref =
-    Exec.git_resolve ~remote:(opam_to_git_remote repo) ~ref
+    D.Exec.git_resolve ~remote:(opam_to_git_remote repo) ~ref
   in
-  Duniverse.resolve ~resolve_ref deps
+  D.Duniverse.resolve ~resolve_ref deps
 
 let current_repos ~switch_state =
   let repo_state = switch_state.OpamStateTypes.switch_repos in
@@ -82,7 +82,7 @@ let current_repos ~switch_state =
 
 let is_duniverse_repo repo_url =
   let url = OpamUrl.to_string repo_url in
-  String.equal url Config.duniverse_opam_repo
+  String.equal url D.Config.duniverse_opam_repo
 
 let check_dune_universe_repo ~repositories non_dune_packages =
   let dune_universe_is_configured =
@@ -101,8 +101,8 @@ let check_dune_universe_repo ~repositories non_dune_packages =
            opam repository add dune-universe %s"
           Fmt.(styled `Bold string)
           "opam monorepo lock"
-          Fmt.(list ~sep:comma Opam.Pp.package_name)
-          non_dune_packages Config.duniverse_opam_repo)
+          Fmt.(list ~sep:comma D.Opam.Pp.package_name)
+          non_dune_packages D.Config.duniverse_opam_repo)
 
 let read_opam fpath =
   let filename =
@@ -117,7 +117,7 @@ let local_paths_to_opam_map local_paths =
   let bindings = OpamPackage.Name.Map.bindings local_paths in
   Result.List.map bindings ~f:(fun (name, (explicit_version, path)) ->
       let+ opam_file = read_opam path in
-      let version = Opam.local_package_version opam_file ~explicit_version in
+      let version = D.Opam.local_package_version opam_file ~explicit_version in
       (name, (version, opam_file)))
   >>| OpamPackage.Name.Map.of_list
 
@@ -133,7 +133,7 @@ let lockfile_path ~explicit_lockfile ~target_packages repo =
   match explicit_lockfile with
   | Some path -> Ok path
   | None ->
-      Project.lockfile
+      D.Project.lockfile
         ~target_packages:(OpamPackage.Name.Set.elements target_packages)
         repo
       |> Result.map_error ~f:(function `Msg msg ->
@@ -148,7 +148,7 @@ let root_pin_depends local_opam_files =
     (fun _pkg (_version, opam_file) acc ->
       OpamFile.OPAM.pin_depends opam_file @ acc)
     local_opam_files []
-  |> Pin_depends.sort_uniq
+  |> D.Pin_depends.sort_uniq
 
 let pull_pin_depends ~global_state pin_depends =
   let open Result.O in
@@ -159,7 +159,9 @@ let pull_pin_depends ~global_state pin_depends =
         l "Pulling pin depends: %a"
           Fmt.(list ~sep:(any " ") Fmt.(styled `Yellow string))
           (List.map ~f:(fun (pkg, _) -> OpamPackage.to_string pkg) pin_depends));
-    let by_urls = OpamUrl.Map.bindings (Pin_depends.group_by_url pin_depends) in
+    let by_urls =
+      OpamUrl.Map.bindings (D.Pin_depends.group_by_url pin_depends)
+    in
     let elm_from_pkg ~dir ~url pkg =
       let opam_path =
         Fpath.(dir / OpamPackage.name_to_string pkg |> add_ext "opam")
@@ -172,7 +174,7 @@ let pull_pin_depends ~global_state pin_depends =
       let label = Filename.remove_extension (OpamUrl.basename url) in
       let dir = Fpath.(pins_tmp_dir / label) in
       let open OpamProcess.Job.Op in
-      Opam.pull_tree ~url ~hashes:[] ~dir global_state @@| fun result ->
+      D.Opam.pull_tree ~url ~hashes:[] ~dir global_state @@| fun result ->
       let* () = result in
       Result.List.map ~f:(elm_from_pkg ~dir ~url) pkgs
     in
@@ -198,7 +200,7 @@ let could_not_determine_version offending_packages =
       | `Lt -> Fmt.pf fmt "<"
       | `Neq -> Fmt.pf fmt "!="
     in
-    Fmt.str "%a %a" pp_relop relop Opam.Pp.version version
+    Fmt.str "%a %a" pp_relop relop D.Opam.Pp.version version
   in
   let s = OpamFormula.string_of_formula f in
   let pp_version_formula = Fmt.using s Fmt.string in
@@ -206,21 +208,21 @@ let could_not_determine_version offending_packages =
     ~f:(fun (name, formula) ->
       Logs.err (fun l ->
           l "There is no eligible version of %a that matches %a"
-            Opam.Pp.package_name name pp_version_formula formula))
+            D.Opam.Pp.package_name name pp_version_formula formula))
     offending_packages
 
 let interpret_solver_error ~repositories solver = function
   | `Msg _ as err -> err
   | `Diagnostics d ->
-      (match Opam_solve.unavailable_versions_due_to_constraints solver d with
+      (match D.Opam_solve.unavailable_versions_due_to_constraints solver d with
       | [] -> ()
       | offending_packages -> could_not_determine_version offending_packages);
-      (match Opam_solve.not_buildable_with_dune solver d with
+      (match D.Opam_solve.not_buildable_with_dune solver d with
       | [] -> ()
       | offending_packages ->
           check_dune_universe_repo ~repositories offending_packages);
       let verbose = display_verbose_diagnostics (Logs.level ()) in
-      Opam_solve.diagnostics_message ~verbose solver d
+      D.Opam_solve.diagnostics_message ~verbose solver d
 
 let dirname_of_fpath fpath =
   fpath |> Fpath.to_string |> OpamFilename.Dir.of_string
@@ -247,7 +249,7 @@ let git_permanent_url (url : OpamUrl.t) version =
 let make_repository_locally_available url =
   let open OpamProcess.Job.Op in
   match OpamUrl.local_dir url with
-  | Some path when Opam.Url.is_local_filesystem url ->
+  | Some path when D.Opam.Url.is_local_filesystem url ->
       let packages =
         OpamFilename.Dir.to_string OpamFilename.Op.(path / "packages")
       in
@@ -272,7 +274,7 @@ let make_repository_locally_available url =
             Rresult.R.error_msgf
               "Only git and local file systems (file://) are supported at the \
                moment, got %a"
-              Opam.Pp.url url
+              D.Opam.Pp.url url
       in
       match url_result with
       | Error _ as e -> Done e
@@ -303,7 +305,7 @@ let opam_env_from_global_state global_state =
     vars String.Map.empty
 
 let extract_opam_env ~source_config global_state =
-  match (source_config : Source_opam_config.t) with
+  match (source_config : D.Source_opam_config.t) with
   | { global_vars = Some env; _ } -> env
   | { global_vars = None; _ } -> opam_env_from_global_state global_state
 
@@ -314,15 +316,15 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
   OpamGlobalState.with_ `Lock_none (fun global_state ->
       let opam_provided =
         Option.value ~default:OpamPackage.Name.Set.empty
-          source_config.Source_opam_config.opam_provided
+          source_config.D.Source_opam_config.opam_provided
       in
       let* pin_depends = get_pin_depends ~global_state local_opam_files in
-      match (source_config : Source_opam_config.t) with
+      match (source_config : D.Source_opam_config.t) with
       | { repositories = Some repositories; _ } ->
           let repositories = OpamUrl.Set.elements repositories in
           Logs.info (fun l ->
               l "Solve using explicit repositories:\n%a"
-                Fmt.(list ~sep:(const char '\n') Opam.Pp.url)
+                Fmt.(list ~sep:(const char '\n') D.Opam.Pp.url)
                 repositories);
           let* local_repos = make_repositories_locally_available repositories in
           let local_repo_dirs, source_config =
@@ -334,9 +336,9 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
             (local_repo_dirs, source_config)
           in
           let opam_env = extract_opam_env ~source_config global_state in
-          let solver = Opam_solve.explicit_repos_solver in
+          let solver = D.Opam_solve.explicit_repos_solver in
           let dependency_entries =
-            Opam_solve.calculate ~build_only ~allow_jbuilder
+            D.Opam_solve.calculate ~build_only ~allow_jbuilder
               ~require_cross_compile ~preferred_versions ~local_opam_files
               ~target_packages ~opam_provided ~pin_depends ?ocaml_version solver
               (opam_env, local_repo_dirs)
@@ -351,9 +353,9 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
               Logs.info (fun l ->
                   l "Solve using current opam switch: %s"
                     (OpamSwitch.to_string switch_state.switch));
-              let solver = Opam_solve.local_opam_config_solver in
+              let solver = D.Opam_solve.local_opam_config_solver in
               let dependency_entries =
-                Opam_solve.calculate ~build_only ~allow_jbuilder
+                D.Opam_solve.calculate ~build_only ~allow_jbuilder
                   ~require_cross_compile ~preferred_versions ~local_opam_files
                   ~target_packages ~opam_provided ~pin_depends ?ocaml_version
                   solver switch_state
@@ -377,7 +379,7 @@ let select_explicitly_specified ~local_packages ~explicitly_specified =
   |> Result.map_error ~f:(fun missing_packages ->
          let msg =
            Fmt.str "Package%a %a specified but not found in repository"
-             Pp.plural missing_packages
+             D.Pp.plural missing_packages
              Fmt.(list ~sep:comma Package_argument.pp_styled)
              missing_packages
          in
@@ -402,7 +404,7 @@ let warn_duplicate_paths ~packages duplicates =
     Fmt.pf fmt
       "Package %a is defined multiple times in the repository:\n\
        %a\n\
-       We kept %a and discarded the others" Opam.Pp.package_name name pp_paths
+       We kept %a and discarded the others" D.Opam.Pp.package_name name pp_paths
       duplicate_paths Fpath.pp taken
   in
   OpamPackage.Name.Map.iter
@@ -462,14 +464,14 @@ let target_packages ~local_packages ~recurse ~explicitly_specified repo =
 
 let log_local_packages pkgs =
   let pp_one fmt (name, path) =
-    Format.fprintf fmt "%a:%a" Opam.Pp.package_name name Fpath.pp path
+    Format.fprintf fmt "%a:%a" D.Opam.Pp.package_name name Fpath.pp path
   in
   Logs.debug (fun l ->
       l "Detected local packages:@ %a" Fmt.(list ~sep:sp pp_one) pkgs)
 
 let local_packages ~versions repo =
   let open Result.O in
-  let+ local_packages_path = Project.all_local_packages repo in
+  let+ local_packages_path = D.Project.all_local_packages repo in
   log_local_packages local_packages_path;
   package_version_map ~versions local_packages_path
 
@@ -483,12 +485,12 @@ let preferred_versions ~minimal_update ~root target_lockfile =
         target_lockfile
     else
       let+ lockfile =
-        Lockfile.load ~opam_monorepo_cwd:root ~file:target_lockfile
+        D.Lockfile.load ~opam_monorepo_cwd:root ~file:target_lockfile
       in
-      let depends = Lockfile.depends lockfile in
+      let depends = D.Lockfile.depends lockfile in
       let name_to_version_map =
         List.fold_left depends ~init:OpamPackage.Name.Map.empty
-          ~f:(fun acc { Lockfile.Depends.package; _ } ->
+          ~f:(fun acc { D.Lockfile.Depends.package; _ } ->
             OpamPackage.Name.Map.add package.name package.version acc)
       in
       name_to_version_map
@@ -502,10 +504,12 @@ let extract_source_config ~adjustment ~opam_monorepo_cwd ~opam_files
   in
   let* source_config_list =
     Result.List.map target_opam_files
-      ~f:(Source_opam_config.get ~opam_monorepo_cwd)
+      ~f:(D.Source_opam_config.get ~opam_monorepo_cwd)
   in
-  let* local_opam_files_config = Source_opam_config.merge source_config_list in
-  Source_opam_config.make ~opam_monorepo_cwd ~adjustment
+  let* local_opam_files_config =
+    D.Source_opam_config.merge source_config_list
+  in
+  D.Source_opam_config.make ~opam_monorepo_cwd ~adjustment
     ~local_opam_files_config
 
 let raw_cli_args () =
@@ -543,19 +547,20 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
   let* duniverse = compute_duniverse ~dependency_entries >>= resolve_ref in
   let target_depexts = target_depexts opam_files target_packages in
   let lockfile =
-    Lockfile.create ~source_config ~root_packages:target_packages
+    D.Lockfile.create ~source_config ~root_packages:target_packages
       ~dependency_entries ~root_depexts:target_depexts ~duniverse ()
   in
   let cli_args = raw_cli_args () in
   let* () =
-    Lockfile.save ~opam_monorepo_cwd:root ~cli_args ~file:lockfile_path lockfile
+    D.Lockfile.save ~opam_monorepo_cwd:root ~cli_args ~file:lockfile_path
+      lockfile
   in
   Common.Logs.app (fun l ->
       l
         "Wrote lockfile with %a entries to %a. You can now run %a to fetch \
          their sources."
         Fmt.(styled `Green int)
-        (List.length duniverse) Pp.Styled.path
+        (List.length duniverse) D.Pp.Styled.path
         (Fpath.normalize lockfile_path)
         Fmt.(styled `Blue string)
         "opam monorepo pull");
@@ -566,7 +571,7 @@ open Cmdliner
 let config_adjustment =
   Common.Arg.named
     (fun x -> `Config_adjustment x)
-    Source_opam_config.cli_adjustment
+    D.Source_opam_config.cli_adjustment
 
 let recurse_opam =
   let doc =

@@ -26,7 +26,7 @@ module Opam : sig
     val pp : t Fmt.t
   end
 
-  module Make_Set (M : OpamStd.SET) (P : Printable with type t = M.elt) : sig
+  module Make_Set (M : OpamStd.SET) (_ : Printable with type t = M.elt) : sig
     val pp : ?sep:unit Fmt.t -> M.t Fmt.t
   end
 end

@@ -1,14 +1,14 @@
-(lang dune 2.7)
+(lang dune 3.5)
 (generate_opam_files true)
 (name opam-monorepo)
 
 (cram enable)
 
-(source (github ocamllabs/opam-monorepo))
+(source (github tarides/opam-monorepo))
 (license ISC)
 (authors "Anil Madhavapeddy" "Nathan Rebours" "Lucas Pluvinage" "Jules Aguillon")
 (maintainers "anil@recoil.org")
-(documentation "https://ocamllabs.github.io/opam-monorepo")
+(documentation "https://tarides.github.io/opam-monorepo")
 
 (package
  (name opam-monorepo)

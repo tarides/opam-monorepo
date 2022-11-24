@@ -108,11 +108,11 @@ module Logs = struct
   let app ?src f =
     Logs.app ?src (fun l ->
         f (fun ?header ?tags fmt ->
-            l ?header ?tags ("%a" ^^ fmt) Duniverse_lib.Pp.Styled.header ()))
+            l ?header ?tags ("%a" ^^ fmt) D.Pp.Styled.header ()))
 end
 
 (** Filters the duniverse according to the CLI provided list of repos *)
-let filter_duniverse ~to_consider (duniverse : Duniverse.t) =
+let filter_duniverse ~to_consider (duniverse : D.Duniverse.t) =
   match to_consider with
   | None -> Ok duniverse
   | Some to_consider -> (
@@ -139,7 +139,7 @@ let find_lockfile_aux ~explicit_lockfile repo =
   match explicit_lockfile with
   | Some file -> Ok file
   | None -> (
-      let* local_lockfiles = Project.local_lockfiles repo in
+      let* local_lockfiles = D.Project.local_lockfiles repo in
       match local_lockfiles with
       | [] ->
           Rresult.R.error_msg
@@ -150,7 +150,7 @@ let find_lockfile_aux ~explicit_lockfile repo =
           Rresult.R.error_msgf
             "Found several lockfiles: %a\n\
              Please pick one explicitly using the %a option"
-            (Fmt.list ~sep Pp.Styled.path)
+            (Fmt.list ~sep D.Pp.Styled.path)
             lockfile_paths
             Fmt.(styled `Bold string)
             "--lockfile")
@@ -159,5 +159,5 @@ let find_lockfile ~explicit_lockfile ?(quiet = false) root =
   let open Result.O in
   find_lockfile_aux ~explicit_lockfile root >>= fun file ->
   if not quiet then
-    Logs.app (fun l -> l "Using lockfile %a" Pp.Styled.path file);
-  Lockfile.load ~opam_monorepo_cwd:root ~file
+    Logs.app (fun l -> l "Using lockfile %a" D.Pp.Styled.path file);
+  D.Lockfile.load ~opam_monorepo_cwd:root ~file

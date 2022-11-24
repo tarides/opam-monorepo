@@ -1,5 +1,4 @@
 open Import
-open Duniverse
 
 type t = {
   name : OpamPackage.Name.t;
@@ -44,12 +43,12 @@ let pp ~max_name ~max_version ~short ppf t =
       Fmt.pf ppf "%a %a %s" pp_name padded_name pp_version padded_version
         (match t.descr with None -> "--" | Some d -> d)
 
-let pkgs_of_repo (t : resolved Repo.t) =
+let pkgs_of_repo (t : D.Duniverse.resolved D.Duniverse.Repo.t) =
   List.map
     ~f:(fun (pkg : OpamPackage.t) ->
       let name = pkg.name in
       let version = pkg.version in
-      let loc = Repo.Url.to_string t.url in
+      let loc = D.Duniverse.Repo.Url.to_string t.url in
       let pinned =
         match t.url with Git _ -> true | _ -> guess_pin ~version ~loc
       in
@@ -79,7 +78,7 @@ let with_descr pkgs =
 let run (`Root root) (`Lockfile explicit_lockfile) short () =
   let open Result.O in
   let* lockfile = Common.find_lockfile ~explicit_lockfile ~quiet:short root in
-  let+ duniverse = Lockfile.to_duniverse lockfile in
+  let+ duniverse = D.Lockfile.to_duniverse lockfile in
   let pkgs = pkgs_of_duniverse duniverse in
   let pkgs = with_descr pkgs in
   let max_name, max_version =
@@ -94,8 +93,8 @@ let run (`Root root) (`Lockfile explicit_lockfile) short () =
   let pp = pp ~max_name ~max_version ~short in
   if not short then
     Common.Logs.app (fun l ->
-        let duniverse = Fpath.(v (Sys.getcwd ()) // Config.vendor_dir / "") in
-        l "The vendor directory is %a" Pp.Styled.path duniverse);
+        let duniverse = Fpath.(v (Sys.getcwd ()) // D.Config.vendor_dir / "") in
+        l "The vendor directory is %a" D.Pp.Styled.path duniverse);
   List.iter ~f:(fun pkg -> Fmt.pr "%a\n" pp pkg) pkgs
 
 open Cmdliner
