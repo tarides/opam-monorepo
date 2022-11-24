@@ -56,12 +56,19 @@ module Ls_remote = struct
           let result = search_ref (prefix ^ ref) parsed_lines in
           interpret_search_result result
         in
-        match (search "refs/tags/", search "refs/heads/") with
-        | Some _, Some _ -> Error `Multiple_such_refs
-        | Some commit, None | None, Some commit -> Ok commit
-        | None, None when is_commit ref parsed_lines -> Ok ref
-        | None, None when looks_like_commit ref -> log_approx ()
-        | None, None -> Error `No_such_ref)
+        match (search "", search "refs/tags/", search "refs/heads/") with
+        | Some _, Some _, Some _
+        | Some _, Some _, None
+        | Some _, None, Some _
+        | None, Some _, Some _ ->
+            Error `Multiple_such_refs
+        | Some commit, None, None
+        | None, Some commit, None
+        | None, None, Some commit ->
+            Ok commit
+        | None, None, None when is_commit ref parsed_lines -> Ok ref
+        | None, None, None when looks_like_commit ref -> log_approx ()
+        | None, None, None -> Error `No_such_ref)
 
   let parse_ref_output_line ~symref line =
     match String.extract_blank_separated_words line with

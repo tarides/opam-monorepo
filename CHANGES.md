@@ -8,6 +8,9 @@
 
 ### Fixed
 
+- Fix resolving refs of locally pinned repositories (#326, #332, @hannesm,
+  @Leonidas-from-XIV)
+
 ### Removed
 
 ### Security
