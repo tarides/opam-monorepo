@@ -97,8 +97,7 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
     in
     let summary = Opam.Package_summary.from_opam pkg opam_file in
     let is_valid_dune_wise =
-      Opam.Package_summary.is_base_package summary
-      || Opam.Package_summary.is_virtual summary
+      Opam.Package_summary.is_safe_package summary
       || (not require_dune) || uses_dune
     in
     match is_valid_dune_wise with

@@ -26,10 +26,11 @@ module Package_summary : sig
   val pp : t Fmt.t
   val from_opam : OpamPackage.t -> OpamFile.OPAM.t -> t
 
-  val is_virtual : t -> bool
-  (** A package is considered virtual if it has no url.src or no dev-repo. *)
+  val is_safe_package : t -> bool
+  (** A package is safe when it is clear that it can be added to the lockfile
+      without disruption, as it will not get pulled.
 
-  val is_base_package : t -> bool
+      The OCaml compiler is one such package. *)
 end
 
 module Dependency_entry : sig

@@ -230,14 +230,14 @@ module Package_summary = struct
     | { dev_repo = None | Some ""; _ } -> true
     | _ -> false
 
-  let is_base_package v =
-    let in_base_pkgs { package; _ } =
-      OpamPackage.Name.Set.mem package.name Config.base_packages
-    in
-    let is_compiler_pkg { package; _ } =
-      OpamPackage.Name.equal package.name Config.compiler_package_name
-    in
-    is_compiler v || in_base_pkgs v || is_compiler_pkg v
+  let is_compiler_package { package; _ } =
+    OpamPackage.Name.equal package.name Config.compiler_package_name
+
+  let is_base_package { package; _ } =
+    OpamPackage.Name.Set.mem package.name Config.base_packages
+
+  let is_safe_package v =
+    is_compiler v || is_compiler_package v || is_base_package v || is_virtual v
 end
 
 module Dependency_entry = struct
