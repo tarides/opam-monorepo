@@ -42,6 +42,7 @@ solutions:
   depends: [
     "dune"
   ]
+  build: [ "dune" "build" ]
   url {
     src: "https://a.com/a.0.2.tbz"
     checksum: [

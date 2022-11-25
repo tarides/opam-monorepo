@@ -3,6 +3,7 @@ dev-repo: "git+https://b.com/b.git"
 depends: [
   "dune"
 ]
+build: [ "dune" "build" ]
 tags: ["cross-compile"]
 url {
   src: "https://mirage.com/b.0.1-dune-mirage.tbz"

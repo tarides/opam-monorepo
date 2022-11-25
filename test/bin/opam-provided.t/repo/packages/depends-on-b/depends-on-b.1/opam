@@ -3,6 +3,7 @@ depends: [
   "dune"
   "b"
 ]
+build: [ "dune" "build" ]
 dev-repo: "git+https://github.com/b/depends-on-b"
 url {
   src: "https://b.com/depends-on-b.tbz"

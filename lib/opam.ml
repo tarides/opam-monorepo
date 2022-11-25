@@ -129,6 +129,14 @@ module Hash = struct
     Format.fprintf fmt "%s:%s" kind contents
 end
 
+module Command = struct
+  type t = OpamTypes.command
+
+  let pp fmt (t : t) =
+    OpamPp.print OpamFormat.V.command t
+    |> OpamPrinter.FullPos.value |> Format.pp_print_string fmt
+end
+
 module Depexts = struct
   let pp fmt t =
     let pp_filter fmt filter =
@@ -196,18 +204,21 @@ module Package_summary = struct
     dev_repo : string option;
     depexts : (OpamSysPkg.Set.t * OpamTypes.filter) list;
     flags : Package_flag.t list;
+    build_commands : OpamTypes.command list;
   }
 
-  let pp fmt { package; url_src; hashes; dev_repo; depexts; flags } =
+  let pp fmt
+      { package; url_src; hashes; dev_repo; depexts; flags; build_commands } =
     let open Pp_combinators.Ocaml in
     Format.fprintf fmt
       "@[<hov 2>{ name = %a;@ version = %a;@ url_src = %a;@ hashes = %a;@ \
-       dev_repo = %a;@ depexts = %a;@ flags = %a }@]"
+       dev_repo = %a;@ depexts = %a;@ flags = %a;@ build_commands = %a }@]"
       Pp.package_name package.name Pp.version package.version
       (option ~brackets:true Url.pp)
       url_src (list Hash.pp) hashes
       (option ~brackets:true string)
-      dev_repo Depexts.pp depexts (list Package_flag.pp) flags
+      dev_repo Depexts.pp depexts (list Package_flag.pp) flags (list Command.pp)
+      build_commands
 
   let from_opam package opam_file =
     let url_field = OpamFile.OPAM.url opam_file in
@@ -220,7 +231,8 @@ module Package_summary = struct
     in
     let depexts = OpamFile.OPAM.depexts opam_file in
     let flags = OpamFile.OPAM.flags opam_file in
-    { package; url_src; hashes; dev_repo; depexts; flags }
+    let build_commands = OpamFile.OPAM.build opam_file in
+    { package; url_src; hashes; dev_repo; depexts; flags; build_commands }
 
   let has_flag flag { flags; _ } = List.mem flag ~set:flags
   let is_compiler v = has_flag OpamTypes.Pkgflag_Compiler v
@@ -228,6 +240,7 @@ module Package_summary = struct
   let is_virtual = function
     | { url_src = None; _ } -> true
     | { dev_repo = None | Some ""; _ } -> true
+    | { build_commands = []; _ } -> true
     | _ -> false
 
   let is_compiler_package { package; _ } =

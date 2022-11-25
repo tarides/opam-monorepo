@@ -3,6 +3,7 @@ dev-repo: "git+https://b.com/b.git"
 depends: [
   "dune"
 ]
+build: [ "dune" "build" ]
 url {
   src: "https://dune.com/b.0.1-dune.tbz"
   checksum: "sha256=0000000000000000000000000000000000000000000000000000000000000001"

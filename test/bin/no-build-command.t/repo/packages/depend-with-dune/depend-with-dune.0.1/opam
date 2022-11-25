@@ -1,11 +1,11 @@
 opam-version: "2.0"
+dev-repo: "git+https://github.com/test-no-build-command/test"
 depends: [
-  "dune"
+  "with-dune"
 ]
 dev-repo: "git+https://github.com/b/b"
-build: [ "dune" "build" ]
 url {
-  src: "https://b.com/b.tbz"
+  src: "https://test.com/test.tbz"
   checksum: [
     "sha256=0000000000000000000000000000000000000000000000000000000000000000"
   ]

@@ -3,6 +3,7 @@ dev-repo: "git+https://a.com/a.git"
 depends: [
   "ocaml"
 ]
+build: [ "make" ]
 url {
   src: "https://a.com/a.1.1.tbz"
   checksum: [

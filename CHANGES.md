@@ -4,6 +4,9 @@
 
 ### Changed
 
+- Treat packages with no build commands as if they can be built with dune (#355,
+  @gridbugs)
+
 ### Deprecated
 
 ### Fixed
