@@ -233,11 +233,12 @@ module Package_summary = struct
   let is_compiler_package { package; _ } =
     OpamPackage.Name.equal package.name Config.compiler_package_name
 
-  let is_base_package { package; _ } =
-    OpamPackage.Name.Set.mem package.name Config.base_packages
+  let is_skippable_package { package; _ } =
+    OpamPackage.Name.Set.mem package.name Config.skip_packages
 
   let is_safe_package v =
-    is_compiler v || is_compiler_package v || is_base_package v || is_virtual v
+    is_compiler v || is_compiler_package v || is_skippable_package v
+    || is_virtual v
 end
 
 module Dependency_entry = struct
