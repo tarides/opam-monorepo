@@ -6,17 +6,25 @@ let compare = String.compare
 let from_string s = s
 let to_string t = t
 
+let rec repeat_while_some x ~f =
+  match f x with None -> x | Some x -> repeat_while_some x ~f
+
+(* Attempt to split a string by calling [split s], then choose a side of the
+   result with [side], returning [s] if a split is not possible *)
+let try_split_side s ~(split : string -> (string * string) option) ~side =
+  Option.map_default (split s) ~f:side ~default:s
+
 let repo_name t =
-  let uri = Uri.of_string t in
-  let path = Uri.path uri in
-  let last_path_component =
-    match String.rsplit2 ~on:'/' path with
-    | None -> path
-    | Some (_, last_path_component) -> last_path_component
-  in
-  match String.lsplit2 ~on:'.' last_path_component with
-  | None -> last_path_component
-  | Some (repo_name, _ext) -> repo_name
+  Uri.of_string t |> Uri.path
+  |> repeat_while_some ~f:(Base.String.chop_suffix ~suffix:"/")
+  |> try_split_side ~split:(String.rsplit2 ~on:'/') ~side:snd
+  |> repeat_while_some ~f:(Base.String.chop_prefix ~prefix:".")
+  |> try_split_side ~split:(String.lsplit2 ~on:'.') ~side:fst
+  |> function
+  | "" ->
+      Rresult.R.error_msgf
+        "unexpected empty string while computing name for dev_repo: \"%s\"" t
+  | non_empty -> Ok non_empty
 
 module Map = Map.Make (struct
   type nonrec t = t

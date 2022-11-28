@@ -127,7 +127,8 @@ module Repo = struct
       let test_fun () =
         let dev_repo = Dev_repo.from_string dev_repo in
         let actual = Duniverse.Repo.from_packages ~dev_repo packages in
-        Alcotest.(check Testable.Repo.unresolved) test_name expected actual
+        Alcotest.(check (result Testable.Repo.unresolved Testable.r_msg))
+          test_name expected actual
       in
       (test_name, `Quick, test_fun)
     in
@@ -139,12 +140,13 @@ module Repo = struct
               ();
           ]
         ~expected:
-          {
-            dir = "d";
-            url = Other "u";
-            hashes = [];
-            provided_packages = [ opam_factory ~name:"p" ~version:"v" ];
-          }
+          (Ok
+             {
+               dir = "d";
+               url = Other "u";
+               hashes = [];
+               provided_packages = [ opam_factory ~name:"p" ~version:"v" ];
+             })
         ();
       make_test ~name:"Uses repository name as dir"
         ~dev_repo:"https://github.com/org/repo.git"
@@ -154,12 +156,13 @@ module Repo = struct
               ();
           ]
         ~expected:
-          {
-            dir = "repo";
-            url = Other "u";
-            hashes = [];
-            provided_packages = [ opam_factory ~name:"p" ~version:"v" ];
-          }
+          (Ok
+             {
+               dir = "repo";
+               url = Other "u";
+               hashes = [];
+               provided_packages = [ opam_factory ~name:"p" ~version:"v" ];
+             })
         ();
       make_test ~name:"Expection for dune"
         ~dev_repo:"https://github.com/ocaml/dune.git"
@@ -169,12 +172,13 @@ module Repo = struct
               ();
           ]
         ~expected:
-          {
-            dir = "dune_";
-            url = Other "u";
-            hashes = [];
-            provided_packages = [ opam_factory ~name:"p" ~version:"v" ];
-          }
+          (Ok
+             {
+               dir = "dune_";
+               url = Other "u";
+               hashes = [];
+               provided_packages = [ opam_factory ~name:"p" ~version:"v" ];
+             })
         ();
       make_test ~name:"Add all to provided packages" ~dev_repo:"d"
         ~packages:
@@ -185,16 +189,17 @@ module Repo = struct
               ~hashes:[] ();
           ]
         ~expected:
-          {
-            dir = "d";
-            url = Other "u";
-            hashes = [];
-            provided_packages =
-              [
-                opam_factory ~name:"d" ~version:"zdev";
-                opam_factory ~name:"d-lwt" ~version:"zdev";
-              ];
-          }
+          (Ok
+             {
+               dir = "d";
+               url = Other "u";
+               hashes = [];
+               provided_packages =
+                 [
+                   opam_factory ~name:"d" ~version:"zdev";
+                   opam_factory ~name:"d-lwt" ~version:"zdev";
+                 ];
+             })
         ();
       make_test ~name:"Pick URL from highest version package" ~dev_repo:"d"
         ~packages:
@@ -205,16 +210,24 @@ module Repo = struct
               ~hashes:[] ();
           ]
         ~expected:
-          {
-            dir = "d";
-            url = Other "u2";
-            hashes = [];
-            provided_packages =
-              [
-                opam_factory ~name:"d" ~version:"1";
-                opam_factory ~name:"d-lwt" ~version:"2";
-              ];
-          }
+          (Ok
+             {
+               dir = "d";
+               url = Other "u2";
+               hashes = [];
+               provided_packages =
+                 [
+                   opam_factory ~name:"d" ~version:"1";
+                   opam_factory ~name:"d-lwt" ~version:"2";
+                 ];
+             })
+        ();
+      make_test ~name:"An empty string dev_repo results in an error"
+        ~dev_repo:"" ~packages:[]
+        ~expected:
+          (Rresult.R.error_msgf
+             "unexpected empty string while computing name for dev_repo: \"%s\""
+             "")
         ();
     ]
 end

@@ -48,7 +48,10 @@ module Repo : sig
       (t option, [ `Msg of string ]) result
   end
 
-  val from_packages : dev_repo:Dev_repo.t -> Package.t list -> unresolved t
+  val from_packages :
+    dev_repo:Dev_repo.t ->
+    Package.t list ->
+    (unresolved t, Rresult.R.msg) result
 
   (**/**)
 end
