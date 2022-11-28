@@ -51,7 +51,7 @@ Therefore the list of repositories in the lockfile should have the a git repo
 that's the same as the previous git-repository path but end with "#$SHORT_HASH"
 
   $ opam show --just-file --raw -fx-opam-monorepo-opam-repositories ./explicit-repo.opam.locked > locked-repos
-  $ grep -Po ".+(?=$SHORT_HASH1)" locked-repos
+  $ sed "s/\(.*\)$SHORT_HASH1.*/\1/" locked-repos
   git+file://$OPAM_MONOREPO_CWD/git-repository#
 
 We also need to make sure that the git cache gets updated when the repository is updated:
@@ -74,5 +74,5 @@ new version of the git opam repository.
   $ opam show --just-file --raw -fdepends ./explicit-repo.opam.locked | grep git-dep
   "git-dep" {= "2.0"}
   $ opam show --just-file --raw -fx-opam-monorepo-opam-repositories ./explicit-repo.opam.locked > locked-repos
-  $ grep -Po ".+(?=$SHORT_HASH2)" locked-repos
+  $ sed "s/\(.*\)$SHORT_HASH2.*/\1/" locked-repos
   git+file://$OPAM_MONOREPO_CWD/git-repository#

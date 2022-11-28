@@ -1,6 +1,9 @@
 (cram
  (applies_to :whole_subtree)
- (deps %{bin:opam-monorepo} %{bin:gen-minimal-repo}))
+ (deps
+  %{bin:opam-monorepo}
+  %{bin:gen-minimal-repo}
+  (sandbox preserve_file_kind)))
 
 (executable
  (name gen_minimal_repo)

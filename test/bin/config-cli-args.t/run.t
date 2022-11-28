@@ -47,7 +47,7 @@ Once again, we can see from the generated lock file that it used both repos.
 Note that you can use the '--opam-repositories' option to overwrite any local
 extension.
 
-  $ sed -i '$d' ./config-cli-args.opam
+  $ sed -i -e '$d' ./config-cli-args.opam
   $ echo 'x-opam-monorepo-opam-repositories: ["https://a.com/a.tbz"]' >> ./config-cli-args.opam
   $ opam show --just-file -fx-opam-monorepo-opam-repositories ./config-cli-args.opam
   https://a.com/a.tbz
