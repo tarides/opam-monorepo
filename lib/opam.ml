@@ -174,6 +174,20 @@ module Pp = struct
   let url = Fmt.using OpamUrl.to_string Fmt.string
 end
 
+module Package_flag = struct
+  type t = OpamTypes.package_flag
+
+  let pp pps (v : t) =
+    match v with
+    | Pkgflag_LightUninstall -> Fmt.pf pps "light-uninstall"
+    | Pkgflag_Verbose -> Fmt.pf pps "verbose"
+    | Pkgflag_Plugin -> Fmt.pf pps "plugin"
+    | Pkgflag_Compiler -> Fmt.pf pps "compiler"
+    | Pkgflag_Conf -> Fmt.pf pps "conf"
+    | Pkgflag_AvoidVersion -> Fmt.pf pps "avoid-version"
+    | Pkgflag_Unknown unknown -> Fmt.pf pps "unknown(%s)" unknown
+end
+
 module Package_summary = struct
   type t = {
     package : OpamPackage.t;
@@ -181,18 +195,19 @@ module Package_summary = struct
     hashes : OpamHash.t list;
     dev_repo : string option;
     depexts : (OpamSysPkg.Set.t * OpamTypes.filter) list;
+    flags : Package_flag.t list;
   }
 
-  let pp fmt { package; url_src; hashes; dev_repo; depexts } =
+  let pp fmt { package; url_src; hashes; dev_repo; depexts; flags } =
     let open Pp_combinators.Ocaml in
     Format.fprintf fmt
       "@[<hov 2>{ name = %a;@ version = %a;@ url_src = %a;@ hashes = %a;@ \
-       dev_repo = %a;@ depexts = %a }@]"
+       dev_repo = %a;@ depexts = %a;@ flags = %a }@]"
       Pp.package_name package.name Pp.version package.version
       (option ~brackets:true Url.pp)
       url_src (list Hash.pp) hashes
       (option ~brackets:true string)
-      dev_repo Depexts.pp depexts
+      dev_repo Depexts.pp depexts (list Package_flag.pp) flags
 
   let from_opam package opam_file =
     let url_field = OpamFile.OPAM.url opam_file in
@@ -204,18 +219,26 @@ module Package_summary = struct
       Option.map ~f:OpamUrl.to_string (OpamFile.OPAM.dev_repo opam_file)
     in
     let depexts = OpamFile.OPAM.depexts opam_file in
-    { package; url_src; hashes; dev_repo; depexts }
+    let flags = OpamFile.OPAM.flags opam_file in
+    { package; url_src; hashes; dev_repo; depexts; flags }
+
+  let has_flag flag { flags; _ } = List.mem flag ~set:flags
+  let is_compiler v = has_flag OpamTypes.Pkgflag_Compiler v
 
   let is_virtual = function
     | { url_src = None; _ } -> true
     | { dev_repo = None | Some ""; _ } -> true
     | _ -> false
 
-  let is_base_package = function
-    | { package; _ }
-      when OpamPackage.Name.Set.mem package.name Config.base_packages ->
-        true
-    | _ -> false
+  let is_compiler_package { package; _ } =
+    OpamPackage.Name.equal package.name Config.compiler_package_name
+
+  let is_skippable_package { package; _ } =
+    OpamPackage.Name.Set.mem package.name Config.skip_packages
+
+  let is_safe_package v =
+    is_compiler v || is_compiler_package v || is_skippable_package v
+    || is_virtual v
 end
 
 module Dependency_entry = struct

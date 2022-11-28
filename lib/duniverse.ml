@@ -83,13 +83,20 @@ module Repo = struct
             let* ref = get_default_branch repo in
             Ok (Url.Git { repo; ref })
       in
-      match ps with
-      | _ when is_base_package ps -> Ok None
-      | { url_src = None; _ } | { dev_repo = None; _ } -> Ok None
-      | { url_src = Some url_src; package; dev_repo = Some dev_repo; hashes; _ }
-        ->
-          let* url = url url_src in
-          Ok (Some { opam = package; dev_repo; url; hashes })
+      match is_safe_package ps with
+      | true -> Ok None
+      | false -> (
+          match ps with
+          | {
+           url_src = Some url_src;
+           package;
+           dev_repo = Some dev_repo;
+           hashes;
+           _;
+          } ->
+              let* url = url url_src in
+              Ok (Some { opam = package; dev_repo; url; hashes })
+          | _ -> Ok None)
   end
 
   type 'ref t = {

@@ -100,8 +100,7 @@ module Depends = struct
     List.map dependency_entries
       ~f:(fun Opam.Dependency_entry.{ vendored; package_summary } ->
         let vendored =
-          (not @@ Opam.Package_summary.is_base_package package_summary)
-          && (not @@ Opam.Package_summary.is_virtual package_summary)
+          (not @@ Opam.Package_summary.is_safe_package package_summary)
           && vendored
         in
         { vendored; package = package_summary.package })

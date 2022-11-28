@@ -10,6 +10,8 @@
 
 - Fix resolving refs of locally pinned repositories (#326, #332, @hannesm,
   @Leonidas-from-XIV)
+- Read the `compiler` flag from OPAM metadata thus classifying more packages
+  correctly as base packages (#328, @Leonidas-from-XIV)
 
 ### Removed
 
