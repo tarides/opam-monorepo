@@ -132,11 +132,13 @@ module Repo = struct
   end)
 
   let dir_name_from_dev_repo dev_repo =
-    match Dev_repo.repo_name dev_repo with "dune" -> "dune_" | name -> name
+    Dev_repo.repo_name dev_repo
+    |> Result.map ~f:(function "dune" -> "dune_" | name -> name)
 
   let from_packages ~dev_repo (packages : Package.t list) =
+    let open Result.O in
     let provided_packages = List.map packages ~f:(fun p -> p.Package.opam) in
-    let dir = dir_name_from_dev_repo dev_repo in
+    let+ dir = dir_name_from_dev_repo dev_repo in
     let urls =
       let add acc p =
         Unresolved_url_map.set acc p.Package.url p.Package.hashes
@@ -227,12 +229,10 @@ let from_dependency_entries ~get_default_branch dependencies =
   let* pkg_opts = Result.List.all results in
   let pkgs = List.filter_opt pkg_opts in
   let dev_repo_map = dev_repo_map_from_packages pkgs in
-  let repos =
-    Dev_repo.Map.fold dev_repo_map ~init:[]
-      ~f:(fun ~key:dev_repo ~data:pkgs acc ->
-        Repo.from_packages ~dev_repo pkgs :: acc)
-  in
-  Ok repos
+  Dev_repo.Map.fold dev_repo_map ~init:[]
+    ~f:(fun ~key:dev_repo ~data:pkgs acc ->
+      Repo.from_packages ~dev_repo pkgs :: acc)
+  |> Result.List.all
 
 let resolve ~resolve_ref t =
   Parallel.map ~f:(Repo.resolve ~resolve_ref) t |> Result.List.all

@@ -16,6 +16,11 @@
 - Read the `compiler` flag from OPAM metadata thus classifying more packages
   correctly as base packages (#328, @Leonidas-from-XIV)
 
+- Fix bug where dev repo urls ending with a "/" would result in
+  `opam monorepo pull` placing package source code directly inside the duniverse
+  directory instead of in a subdirectory of the duniverse directory (#359,
+  @gridbugs)
+
 ### Removed
 
 ### Security
