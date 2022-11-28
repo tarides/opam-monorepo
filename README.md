@@ -1,4 +1,4 @@
-[![Build Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fci.ocamllabs.io%2Fbadge%2Focamllabs%2Fopam-monorepo%2Fmain&logo=ocaml)](https://ci.ocamllabs.io/github/ocamllabs/opam-monorepo) [![Documentation](https://img.shields.io/badge/doc-online-blue)](https://ocamllabs.io/opam-monorepo/opam-monorepo/index.html)
+[![Build Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fci.ocamllabs.io%2Fbadge%2Ftarides%2Fopam-monorepo%2Fmain&logo=ocaml)](https://ci.ocamllabs.io/github/tarides/opam-monorepo) [![Documentation](https://img.shields.io/badge/doc-online-blue)](https://ocamllabs.io/opam-monorepo/opam-monorepo/index.html)
 
 # `opam-monorepo`
 
