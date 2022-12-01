@@ -1,21 +1,40 @@
 open Import
 
+(* Check that [output_dir] is strictly a descendant of [duniverse_dir] *)
+let is_in_universe_dir ~duniverse_dir ~output_dir =
+  Fpath.(is_prefix (normalize duniverse_dir) (normalize output_dir))
+  && not (String.equal (Fpath.filename output_dir) "")
+
+(* Delete version control metadata and vendor subdirectory *)
+let do_trim_clone output_dir =
+  let open Result.O in
+  let* () =
+    Bos.OS.Dir.delete ~must_exist:false ~recurse:true
+      Fpath.(output_dir / ".git")
+  in
+  Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
+
 let pull ?(trim_clone = false) ~global_state ~duniverse_dir src_dep =
   let open Result.O in
   let open Duniverse.Repo in
   let { dir; url; hashes; _ } = src_dep in
   let output_dir = Fpath.(duniverse_dir / dir) in
-  let url = Url.to_opam_url url in
-  let open OpamProcess.Job.Op in
-  Opam.pull_tree ~url ~hashes ~dir:output_dir global_state @@| fun result ->
-  let* () = result in
-  if trim_clone then
-    let* () =
-      Bos.OS.Dir.delete ~must_exist:false ~recurse:true
-        Fpath.(output_dir / ".git")
+  if is_in_universe_dir ~duniverse_dir ~output_dir then
+    let url = Url.to_opam_url url in
+    let open OpamProcess.Job.Op in
+    Opam.pull_tree ~url ~hashes ~dir:output_dir global_state @@| fun result ->
+    let* () = result in
+    if trim_clone then do_trim_clone output_dir else Ok ()
+  else
+    let error =
+      Rresult.R.error_msgf
+        "Refusing to pull %s into directory %s as it is not inside the \
+         directory %s"
+        (Url.to_string url)
+        (Fpath.to_string output_dir)
+        (Fpath.to_string duniverse_dir)
     in
-    Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
-  else Ok ()
+    Done error
 
 let pull_source_dependencies ?trim_clone ~global_state ~duniverse_dir src_deps =
   let open Result.O in
