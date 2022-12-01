@@ -1,0 +1,21 @@
+opam-version: "2.0"
+synopsis: "opam-monorepo generated lockfile"
+maintainer: "opam-monorepo"
+depends: [
+  "foo" {= "1" & ?vendor}
+  "ocaml" {= "4.14.0"}
+]
+pin-depends: [
+  ["foo.1" "https://foo.com/foo.tbz"]
+]
+x-opam-monorepo-duniverse-dirs: [
+  [
+    "https://foo.com/foo.tbz"
+    "" # <--------------------------- repo name is the empty string
+    [
+      "sha256=0000000000000000000000000000000000000000000000000000000000000000"
+    ]
+  ]
+]
+x-opam-monorepo-root-packages: ["foo"]
+x-opam-monorepo-version: "0.3"
