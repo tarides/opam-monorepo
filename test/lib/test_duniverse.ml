@@ -28,14 +28,23 @@ let opam_factory ~name ~version =
   OpamPackage.create name version
 
 let summary_factory ?(name = "undefined") ?(version = "1") ?dev_repo ?url_src
-    ?(hashes = []) ?(depexts = []) ?(flags = []) () =
+    ?(hashes = []) ?(depexts = []) ?(flags = []) ?(build_commands = []) () =
   let package = opam_factory ~name ~version in
-  { Opam.Package_summary.package; dev_repo; url_src; hashes; depexts; flags }
+  {
+    Opam.Package_summary.package;
+    dev_repo;
+    url_src;
+    hashes;
+    depexts;
+    flags;
+    build_commands;
+  }
 
 let dependency_factory ?(vendored = true) ?name ?version ?dev_repo ?url_src
-    ?hashes ?depexts ?flags () =
+    ?hashes ?depexts ?flags ?build_commands () =
   let package_summary =
-    summary_factory ?name ?version ?dev_repo ?url_src ?hashes ?depexts ?flags ()
+    summary_factory ?name ?version ?dev_repo ?url_src ?hashes ?depexts ?flags
+      ?build_commands ()
   in
   { Opam.Dependency_entry.vendored; package_summary }
 
@@ -71,7 +80,9 @@ module Repo = struct
         make_test ~name:"Regular"
           ~summary:
             (summary_factory ~dev_repo:"d" ~url_src:(Other "u") ~name:"y"
-               ~version:"v" ~hashes:[] ())
+               ~version:"v" ~hashes:[]
+               ~build_commands:[ ([], None) ]
+               ())
           ~expected:
             (Ok
                (Some
@@ -88,7 +99,9 @@ module Repo = struct
           ~summary:
             (summary_factory ~dev_repo:"d"
                ~url_src:(Git { repo = "r"; ref = None })
-               ~name:"y" ~version:"v" ~hashes:[] ())
+               ~name:"y" ~version:"v" ~hashes:[]
+               ~build_commands:[ ([], None) ]
+               ())
           ~expected:
             (Ok
                (Some
@@ -234,7 +247,9 @@ let test_from_dependency_entries =
       ~dependency_entries:
         [
           dependency_factory ~name:"x" ~version:"v" ~url_src:(Other "u")
-            ~dev_repo:"d" ~hashes:[] ();
+            ~dev_repo:"d" ~hashes:[]
+            ~build_commands:[ ([], None) ]
+            ();
         ]
       ~expected:
         (Ok
@@ -258,9 +273,13 @@ let test_from_dependency_entries =
       ~dependency_entries:
         [
           dependency_factory ~name:"y" ~version:"v" ~url_src:(Other "u")
-            ~dev_repo:"d" ~hashes:[] ();
+            ~dev_repo:"d" ~hashes:[]
+            ~build_commands:[ ([], None) ]
+            ();
           dependency_factory ~name:"y-lwt" ~version:"v" ~url_src:(Other "u")
-            ~dev_repo:"d" ~hashes:[] ();
+            ~dev_repo:"d" ~hashes:[]
+            ~build_commands:[ ([], None) ]
+            ();
         ]
       ~expected:
         (Ok

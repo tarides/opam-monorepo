@@ -11,6 +11,7 @@ original 0.1 release. There is a 0.1+dune port of it in opam-overlays:
   depends: [
     "dune"
   ]
+  build: [ "dune" "build" ]
   url {
     src: "https://dune.com/b.0.1-dune.tbz"
     checksum: "sha256=0000000000000000000000000000000000000000000000000000000000000001"
@@ -25,6 +26,7 @@ maintainers created a 0.1+dune+mirage port in mirage-opam-overlays:
   depends: [
     "dune"
   ]
+  build: [ "dune" "build" ]
   tags: ["cross-compile"]
   url {
     src: "https://mirage.com/b.0.1-dune-mirage.tbz"
@@ -72,6 +74,7 @@ to upstream the dune port before `0.2` so the `0.2` release builds with dune.
   > depends: [
   >   "dune"
   > ]
+  > build: [ "dune" "build" ]
   > url {
   >   src: "https://b.com/b.0.2.tbz"
   >   checksum: "sha256=0000000000000000000000000000000000000000000000000000000000000003"
