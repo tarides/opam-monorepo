@@ -40,12 +40,6 @@ let drop_prefix s ~prefix =
     else Some (sub s ~pos:(length prefix) ~len:(length s - length prefix))
   else None
 
-let drop_suffix s ~suffix =
-  if is_suffix s ~suffix then
-    if length s = length suffix then Some s
-    else Some (sub s ~pos:0 ~len:(length s - length suffix))
-  else None
-
 let index = index_opt
 let rindex = rindex_opt
 

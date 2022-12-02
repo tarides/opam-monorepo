@@ -10,6 +10,5 @@ val extract_blank_separated_words : string -> string list
 val is_prefix : string -> prefix:string -> bool
 val is_suffix : string -> suffix:string -> bool
 val drop_prefix : string -> prefix:string -> string option
-val drop_suffix : string -> suffix:string -> string option
 
 module Map : Map.S with type key = string
