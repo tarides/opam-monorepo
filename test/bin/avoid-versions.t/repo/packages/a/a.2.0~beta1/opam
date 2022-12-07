@@ -1,0 +1,13 @@
+opam-version: "2.0"
+dev-repo: "git+https://a.com/a.git"
+depends: [
+  "ocaml"
+  "dune"
+]
+flags: [ avoid-version ]
+url {
+  src: "https://a.com/a.2.0beta1.tbz"
+  checksum: [
+    "sha256=0000000000000000000000000000000000000000000000000000000000000000"
+  ]
+}
