@@ -169,33 +169,13 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
                    (version, Ok opam_file))
 
   let demote_candidates_to_avoid versions =
-    (* false as long as the package name stays the same *)
-    let break (_, opam_res_a) (_, opam_res_b) =
-      match (opam_res_a, opam_res_b) with
-      | Ok opam_a, Ok opam_b ->
-          let name_a = OpamFile.OPAM.name opam_a in
-          let name_b = OpamFile.OPAM.name opam_b in
-          not (OpamPackage.Name.equal name_a name_b)
-      | _, _ -> false
+    let avoid_versions, regular_versions =
+      List.partition versions ~f:(fun (_version, opam_res) ->
+          match opam_res with
+          | Ok opam -> Opam.avoid_version opam
+          | Error _ -> false)
     in
-    let put_avoid_version_back versions =
-      let avoid_versions, regular_versions =
-        List.partition versions ~f:(fun (_version, opam_res) ->
-            match opam_res with
-            | Ok opam -> Opam.avoid_version opam
-            | Error _ -> false)
-      in
-      regular_versions @ avoid_versions
-    in
-    (* the solver only looks at package candidates that are consecutive in
-       the list, thus each avoid-version demotion has to stay in the same
-       run of package names and can't be just shuffled to the back of the
-       candidate list.
-
-       Thus we group by package name, demote and reconcatenate *)
-    versions |> Base.List.group ~break
-    |> List.map ~f:put_avoid_version_back
-    |> List.concat
+    regular_versions @ avoid_versions
 
   let promote_version version candidates =
     match version with
