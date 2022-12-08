@@ -218,7 +218,7 @@ module Opam_repositories_url_rewriter = struct
     match url.OpamUrl.transport with
     | "file" -> (
         let path_remainder =
-          String.drop_prefix ~prefix:opam_monorepo_cwd url.OpamUrl.path
+          Base.String.chop_prefix ~prefix:opam_monorepo_cwd url.OpamUrl.path
         in
         match path_remainder with
         | Some r ->

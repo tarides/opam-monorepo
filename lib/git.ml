@@ -76,7 +76,7 @@ module Ls_remote = struct
     | _ -> None
 
   let extract_branch branch_ref =
-    String.drop_prefix branch_ref ~prefix:"refs/heads/"
+    Base.String.chop_prefix branch_ref ~prefix:"refs/heads/"
     |> Option.to_result
          ~none:
            (`Msg
