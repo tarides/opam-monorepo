@@ -328,7 +328,7 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
                 repositories);
           let* local_repos = make_repositories_locally_available repositories in
           let local_repo_dirs, source_config =
-            let local_repo_dirs, repo_urls = List.unzip local_repos in
+            let local_repo_dirs, repo_urls = Base.List.unzip local_repos in
             let repositories =
               repo_urls |> OpamUrl.Set.of_list |> Option.some
             in
