@@ -1,7 +1,5 @@
 include ListLabels
 
-let filter_opt l = filter_map ~f:(fun x -> x) l
-
 let concat_map ~f l =
   let rec aux f acc = function
     | [] -> rev acc

@@ -227,7 +227,7 @@ let from_dependency_entries ~get_default_branch dependencies =
       summaries
   in
   let* pkg_opts = Result.List.all results in
-  let pkgs = List.filter_opt pkg_opts in
+  let pkgs = Base.List.filter_opt pkg_opts in
   let dev_repo_map = dev_repo_map_from_packages pkgs in
   Dev_repo.Map.fold dev_repo_map ~init:[]
     ~f:(fun ~key:dev_repo ~data:pkgs acc ->

@@ -2,7 +2,6 @@ include module type of struct
   include ListLabels
 end
 
-val filter_opt : 'a option t -> 'a t
 val concat_map : f:('a -> 'b list) -> 'a list -> 'b list
 
 val max_exn : compare:('a -> 'a -> int) -> 'a list -> 'a
