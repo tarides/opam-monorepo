@@ -1,11 +1,5 @@
 include ListLabels
 
-let rec equal eq xs ys =
-  match (xs, ys) with
-  | [], [] -> true
-  | x :: xs, y :: ys -> eq x y && equal eq xs ys
-  | _, _ -> false
-
 let rec find_map l ~f =
   match l with
   | [] -> None

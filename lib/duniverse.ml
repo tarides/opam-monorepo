@@ -177,8 +177,8 @@ module Repo = struct
     in
     String.equal dir dir'
     && Url.equal equal_ref url url'
-    && List.equal Opam.Hash.equal hashes hashes'
-    && List.equal OpamPackage.equal provided_packages provided_packages'
+    && Base.List.equal Opam.Hash.equal hashes hashes'
+    && Base.List.equal OpamPackage.equal provided_packages provided_packages'
 
   let pp pp_ref fmt { dir; url; hashes; provided_packages } =
     let open Pp_combinators.Ocaml in
@@ -200,7 +200,7 @@ end
 
 type t = resolved Repo.t list
 
-let equal t t' = List.equal (Repo.equal Git.Ref.equal_resolved) t t'
+let equal t t' = Base.List.equal (Repo.equal Git.Ref.equal_resolved) t t'
 
 let pp fmt t =
   let open Pp_combinators.Ocaml in
