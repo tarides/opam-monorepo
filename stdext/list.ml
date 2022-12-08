@@ -1,10 +1,5 @@
 include ListLabels
 
-let rec find_map l ~f =
-  match l with
-  | [] -> None
-  | x :: l -> ( match f x with None -> find_map l ~f | Some _ as res -> res)
-
 let rev_partition_map =
   let rec loop l accl accr ~f =
     match l with
