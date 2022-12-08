@@ -16,17 +16,14 @@ let extract_words s ~is_word_char =
 let extract_blank_separated_words s =
   extract_words s ~is_word_char:(function ' ' | '\t' -> false | _ -> true)
 
-let index = index_opt
-let rindex = rindex_opt
-
 let lsplit2 s ~on =
-  match index s on with
+  match index_opt s on with
   | None -> None
   | Some i ->
       Some (sub s ~pos:0 ~len:i, sub s ~pos:(i + 1) ~len:(length s - i - 1))
 
 let rsplit2 s ~on =
-  match rindex s on with
+  match rindex_opt s on with
   | None -> None
   | Some i ->
       Some (sub s ~pos:0 ~len:i, sub s ~pos:(i + 1) ~len:(length s - i - 1))
