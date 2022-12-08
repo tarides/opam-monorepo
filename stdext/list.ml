@@ -1,20 +1,5 @@
 include ListLabels
 
-let rev_partition_map =
-  let rec loop l accl accr ~f =
-    match l with
-    | [] -> (accl, accr)
-    | x :: l -> (
-        match (f x : (_, _) Either.t) with
-        | Left y -> loop l (y :: accl) accr ~f
-        | Right y -> loop l accl (y :: accr) ~f)
-  in
-  fun l ~f -> loop l [] [] ~f
-
-let partition_map l ~f =
-  let l, r = rev_partition_map l ~f in
-  (rev l, rev r)
-
 let filter_opt l = filter_map ~f:(fun x -> x) l
 
 let concat_map ~f l =
