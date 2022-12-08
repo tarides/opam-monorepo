@@ -226,13 +226,13 @@ let from_dependency_entries ~get_default_branch dependencies =
       ~f:(Repo.Package.from_package_summary ~get_default_branch)
       summaries
   in
-  let* pkg_opts = Result.List.all results in
+  let* pkg_opts = Base.Result.all results in
   let pkgs = Base.List.filter_opt pkg_opts in
   let dev_repo_map = dev_repo_map_from_packages pkgs in
   Dev_repo.Map.fold dev_repo_map ~init:[]
     ~f:(fun ~key:dev_repo ~data:pkgs acc ->
       Repo.from_packages ~dev_repo pkgs :: acc)
-  |> Result.List.all
+  |> Base.Result.all
 
 let resolve ~resolve_ref t =
-  Parallel.map ~f:(Repo.resolve ~resolve_ref) t |> Result.List.all
+  Parallel.map ~f:(Repo.resolve ~resolve_ref) t |> Base.Result.all

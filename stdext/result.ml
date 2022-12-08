@@ -37,15 +37,6 @@ module List = struct
         let* () = f hd in
         iter ~f tl
 
-  let all =
-    let rec loop acc = function
-      | [] -> Ok (List.rev acc)
-      | t :: l ->
-          let* x = t in
-          loop (x :: acc) l
-    in
-    fun l -> loop [] l
-
   let rec fold_left t ~f ~init =
     match t with
     | [] -> Ok init

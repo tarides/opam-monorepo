@@ -179,7 +179,7 @@ let pull_pin_depends ~global_state pin_depends =
       Result.List.map ~f:(elm_from_pkg ~dir ~url) pkgs
     in
     let jobs = !OpamStateConfig.r.dl_jobs in
-    let+ elms = OpamParallel.map ~jobs ~command by_urls |> Result.List.all in
+    let+ elms = OpamParallel.map ~jobs ~command by_urls |> Base.Result.all in
     OpamPackage.Name.Map.of_list (List.concat elms)
 
 let get_pin_depends ~global_state local_opam_files =
@@ -292,7 +292,7 @@ let make_repository_locally_available url =
 let make_repositories_locally_available repositories =
   repositories
   |> OpamProcess.Job.seq_map make_repository_locally_available
-  |> OpamProcess.Job.run |> Result.List.all
+  |> OpamProcess.Job.run |> Base.Result.all
 
 let opam_env_from_global_state global_state =
   let vars = global_state.OpamStateTypes.global_variables in

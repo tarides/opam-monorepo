@@ -43,7 +43,7 @@ let pull_source_dependencies ?trim_clone ~global_state ~duniverse_dir src_deps =
     OpamParallel.map ~jobs
       ~command:(pull ?trim_clone ~global_state ~duniverse_dir)
       src_deps
-    |> Result.List.all
+    |> Base.Result.all
   in
   let total = List.length src_deps in
   let pp_count = Pp.Styled.good Fmt.int in
