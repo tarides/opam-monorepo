@@ -105,7 +105,7 @@ module Url = struct
     match url.OpamUrl.backend with
     | `git -> (
         let str_url = OpamUrl.to_string url in
-        match String.lsplit2 ~on:'#' str_url with
+        match Base.String.lsplit2 ~on:'#' str_url with
         | Some (repo, ref) -> Git { repo; ref = Some ref }
         | None -> Git { repo = str_url; ref = None })
     | _ -> Other (OpamUrl.to_string url)

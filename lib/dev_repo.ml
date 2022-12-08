@@ -17,9 +17,9 @@ let try_split_side s ~(split : string -> (string * string) option) ~side =
 let repo_name t =
   Uri.of_string t |> Uri.path
   |> repeat_while_some ~f:(Base.String.chop_suffix ~suffix:"/")
-  |> try_split_side ~split:(String.rsplit2 ~on:'/') ~side:snd
+  |> try_split_side ~split:(Base.String.rsplit2 ~on:'/') ~side:snd
   |> repeat_while_some ~f:(Base.String.chop_prefix ~prefix:".")
-  |> try_split_side ~split:(String.lsplit2 ~on:'.') ~side:fst
+  |> try_split_side ~split:(Base.String.lsplit2 ~on:'.') ~side:fst
   |> function
   | "" ->
       Rresult.R.error_msgf

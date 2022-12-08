@@ -34,7 +34,7 @@ module Version = struct
     let err () =
       Error (`Msg (Format.sprintf "Invalid lockfile version: %S" s))
     in
-    match String.lsplit2 ~on:'.' s with
+    match Base.String.lsplit2 ~on:'.' s with
     | None -> err ()
     | Some (major, minor) -> (
         match (int_of_string_opt major, int_of_string_opt minor) with

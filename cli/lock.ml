@@ -57,7 +57,7 @@ let check_target_packages packages =
       Ok ()
 
 let opam_to_git_remote remote =
-  match String.lsplit2 ~on:'+' remote with
+  match Base.String.lsplit2 ~on:'+' remote with
   | Some ("git", remote) -> remote
   | _ -> remote
 
