@@ -4,7 +4,6 @@ end
 
 val bind : f:('a -> ('b, 'err) t) -> ('a, 'err) t -> ('b, 'err) t
 val map : f:('a -> 'b) -> ('a, 'err) t -> ('b, 'err) t
-val of_option : 'ok option -> error:'err -> ('ok, 'err) t
 
 module O : sig
   val ( >>= ) : ('a, 'err) t -> ('a -> ('b, 'err) t) -> ('b, 'err) t

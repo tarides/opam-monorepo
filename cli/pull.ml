@@ -68,7 +68,7 @@ let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
       OpamGlobalState.with_ `Lock_none @@ fun global_state ->
       let* locked_ocaml_version =
         D.Lockfile.ocaml_version lockfile
-        |> Result.of_option ~error:(`Msg "OCaml compiler not in lockfile")
+        |> Base.Result.of_option ~error:(`Msg "OCaml compiler not in lockfile")
       in
       OpamSwitchState.with_ `Lock_none global_state @@ fun switch_state ->
       let switch_ocaml_version =
