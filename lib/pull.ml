@@ -110,7 +110,7 @@ let write_duniverse_dir_documentation ~duniverse_dir =
   written
 
 let duniverse ~full ~root ~global_state ~trim_clone duniverse =
-  if List.is_empty duniverse then Ok ()
+  if Base.List.is_empty duniverse then Ok ()
   else
     let open Result.O in
     let duniverse_dir = Fpath.(root // Config.vendor_dir) in

@@ -152,7 +152,7 @@ let root_pin_depends local_opam_files =
 
 let pull_pin_depends ~global_state pin_depends =
   let open Result.O in
-  if List.is_empty pin_depends then Ok OpamPackage.Name.Map.empty
+  if Base.List.is_empty pin_depends then Ok OpamPackage.Name.Map.empty
   else
     let* pins_tmp_dir = Bos.OS.Dir.tmp "opam-monorepo-pins-%s" in
     Logs.debug (fun l ->

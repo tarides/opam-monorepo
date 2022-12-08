@@ -1,7 +1,5 @@
 include ListLabels
 
-let is_empty = function [] -> true | _ -> false
-
 let rec equal eq xs ys =
   match (xs, ys) with
   | [], [] -> true
