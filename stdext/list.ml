@@ -1,14 +1,5 @@
 include ListLabels
 
-let concat_map ~f l =
-  let rec aux f acc = function
-    | [] -> rev acc
-    | x :: l ->
-        let xs = f x in
-        aux f (rev_append xs acc) l
-  in
-  aux f [] l
-
 let max_exn ~compare l =
   match l with
   | [] -> invalid_arg "List.max_exn: empty list"
