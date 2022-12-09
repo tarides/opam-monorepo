@@ -138,7 +138,7 @@ module Repo = struct
   let from_packages ~dev_repo (packages : Package.t list) =
     let open Result.O in
     let provided_packages = List.map packages ~f:(fun p -> p.Package.opam) in
-    let+ dir = dir_name_from_dev_repo dev_repo in
+    let* dir = dir_name_from_dev_repo dev_repo in
     let urls =
       let add acc p =
         Unresolved_url_map.set acc p.Package.url p.Package.hashes
@@ -147,7 +147,7 @@ module Repo = struct
       |> Unresolved_url_map.bindings
     in
     match urls with
-    | [ (url, hashes) ] -> { dir; url; hashes; provided_packages }
+    | [ (url, hashes) ] -> Ok { dir; url; hashes; provided_packages }
     | _ ->
         (* If packages from the same repo were resolved to different URLs, we need to pick
            a single one. Here we decided to go with the one associated with the package
@@ -156,14 +156,16 @@ module Repo = struct
            The best solution here would be to use source trimming, so we can pull each individual
            package to its own directory and strip out all the unrelated source code but we would
            need dune to provide that feature. *)
-        let highest_version_package =
-          List.max_exn packages ~compare:(fun p p' ->
+        let* highest_version_package =
+          Base.List.max_elt packages ~compare:(fun p p' ->
               OpamPackage.Version.compare p.Package.opam.version p'.opam.version)
+          |> Base.Result.of_option
+               ~error:(Rresult.R.msg "No packages to compare, internal failure")
         in
         log_url_selection ~dev_repo ~packages ~highest_version_package;
         let url = highest_version_package.url in
         let hashes = highest_version_package.hashes in
-        { dir; url; hashes; provided_packages }
+        Ok { dir; url; hashes; provided_packages }
 
   let equal equal_ref t t' =
     let { dir; url; hashes; provided_packages } = t in
