@@ -10,7 +10,7 @@ module Extra_field = struct
     | Some result, _ -> Ok result
     | None, Some default -> Ok default
     | None, None ->
-        let file_suffix_opt = Option.map ~f:(Printf.sprintf " %s") file in
+        let file_suffix_opt = Base.Option.map ~f:(Printf.sprintf " %s") file in
         let file_suffix = Option.value ~default:"" file_suffix_opt in
         Error
           (`Msg

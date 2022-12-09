@@ -222,12 +222,12 @@ module Package_summary = struct
 
   let from_opam package opam_file =
     let url_field = OpamFile.OPAM.url opam_file in
-    let url_src = Option.map ~f:Url.from_opam_field url_field in
+    let url_src = Base.Option.map ~f:Url.from_opam_field url_field in
     let hashes =
       Option.map_default ~default:[] ~f:OpamFile.URL.checksum url_field
     in
     let dev_repo =
-      Option.map ~f:OpamUrl.to_string (OpamFile.OPAM.dev_repo opam_file)
+      Base.Option.map ~f:OpamUrl.to_string (OpamFile.OPAM.dev_repo opam_file)
     in
     let depexts = OpamFile.OPAM.depexts opam_file in
     let flags = OpamFile.OPAM.flags opam_file in
