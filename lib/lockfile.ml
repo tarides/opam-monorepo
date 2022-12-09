@@ -22,8 +22,8 @@ module Version = struct
   type t = int * int
 
   let compare (major, minor) (major', minor') =
-    match Ordering.of_int (Int.compare major major') with
-    | Eq -> Ordering.of_int (Int.compare minor minor')
+    match Base.Ordering.of_int (Int.compare major major') with
+    | Base.Ordering.Equal -> Base.Ordering.of_int (Int.compare minor minor')
     | ordering -> ordering
 
   let current = (0, 3)
@@ -43,13 +43,13 @@ module Version = struct
 
   let compatible t =
     match compare current t with
-    | Eq -> Ok ()
-    | Lt ->
+    | Base.Ordering.Equal -> Ok ()
+    | Less ->
         Rresult.R.error_msgf
           "Incompatible opam-monorepo lockfile version %a. Please upgrade your \
            opam-monorepo plugin."
           pp t
-    | Gt ->
+    | Greater ->
         Rresult.R.error_msgf
           "opam-monorepo lockfile version %a is too old. Please regenerate the \
            lockfile using your current opam-monorepo plugin or install an \

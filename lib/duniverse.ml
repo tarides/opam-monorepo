@@ -16,13 +16,13 @@ module Repo = struct
 
     let compare compare_ref t t' =
       match (t, t') with
-      | Git _, Other _ -> Ordering.to_int Lt
-      | Other _, Git _ -> Ordering.to_int Gt
+      | Git _, Other _ -> Base.Ordering.to_int Base.Ordering.Less
+      | Other _, Git _ -> Base.Ordering.to_int Base.Ordering.Greater
       | Git { repo; ref }, Git { repo = repo'; ref = ref' } -> (
           let c1 = String.compare repo repo' in
-          match Ordering.of_int c1 with
-          | Lt | Gt -> c1
-          | Eq -> compare_ref ref ref')
+          match Base.Ordering.of_int c1 with
+          | Base.Ordering.Less | Greater -> c1
+          | Equal -> compare_ref ref ref')
       | Other s, Other s' -> String.compare s s'
 
     let pp pp_ref fmt t =

@@ -5,6 +5,4 @@ let max_exn ~compare l =
   | [] -> invalid_arg "List.max_exn: empty list"
   | hd :: tl ->
       fold_left tl ~init:hd ~f:(fun acc elm ->
-          match Ordering.of_int (compare acc elm) with
-          | Gt | Eq -> acc
-          | Lt -> elm)
+          match compare acc elm with n when n >= 0 -> acc | _ -> elm)

@@ -41,9 +41,9 @@ let check_dune_lang_version ~yes ~root =
         let compared =
           D.Dune_file.Lang.(compare_version version duniverse_minimum_version)
         in
-        match Ordering.of_int compared with
-        | Eq | Gt -> Ok ()
-        | Lt ->
+        match Base.Ordering.of_int compared with
+        | Base.Ordering.Equal | Greater -> Ok ()
+        | Less ->
             suggest_updating_version ~yes ~version ~dune_project_path ~content)
   else (
     Logs.debug (fun l -> l "No dune-project found");
