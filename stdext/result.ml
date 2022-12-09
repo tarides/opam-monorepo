@@ -7,8 +7,6 @@ module O = struct
   let ( let+ ) = ( >>| )
 end
 
-let map_error ~f = map_error f
-
 module List = struct
   open O
   module List = Stdlib.List

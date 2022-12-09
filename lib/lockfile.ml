@@ -321,7 +321,7 @@ let depends t = t.depends
 
 let url_to_duniverse_url url =
   let url_res = Duniverse.Repo.Url.from_opam_url url in
-  Result.map_error url_res ~f:(function `Msg msg ->
+  Base.Result.map_error url_res ~f:(function `Msg msg ->
       let msg =
         Printf.sprintf "Invalid-monorepo lockfile pin URL %s: %s"
           (OpamUrl.to_string url) msg

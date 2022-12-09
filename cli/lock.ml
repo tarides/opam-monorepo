@@ -136,7 +136,7 @@ let lockfile_path ~explicit_lockfile ~target_packages repo =
       D.Project.lockfile
         ~target_packages:(OpamPackage.Name.Set.elements target_packages)
         repo
-      |> Result.map_error ~f:(function `Msg msg ->
+      |> Base.Result.map_error ~f:(function `Msg msg ->
              Rresult.R.msgf
                "Could not infer the target lockfile name: %s\n\
                 Try setting it explicitly using --lockfile or add a project \
@@ -342,7 +342,8 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
               ~require_cross_compile ~preferred_versions ~local_opam_files
               ~target_packages ~opam_provided ~pin_depends ?ocaml_version solver
               (opam_env, local_repo_dirs)
-            |> Result.map_error ~f:(interpret_solver_error ~repositories solver)
+            |> Base.Result.map_error
+                 ~f:(interpret_solver_error ~repositories solver)
           in
           let* dependency_entries = dependency_entries in
           Ok (dependency_entries, source_config)
@@ -359,7 +360,7 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
                   ~require_cross_compile ~preferred_versions ~local_opam_files
                   ~target_packages ~opam_provided ~pin_depends ?ocaml_version
                   solver switch_state
-                |> Result.map_error ~f:(fun err ->
+                |> Base.Result.map_error ~f:(fun err ->
                        let repositories = current_repos ~switch_state in
                        interpret_solver_error ~repositories solver err)
               in
@@ -376,7 +377,7 @@ let select_explicitly_specified ~local_packages ~explicitly_specified =
       | true, Error errors -> Error errors
       | true, Ok selected -> Ok (OpamPackage.Name.Set.add key selected))
     ~init:(Ok OpamPackage.Name.Set.empty) explicitly_specified
-  |> Result.map_error ~f:(fun missing_packages ->
+  |> Base.Result.map_error ~f:(fun missing_packages ->
          let msg =
            Fmt.str "Package%a %a specified but not found in repository"
              D.Pp.plural missing_packages
