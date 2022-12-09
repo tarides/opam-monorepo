@@ -133,7 +133,7 @@ module Repo = struct
 
   let dir_name_from_dev_repo dev_repo =
     Dev_repo.repo_name dev_repo
-    |> Result.map ~f:(function "dune" -> "dune_" | name -> name)
+    |> Base.Result.map ~f:(function "dune" -> "dune_" | name -> name)
 
   let from_packages ~dev_repo (packages : Package.t list) =
     let open Result.O in

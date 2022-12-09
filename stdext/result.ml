@@ -1,13 +1,8 @@
 include Stdlib.Result
 
-let bind ~f r = bind r f
-let map ~f = map f
-
-(* some useful functions inspired by Jane Street Base *)
-
 module O = struct
-  let ( >>= ) res f = bind ~f res
-  let ( >>| ) res f = map ~f res
+  let ( >>= ) = Stdlib.Result.bind
+  let ( >>| ) res f = Stdlib.Result.map f res
   let ( let* ) = ( >>= )
   let ( let+ ) = ( >>| )
 end

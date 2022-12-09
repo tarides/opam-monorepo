@@ -2,9 +2,6 @@ include module type of struct
   include Stdlib.Result
 end
 
-val bind : f:('a -> ('b, 'err) t) -> ('a, 'err) t -> ('b, 'err) t
-val map : f:('a -> 'b) -> ('a, 'err) t -> ('b, 'err) t
-
 module O : sig
   val ( >>= ) : ('a, 'err) t -> ('a -> ('b, 'err) t) -> ('b, 'err) t
   val ( >>| ) : ('a, 'err) t -> ('a -> 'b) -> ('b, 'err) t
