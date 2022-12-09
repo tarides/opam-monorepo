@@ -268,7 +268,7 @@ let get ~opam_monorepo_cwd opam_file =
   Ok { global_vars; repositories; opam_provided }
 
 let set_field set var opam_file =
-  Option.map_default ~default:opam_file var ~f:(fun v -> set v opam_file)
+  Base.Option.value_map ~default:opam_file var ~f:(fun v -> set v opam_file)
 
 let set ~opam_monorepo_cwd { global_vars; repositories; opam_provided }
     opam_file =

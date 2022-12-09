@@ -12,7 +12,7 @@ let rec repeat_while_some x ~f =
 (* Attempt to split a string by calling [split s], then choose a side of the
    result with [side], returning [s] if a split is not possible *)
 let try_split_side s ~(split : string -> (string * string) option) ~side =
-  Option.map_default (split s) ~f:side ~default:s
+  Base.Option.value_map (split s) ~f:side ~default:s
 
 let repo_name t =
   Uri.of_string t |> Uri.path

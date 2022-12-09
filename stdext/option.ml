@@ -6,5 +6,3 @@ module O = struct
   let ( let* ) = ( >>= )
   let ( let+ ) = ( >>| )
 end
-
-let map_default ~f ~default = function None -> default | Some x -> f x

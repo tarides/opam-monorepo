@@ -8,5 +8,3 @@ module O : sig
   val ( let* ) : 'a t -> ('a -> 'b t) -> 'b t
   val ( let+ ) : 'a t -> ('a -> 'b) -> 'b t
 end
-
-val map_default : f:('a -> 'b) -> default:'b -> 'a t -> 'b
