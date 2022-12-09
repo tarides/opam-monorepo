@@ -1,6 +1,5 @@
 include Stdlib.Option
 
-let value ~default = function None -> default | Some x -> x
 let map ~f = function None -> None | Some x -> Some (f x)
 let bind ~f = function None -> None | Some x -> f x
 
