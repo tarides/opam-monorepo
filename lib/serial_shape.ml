@@ -279,7 +279,7 @@ let rec equal : type a. a t -> a -> a -> bool =
   | Sstring, s, s' -> String.equal s s'
   | Spair (sfst, ssnd), (fst, snd), (fst', snd') ->
       equal sfst fst fst' && equal ssnd snd snd'
-  | Slist s, l, l' -> List.equal (equal s) l l'
+  | Slist s, l, l' -> Base.List.equal (equal s) l l'
   | Choice2 (s, _), `C1 v, `C1 v' -> equal s v v'
   | Choice2 (_, s), `C2 v, `C2 v' -> equal s v v'
   | Choice2 _, _, _ -> false

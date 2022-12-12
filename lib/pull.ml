@@ -43,7 +43,7 @@ let pull_source_dependencies ?trim_clone ~global_state ~duniverse_dir src_deps =
     OpamParallel.map ~jobs
       ~command:(pull ?trim_clone ~global_state ~duniverse_dir)
       src_deps
-    |> Result.List.all
+    |> Base.Result.all
   in
   let total = List.length src_deps in
   let pp_count = Pp.Styled.good Fmt.int in
@@ -110,7 +110,7 @@ let write_duniverse_dir_documentation ~duniverse_dir =
   written
 
 let duniverse ~full ~root ~global_state ~trim_clone duniverse =
-  if List.is_empty duniverse then Ok ()
+  if Base.List.is_empty duniverse then Ok ()
   else
     let open Result.O in
     let duniverse_dir = Fpath.(root // Config.vendor_dir) in

@@ -10,7 +10,7 @@ module Extra_field = struct
     | Some result, _ -> Ok result
     | None, Some default -> Ok default
     | None, None ->
-        let file_suffix_opt = Option.map ~f:(Printf.sprintf " %s") file in
+        let file_suffix_opt = Base.Option.map ~f:(Printf.sprintf " %s") file in
         let file_suffix = Option.value ~default:"" file_suffix_opt in
         Error
           (`Msg
@@ -22,8 +22,8 @@ module Version = struct
   type t = int * int
 
   let compare (major, minor) (major', minor') =
-    match Ordering.of_int (Int.compare major major') with
-    | Eq -> Ordering.of_int (Int.compare minor minor')
+    match Base.Ordering.of_int (Int.compare major major') with
+    | Base.Ordering.Equal -> Base.Ordering.of_int (Int.compare minor minor')
     | ordering -> ordering
 
   let current = (0, 3)
@@ -34,7 +34,7 @@ module Version = struct
     let err () =
       Error (`Msg (Format.sprintf "Invalid lockfile version: %S" s))
     in
-    match String.lsplit2 ~on:'.' s with
+    match Base.String.lsplit2 ~on:'.' s with
     | None -> err ()
     | Some (major, minor) -> (
         match (int_of_string_opt major, int_of_string_opt minor) with
@@ -43,13 +43,13 @@ module Version = struct
 
   let compatible t =
     match compare current t with
-    | Eq -> Ok ()
-    | Lt ->
+    | Base.Ordering.Equal -> Ok ()
+    | Less ->
         Rresult.R.error_msgf
           "Incompatible opam-monorepo lockfile version %a. Please upgrade your \
            opam-monorepo plugin."
           pp t
-    | Gt ->
+    | Greater ->
         Rresult.R.error_msgf
           "opam-monorepo lockfile version %a is too old. Please regenerate the \
            lockfile using your current opam-monorepo plugin or install an \
@@ -321,7 +321,7 @@ let depends t = t.depends
 
 let url_to_duniverse_url url =
   let url_res = Duniverse.Repo.Url.from_opam_url url in
-  Result.map_error url_res ~f:(function `Msg msg ->
+  Base.Result.map_error url_res ~f:(function `Msg msg ->
       let msg =
         Printf.sprintf "Invalid-monorepo lockfile pin URL %s: %s"
           (OpamUrl.to_string url) msg

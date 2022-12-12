@@ -33,7 +33,7 @@ module Opam_repositories_url_rewriter = struct
         let value = OpamUrl.of_string value in
         let actual =
           Opam_repositories_url_rewriter.rewrite_one_in ~opam_monorepo_cwd value
-          |> Result.map ~f:OpamUrl.to_string
+          |> Base.Result.map ~f:OpamUrl.to_string
         in
         Alcotest.(check (result string Testable.r_msg))
           test_name expected actual
@@ -107,7 +107,7 @@ module Opam_repositories = struct
       in
       let test_fun () =
         let value = OpamParser.FullPos.value_from_string value "test.opam" in
-        let expected = Result.map ~f:t_from_input expected in
+        let expected = Base.Result.map ~f:t_from_input expected in
         let actual =
           D.Source_opam_config.Private.Opam_repositories.from_opam_value value
         in
@@ -154,7 +154,7 @@ module Opam_repositories = struct
       in
       let test_fun () =
         let open D.Source_opam_config.Private in
-        let expected = Result.map ~f:t_from_input expected in
+        let expected = Base.Result.map ~f:t_from_input expected in
         let actual =
           Cmdliner.Arg.conv_parser Opam_repositories.cmdliner_conv value
         in
@@ -179,7 +179,7 @@ module Opam_global_vars = struct
       in
       let test_fun () =
         let value = OpamParser.FullPos.value_from_string value "test.opam" in
-        let expected = Result.map expected ~f:String.Map.of_list_exn in
+        let expected = Base.Result.map expected ~f:String.Map.of_list_exn in
         let actual =
           D.Source_opam_config.Private.Opam_global_vars.from_opam_value value
         in
@@ -231,7 +231,7 @@ module Opam_global_vars = struct
       in
       let test_fun () =
         let open D.Source_opam_config.Private in
-        let expected = Result.map expected ~f:String.Map.of_list_exn in
+        let expected = Base.Result.map expected ~f:String.Map.of_list_exn in
         let actual =
           Cmdliner.Arg.conv_parser Opam_global_vars.cmdliner_conv value
         in
@@ -259,7 +259,7 @@ module Opam_provided = struct
       let test_fun () =
         let open D.Source_opam_config in
         let value = OpamParser.FullPos.value_from_string value "test.opam" in
-        let expected = Result.map expected ~f:t_from_input in
+        let expected = Base.Result.map expected ~f:t_from_input in
         let actual = Private.Opam_provided.from_opam_value value in
         Alcotest.(check (result Testable.opam_package_name_set Testable.r_msg))
           test_name expected actual

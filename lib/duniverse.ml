@@ -16,13 +16,13 @@ module Repo = struct
 
     let compare compare_ref t t' =
       match (t, t') with
-      | Git _, Other _ -> Ordering.to_int Lt
-      | Other _, Git _ -> Ordering.to_int Gt
+      | Git _, Other _ -> Base.Ordering.to_int Base.Ordering.Less
+      | Other _, Git _ -> Base.Ordering.to_int Base.Ordering.Greater
       | Git { repo; ref }, Git { repo = repo'; ref = ref' } -> (
           let c1 = String.compare repo repo' in
-          match Ordering.of_int c1 with
-          | Lt | Gt -> c1
-          | Eq -> compare_ref ref ref')
+          match Base.Ordering.of_int c1 with
+          | Base.Ordering.Less | Greater -> c1
+          | Equal -> compare_ref ref ref')
       | Other s, Other s' -> String.compare s s'
 
     let pp pp_ref fmt t =
@@ -133,12 +133,12 @@ module Repo = struct
 
   let dir_name_from_dev_repo dev_repo =
     Dev_repo.repo_name dev_repo
-    |> Result.map ~f:(function "dune" -> "dune_" | name -> name)
+    |> Base.Result.map ~f:(function "dune" -> "dune_" | name -> name)
 
   let from_packages ~dev_repo (packages : Package.t list) =
     let open Result.O in
     let provided_packages = List.map packages ~f:(fun p -> p.Package.opam) in
-    let+ dir = dir_name_from_dev_repo dev_repo in
+    let* dir = dir_name_from_dev_repo dev_repo in
     let urls =
       let add acc p =
         Unresolved_url_map.set acc p.Package.url p.Package.hashes
@@ -147,7 +147,7 @@ module Repo = struct
       |> Unresolved_url_map.bindings
     in
     match urls with
-    | [ (url, hashes) ] -> { dir; url; hashes; provided_packages }
+    | [ (url, hashes) ] -> Ok { dir; url; hashes; provided_packages }
     | _ ->
         (* If packages from the same repo were resolved to different URLs, we need to pick
            a single one. Here we decided to go with the one associated with the package
@@ -156,14 +156,16 @@ module Repo = struct
            The best solution here would be to use source trimming, so we can pull each individual
            package to its own directory and strip out all the unrelated source code but we would
            need dune to provide that feature. *)
-        let highest_version_package =
-          List.max_exn packages ~compare:(fun p p' ->
+        let* highest_version_package =
+          Base.List.max_elt packages ~compare:(fun p p' ->
               OpamPackage.Version.compare p.Package.opam.version p'.opam.version)
+          |> Base.Result.of_option
+               ~error:(Rresult.R.msg "No packages to compare, internal failure")
         in
         log_url_selection ~dev_repo ~packages ~highest_version_package;
         let url = highest_version_package.url in
         let hashes = highest_version_package.hashes in
-        { dir; url; hashes; provided_packages }
+        Ok { dir; url; hashes; provided_packages }
 
   let equal equal_ref t t' =
     let { dir; url; hashes; provided_packages } = t in
@@ -177,8 +179,8 @@ module Repo = struct
     in
     String.equal dir dir'
     && Url.equal equal_ref url url'
-    && List.equal Opam.Hash.equal hashes hashes'
-    && List.equal OpamPackage.equal provided_packages provided_packages'
+    && Base.List.equal Opam.Hash.equal hashes hashes'
+    && Base.List.equal OpamPackage.equal provided_packages provided_packages'
 
   let pp pp_ref fmt { dir; url; hashes; provided_packages } =
     let open Pp_combinators.Ocaml in
@@ -200,7 +202,7 @@ end
 
 type t = resolved Repo.t list
 
-let equal t t' = List.equal (Repo.equal Git.Ref.equal_resolved) t t'
+let equal t t' = Base.List.equal (Repo.equal Git.Ref.equal_resolved) t t'
 
 let pp fmt t =
   let open Pp_combinators.Ocaml in
@@ -226,13 +228,13 @@ let from_dependency_entries ~get_default_branch dependencies =
       ~f:(Repo.Package.from_package_summary ~get_default_branch)
       summaries
   in
-  let* pkg_opts = Result.List.all results in
-  let pkgs = List.filter_opt pkg_opts in
+  let* pkg_opts = Base.Result.all results in
+  let pkgs = Base.List.filter_opt pkg_opts in
   let dev_repo_map = dev_repo_map_from_packages pkgs in
   Dev_repo.Map.fold dev_repo_map ~init:[]
     ~f:(fun ~key:dev_repo ~data:pkgs acc ->
       Repo.from_packages ~dev_repo pkgs :: acc)
-  |> Result.List.all
+  |> Base.Result.all
 
 let resolve ~resolve_ref t =
-  Parallel.map ~f:(Repo.resolve ~resolve_ref) t |> Result.List.all
+  Parallel.map ~f:(Repo.resolve ~resolve_ref) t |> Base.Result.all

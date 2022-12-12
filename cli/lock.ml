@@ -57,7 +57,7 @@ let check_target_packages packages =
       Ok ()
 
 let opam_to_git_remote remote =
-  match String.lsplit2 ~on:'+' remote with
+  match Base.String.lsplit2 ~on:'+' remote with
   | Some ("git", remote) -> remote
   | _ -> remote
 
@@ -136,7 +136,7 @@ let lockfile_path ~explicit_lockfile ~target_packages repo =
       D.Project.lockfile
         ~target_packages:(OpamPackage.Name.Set.elements target_packages)
         repo
-      |> Result.map_error ~f:(function `Msg msg ->
+      |> Base.Result.map_error ~f:(function `Msg msg ->
              Rresult.R.msgf
                "Could not infer the target lockfile name: %s\n\
                 Try setting it explicitly using --lockfile or add a project \
@@ -152,7 +152,7 @@ let root_pin_depends local_opam_files =
 
 let pull_pin_depends ~global_state pin_depends =
   let open Result.O in
-  if List.is_empty pin_depends then Ok OpamPackage.Name.Map.empty
+  if Base.List.is_empty pin_depends then Ok OpamPackage.Name.Map.empty
   else
     let* pins_tmp_dir = Bos.OS.Dir.tmp "opam-monorepo-pins-%s" in
     Logs.debug (fun l ->
@@ -179,7 +179,7 @@ let pull_pin_depends ~global_state pin_depends =
       Result.List.map ~f:(elm_from_pkg ~dir ~url) pkgs
     in
     let jobs = !OpamStateConfig.r.dl_jobs in
-    let+ elms = OpamParallel.map ~jobs ~command by_urls |> Result.List.all in
+    let+ elms = OpamParallel.map ~jobs ~command by_urls |> Base.Result.all in
     OpamPackage.Name.Map.of_list (List.concat elms)
 
 let get_pin_depends ~global_state local_opam_files =
@@ -292,7 +292,7 @@ let make_repository_locally_available url =
 let make_repositories_locally_available repositories =
   repositories
   |> OpamProcess.Job.seq_map make_repository_locally_available
-  |> OpamProcess.Job.run |> Result.List.all
+  |> OpamProcess.Job.run |> Base.Result.all
 
 let opam_env_from_global_state global_state =
   let vars = global_state.OpamStateTypes.global_variables in
@@ -328,7 +328,7 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
                 repositories);
           let* local_repos = make_repositories_locally_available repositories in
           let local_repo_dirs, source_config =
-            let local_repo_dirs, repo_urls = List.unzip local_repos in
+            let local_repo_dirs, repo_urls = Base.List.unzip local_repos in
             let repositories =
               repo_urls |> OpamUrl.Set.of_list |> Option.some
             in
@@ -342,7 +342,8 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
               ~require_cross_compile ~preferred_versions ~local_opam_files
               ~target_packages ~opam_provided ~pin_depends ?ocaml_version solver
               (opam_env, local_repo_dirs)
-            |> Result.map_error ~f:(interpret_solver_error ~repositories solver)
+            |> Base.Result.map_error
+                 ~f:(interpret_solver_error ~repositories solver)
           in
           let* dependency_entries = dependency_entries in
           Ok (dependency_entries, source_config)
@@ -359,7 +360,7 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
                   ~require_cross_compile ~preferred_versions ~local_opam_files
                   ~target_packages ~opam_provided ~pin_depends ?ocaml_version
                   solver switch_state
-                |> Result.map_error ~f:(fun err ->
+                |> Base.Result.map_error ~f:(fun err ->
                        let repositories = current_repos ~switch_state in
                        interpret_solver_error ~repositories solver err)
               in
@@ -376,7 +377,7 @@ let select_explicitly_specified ~local_packages ~explicitly_specified =
       | true, Error errors -> Error errors
       | true, Ok selected -> Ok (OpamPackage.Name.Set.add key selected))
     ~init:(Ok OpamPackage.Name.Set.empty) explicitly_specified
-  |> Result.map_error ~f:(fun missing_packages ->
+  |> Base.Result.map_error ~f:(fun missing_packages ->
          let msg =
            Fmt.str "Package%a %a specified but not found in repository"
              D.Pp.plural missing_packages
