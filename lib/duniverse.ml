@@ -96,6 +96,13 @@ module Repo = struct
           } ->
               let* url = url url_src in
               Ok (Some { opam = package; dev_repo; url; hashes })
+          | { dev_repo = None; package; _ } ->
+              Logs.warn (fun l ->
+                  l
+                    "Package %a has no dev-repo specified, but it needs a \
+                     dev-repo to be successfully included in the duniverse."
+                    Opam.Pp.package package);
+              Ok None
           | _ -> Ok None)
   end
 

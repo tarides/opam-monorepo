@@ -236,10 +236,11 @@ module Package_summary = struct
 
   let has_flag flag { flags; _ } = List.mem flag ~set:flags
   let is_compiler v = has_flag OpamTypes.Pkgflag_Compiler v
+  let is_conf v = has_flag OpamTypes.Pkgflag_Conf v
 
   let is_virtual = function
     | { url_src = None; _ } -> true
-    | { dev_repo = None | Some ""; _ } -> true
+    | { dev_repo = None | Some ""; _ } as pkg when is_conf pkg -> true
     | { build_commands = []; _ } -> true
     | _ -> false
 
