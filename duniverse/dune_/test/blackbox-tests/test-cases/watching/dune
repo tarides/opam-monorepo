@@ -1,9 +1,0 @@
-(cram
- ; see https://github.com/ocaml/dune/pull/4728
- (enabled_if
-  (<> "macosx" %{ocaml-config:system}))
- (deps helpers.sh))
-
-(cram
- (applies_to what-dune-watches)
- (deps %{bin:strace}))

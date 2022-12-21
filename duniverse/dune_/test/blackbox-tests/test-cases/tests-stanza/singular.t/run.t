@@ -1,2 +1,0 @@
-  $ dune runtest
-  singular test
