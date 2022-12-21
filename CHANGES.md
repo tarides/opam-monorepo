@@ -1,13 +1,9 @@
-## unreleased
-
-### Added
+## 0.3.5
 
 ### Changed
 
 - Treat packages with no build commands as if they can be built with dune (#355,
   @gridbugs)
-
-### Deprecated
 
 ### Fixed
 
@@ -15,15 +11,10 @@
   @Leonidas-from-XIV)
 - Read the `compiler` flag from OPAM metadata thus classifying more packages
   correctly as base packages (#328, @Leonidas-from-XIV)
-
 - Fix bug where dev repo urls ending with a "/" would result in
   `opam monorepo pull` placing package source code directly inside the duniverse
   directory instead of in a subdirectory of the duniverse directory (#359,
   @gridbugs)
-
-### Removed
-
-### Security
 
 # 0.3.4
 
