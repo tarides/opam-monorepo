@@ -1,0 +1,11 @@
+opam-version: "2.0"
+depends: [
+  "dune"
+]
+build: [ "dune" "build" ]
+url {
+  src: "https://b.com/b.tbz"
+  checksum: [
+    "sha256=0000000000000000000000000000000000000000000000000000000000000000"
+  ]
+}

@@ -2,6 +2,10 @@
 
 ### Added
 
+- Display warning when a package to be locked is missing a `dev-repo` field and
+  is being skipped because of it (#341, #362, @kit-ty-kate,
+  @Leonidas-from-XIV)
+
 ### Changed
 
 ### Deprecated
