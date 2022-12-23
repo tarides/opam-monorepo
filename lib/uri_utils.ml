@@ -7,3 +7,5 @@ let has_git_extension uri =
     Fpath.get_ext ~multi:true path
   in
   match ext_res with Ok ".git" -> true | Ok _ | Error _ -> false
+
+let canonicalize uri = uri
