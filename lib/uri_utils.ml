@@ -1,11 +1,16 @@
 open Import
 
-let has_git_extension uri =
+let canonicalize uri =
   let open Result.O in
-  let ext_res =
-    let+ path = Fpath.of_string (Uri.path uri) in
-    Fpath.get_ext ~multi:true path
+  let path = Uri.path uri in
+  let new_path =
+    let* fpath = Fpath.of_string path in
+    match Fpath.has_ext ".git" fpath with
+    | true -> Ok fpath
+    | false -> Ok (Fpath.add_ext ".git" fpath)
   in
-  match ext_res with Ok ".git" -> true | Ok _ | Error _ -> false
-
-let canonicalize uri = uri
+  match new_path with
+  | Error _ -> uri
+  | Ok new_path ->
+      let new_path = Fpath.to_string new_path in
+      Uri.with_path uri new_path

@@ -53,16 +53,25 @@ module Repo = struct
   end
 
   module Package = struct
+    module Dev_repo = struct
+      type t = string
+
+      let equal a b =
+        let a = a |> Uri.of_string |> Uri_utils.canonicalize in
+        let b = b |> Uri.of_string |> Uri_utils.canonicalize in
+        Uri.equal a b
+    end
+
     type t = {
       opam : OpamPackage.t;
-      dev_repo : string;
+      dev_repo : Dev_repo.t;
       url : unresolved Url.t;
       hashes : OpamHash.t list;
     }
 
     let equal t t' =
       OpamPackage.equal t.opam t'.opam
-      && String.equal t.dev_repo t'.dev_repo
+      && Dev_repo.equal t.dev_repo t'.dev_repo
       && Url.equal Git.Ref.equal t.url t'.url
 
     let pp fmt { opam; dev_repo; url; hashes } =
