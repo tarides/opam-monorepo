@@ -44,6 +44,15 @@ module Arg = struct
       (fun x -> `Keep_git_dir x)
       Cmdliner.Arg.(value & flag & info [ "keep-git-dir" ] ~doc)
 
+  let keep_symlinked_dir =
+    let doc =
+      "Preserve directories that are symlinked. This can be useful when \
+       working on the dependencies of projects."
+    in
+    named
+      (fun x -> `Keep_symlinked_dir x)
+      Cmdliner.Arg.(value & flag & info [ "keep-symlinked-dir" ] ~doc)
+
   let duniverse_repos =
     let open Cmdliner in
     let docv = "REPOSITORIES" in

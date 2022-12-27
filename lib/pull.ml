@@ -62,12 +62,28 @@ let mark_duniverse_content_as_vendored ~duniverse_dir =
   Logs.debug (fun l -> l "Successfully wrote %a" Pp.Styled.path dune_file);
   Ok ()
 
-let pre_pull_clean_up ~full ~duniverse_dir duniverse =
-  if full then Bos.OS.Dir.delete ~must_exist:false ~recurse:true duniverse_dir
-  else
-    Result.List.iter duniverse ~f:(fun { Duniverse.Repo.dir; _ } ->
-        Bos.OS.Dir.delete ~must_exist:false ~recurse:true
-          Fpath.(duniverse_dir / dir))
+let pre_pull_clean_up ~full ~preserve_symlinks ~duniverse_dir duniverse =
+  let open Result.O in
+  match full with
+  | true ->
+      let* () =
+        Bos.OS.Dir.delete ~must_exist:false ~recurse:true duniverse_dir
+      in
+      Ok []
+  | false ->
+      let* preserved =
+        Result.List.map duniverse ~f:(fun { Duniverse.Repo.dir; _ } ->
+            let directory = Fpath.(duniverse_dir / dir) in
+            let* stat = Bos.OS.Path.stat directory in
+            match (preserve_symlinks, stat.st_kind) with
+            | true, S_LNK -> Ok (Some dir)
+            | _, _ ->
+                let* () =
+                  Bos.OS.Dir.delete ~must_exist:false ~recurse:true directory
+                in
+                Ok None)
+      in
+      preserved |> List.filter_map ~f:Base.Fn.id |> Result.ok
 
 let duniverse_documentation =
   {|# duniverse
@@ -109,12 +125,24 @@ let write_duniverse_dir_documentation ~duniverse_dir =
   in
   written
 
-let duniverse ~full ~root ~global_state ~trim_clone duniverse =
+let filter_preserved ~preserved duniverse =
+  List.filter_map
+    ~f:(fun ({ Duniverse.Repo.dir; _ } as entry) ->
+      match List.mem dir ~set:preserved with
+      | true -> None
+      | false -> Some entry)
+    duniverse
+
+let duniverse ~full ~preserve_symlinks ~root ~global_state ~trim_clone duniverse
+    =
   if Base.List.is_empty duniverse then Ok ()
   else
     let open Result.O in
     let duniverse_dir = Fpath.(root // Config.vendor_dir) in
-    let* () = pre_pull_clean_up ~full ~duniverse_dir duniverse in
+    let* preserved =
+      pre_pull_clean_up ~full ~preserve_symlinks ~duniverse_dir duniverse
+    in
+    let duniverse = filter_preserved ~preserved duniverse in
     let* _created = Bos.OS.Dir.create duniverse_dir in
     let* () = mark_duniverse_content_as_vendored ~duniverse_dir in
     let* () = write_duniverse_dir_documentation ~duniverse_dir in

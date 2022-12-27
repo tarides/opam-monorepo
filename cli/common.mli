@@ -33,6 +33,9 @@ module Arg : sig
   val keep_git_dir : [ `Keep_git_dir of bool ] Cmdliner.Term.t
   (** CLI flag to keep the [.git] directory after pulling the vendored sources. *)
 
+  val keep_symlinked_dir : [ `Keep_symlinked_dir of bool ] Cmdliner.Term.t
+  (** CLI flag to preserve vendored directories that are symlinked. *)
+
   val setup_logs : unit -> unit Cmdliner.Term.t
   (** Adds the common options -v and --version and sets up the logs before being passed as [()] to a
       command. *)

@@ -50,7 +50,8 @@ let check_dune_lang_version ~yes ~root =
     Ok ())
 
 let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
-    (`Keep_git_dir keep_git_dir) (`Duniverse_repos duniverse_repos) () =
+    (`Keep_git_dir keep_git_dir) (`Keep_symlinked_dir keep_symlinked_dir)
+    (`Duniverse_repos duniverse_repos) () =
   let open Result.O in
   let* lockfile = Common.find_lockfile ~explicit_lockfile root in
   let* duniverse = D.Lockfile.to_duniverse lockfile in
@@ -60,7 +61,11 @@ let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
           l "No dependencies to pull, there's nothing to be done here!");
       Ok ()
   | duniverse ->
-      let full = match duniverse_repos with None -> true | _ -> false in
+      let full =
+        match (duniverse_repos, keep_symlinked_dir) with
+        | None, false -> true
+        | _ -> false
+      in
       let* duniverse =
         Common.filter_duniverse ~to_consider:duniverse_repos duniverse
       in
@@ -77,7 +82,8 @@ let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
       in
       let* pulled =
         D.Pull.duniverse ~global_state ~root ~full
-          ~trim_clone:(not keep_git_dir) duniverse
+          ~preserve_symlinks:keep_symlinked_dir ~trim_clone:(not keep_git_dir)
+          duniverse
       in
       (match
          D.Opam.version_is_at_least locked_ocaml_version switch_ocaml_version
@@ -121,7 +127,7 @@ let term =
   Common.Term.result_to_exit
     Cmdliner.Term.(
       const run $ Common.Arg.yes $ Common.Arg.root $ Common.Arg.lockfile
-      $ Common.Arg.keep_git_dir $ Common.Arg.duniverse_repos
-      $ Common.Arg.setup_logs ())
+      $ Common.Arg.keep_git_dir $ Common.Arg.keep_symlinked_dir
+      $ Common.Arg.duniverse_repos $ Common.Arg.setup_logs ())
 
 let cmd = Cmdliner.Cmd.v info term
