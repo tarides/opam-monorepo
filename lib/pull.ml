@@ -74,7 +74,7 @@ let pre_pull_clean_up ~full ~preserve_symlinks ~duniverse_dir duniverse =
       let* preserved =
         Result.List.map duniverse ~f:(fun { Duniverse.Repo.dir; _ } ->
             let directory = Fpath.(duniverse_dir / dir) in
-            let* stat = Bos.OS.Path.stat directory in
+            let* stat = Bos.OS.Path.symlink_stat directory in
             match (preserve_symlinks, stat.st_kind) with
             | true, S_LNK -> Ok (Some dir)
             | _, _ ->
