@@ -3,7 +3,9 @@
 ### Added
 
 - Display warning when a package to be locked is missing a `dev-repo` field and
-  is being skipped because of it (#341, #362, @kit-ty-kate,
+  is being skipped because of it (#341, #362, @kit-ty-kate, @Leonidas-from-XIV)
+- Add option `--keep-symlinked-dir` to preserve symlinks in `duniverse/`, which
+  can be useful for local development. (#348, #366, @hannesm,
   @Leonidas-from-XIV)
 
 ### Changed
