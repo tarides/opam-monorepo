@@ -184,13 +184,13 @@ module Pin_depends = struct
 end
 
 module Duniverse_dirs = struct
-  type t = (string * OpamHash.t list) OpamUrl.Map.t
+  type t = (string * OpamHash.t list * string list) OpamUrl.Map.t
 
   let from_duniverse l =
     let open Duniverse.Repo in
     List.fold_left l ~init:OpamUrl.Map.empty
-      ~f:(fun acc { dir; url; hashes; _ } ->
-        OpamUrl.Map.add (Url.to_opam_url url) (dir, hashes) acc)
+      ~f:(fun acc { dir; url; hashes; provided_packages = _; dune_packages } ->
+        OpamUrl.Map.add (Url.to_opam_url url) (dir, hashes, dune_packages) acc)
 
   let hash_to_opam_value hash =
     Opam.Value.String.to_value (OpamHash.to_string hash)
@@ -209,12 +209,26 @@ module Duniverse_dirs = struct
       let* l = Opam.Value.List.from_value Result.ok value in
       match l with
       | [ { pelem = String url; _ }; { pelem = String dir; _ } ] ->
-          Ok (OpamUrl.of_string url, (dir, []))
+          Ok (OpamUrl.of_string url, (dir, [], []))
       | [ { pelem = String url; _ }; { pelem = String dir; _ }; hashes ] ->
           let* hashes =
             Opam.Value.List.from_value hash_from_opam_value hashes
           in
-          Ok (OpamUrl.of_string url, (dir, hashes))
+          Ok (OpamUrl.of_string url, (dir, hashes, []))
+      | [
+       { pelem = String url; _ };
+       { pelem = String dir; _ };
+       dune_packages;
+       hashes;
+      ] ->
+          let* hashes =
+            Opam.Value.List.from_value hash_from_opam_value hashes
+          in
+          let* dune_packages =
+            Opam.Value.List.from_value Opam.Value.String.from_value
+              dune_packages
+          in
+          Ok (OpamUrl.of_string url, (dir, hashes, dune_packages))
       | _ ->
           Opam.Pos.unexpected_value_error
             ~expected:"a list [ \"url\" \"repo name\" [<hashes>] ]" value
@@ -222,15 +236,18 @@ module Duniverse_dirs = struct
     let* bindings = Opam.Value.List.from_value elm_from_value value in
     Ok (OpamUrl.Map.of_list bindings)
 
-  let one_to_opam_value (url, (dir, hashes)) =
+  let one_to_opam_value (url, (dir, hashes, dune_packages)) =
     let url = Opam.Value.String.to_value (OpamUrl.to_string url) in
     let dir = Opam.Value.String.to_value dir in
+    let dune_packages =
+      Opam.Value.List.to_value Opam.Value.String.to_value dune_packages
+    in
     let list = Opam.Value.List.to_value Fun.id in
     match hashes with
-    | [] -> list [ url; dir ]
+    | [] -> list [ url; dir; dune_packages ]
     | _ ->
         let hashes = Opam.Value.List.to_value hash_to_opam_value hashes in
-        list [ url; dir; hashes ]
+        list [ url; dir; dune_packages; hashes ]
 
   let to_opam_value t =
     let l = OpamUrl.Map.bindings t in
@@ -346,9 +363,16 @@ let to_duniverse { duniverse_dirs; pin_depends; _ } =
               (Extra_field.name Duniverse_dirs.field)
           in
           Error (`Msg msg)
-      | Some (dir, hashes) ->
+      | Some (dir, hashes, dune_packages) ->
           let* url = url_to_duniverse_url url in
-          Ok { Duniverse.Repo.dir; url; hashes; provided_packages })
+          Ok
+            {
+              Duniverse.Repo.dir;
+              url;
+              hashes;
+              provided_packages;
+              dune_packages;
+            })
 
 let to_opam ~opam_monorepo_cwd (t : t) =
   let open OpamFile.OPAM in

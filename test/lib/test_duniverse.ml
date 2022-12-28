@@ -93,6 +93,7 @@ module Repo = struct
                     dev_repo = "d";
                     url = Other "u";
                     hashes = [];
+                    dune_packages = [];
                   }))
           ();
         make_test ~name:"Uses default branch when no tag"
@@ -112,16 +113,18 @@ module Repo = struct
                     dev_repo = "d";
                     url = Git { repo = "r"; ref = "master" };
                     hashes = [];
+                    dune_packages = [];
                   }))
           ();
       ]
   end
 
   let package_factory ?(name = "") ?(version = "") ?(dev_repo = "")
-      ?(url = Duniverse.Repo.Url.Other "") ?(hashes = []) () =
+      ?(url = Duniverse.Repo.Url.Other "") ?(hashes = []) ?(dune_packages = [])
+      () =
     let open Duniverse.Repo.Package in
     let opam = opam_factory ~name ~version in
-    { opam; dev_repo; url; hashes }
+    { opam; dev_repo; url; hashes; dune_packages }
 
   let test_from_packages =
     let make_test ~name ~dev_repo ~packages ~expected () =
@@ -148,6 +151,7 @@ module Repo = struct
                url = Other "u";
                hashes = [];
                provided_packages = [ opam_factory ~name:"p" ~version:"v" ];
+               dune_packages = [];
              })
         ();
       make_test ~name:"Uses repository name as dir"
@@ -164,6 +168,7 @@ module Repo = struct
                url = Other "u";
                hashes = [];
                provided_packages = [ opam_factory ~name:"p" ~version:"v" ];
+               dune_packages = [];
              })
         ();
       make_test ~name:"Expection for dune"
@@ -180,6 +185,7 @@ module Repo = struct
                url = Other "u";
                hashes = [];
                provided_packages = [ opam_factory ~name:"p" ~version:"v" ];
+               dune_packages = [];
              })
         ();
       make_test ~name:"Add all to provided packages" ~dev_repo:"d"
@@ -201,6 +207,7 @@ module Repo = struct
                    opam_factory ~name:"d" ~version:"zdev";
                    opam_factory ~name:"d-lwt" ~version:"zdev";
                  ];
+               dune_packages = [];
              })
         ();
       make_test ~name:"Pick URL from highest version package" ~dev_repo:"d"
@@ -222,6 +229,7 @@ module Repo = struct
                    opam_factory ~name:"d" ~version:"1";
                    opam_factory ~name:"d-lwt" ~version:"2";
                  ];
+               dune_packages = [];
              })
         ();
       make_test ~name:"An empty string dev_repo results in an error"
@@ -274,6 +282,7 @@ let test_from_dependency_entries =
                url = Other "u";
                hashes = [];
                provided_packages = [ opam_factory ~name:"x" ~version:"v" ];
+               dune_packages = [];
              };
            ])
       ();
@@ -308,6 +317,7 @@ let test_from_dependency_entries =
                    opam_factory ~name:"y-lwt" ~version:"v";
                    opam_factory ~name:"y" ~version:"v";
                  ];
+               dune_packages = [];
              };
            ])
       ();

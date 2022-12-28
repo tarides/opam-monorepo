@@ -67,6 +67,7 @@ module Repo = struct
       dev_repo : Dev_repo.t;
       url : unresolved Url.t;
       hashes : OpamHash.t list;
+      dune_packages : string list;
     }
 
     let equal t t' =
@@ -74,12 +75,13 @@ module Repo = struct
       && Dev_repo.equal t.dev_repo t'.dev_repo
       && Url.equal Git.Ref.equal t.url t'.url
 
-    let pp fmt { opam; dev_repo; url; hashes } =
+    let pp fmt { opam; dev_repo; url; hashes; dune_packages } =
       let open Pp_combinators.Ocaml in
       Format.fprintf fmt
-        "@[<hov 2>{ opam = %a;@ dev_repo = %a;@ url = %a;@ hashes = %a }@]"
+        "@[<hov 2>{ opam = %a;@ dev_repo = %a;@ url = %a;@ hashes = %a;@ \
+         dune_packages = %a }@]"
         Opam.Pp.raw_package opam string dev_repo (Url.pp Git.Ref.pp) url
-        (list Opam.Pp.hash) hashes
+        (list Opam.Pp.hash) hashes (list string) dune_packages
 
     let from_package_summary ~get_default_branch ps =
       let open Opam.Package_summary in
@@ -101,10 +103,11 @@ module Repo = struct
            package;
            dev_repo = Some dev_repo;
            hashes;
+           dune_packages;
            _;
           } ->
               let* url = url url_src in
-              Ok (Some { opam = package; dev_repo; url; hashes })
+              Ok (Some { opam = package; dev_repo; url; hashes; dune_packages })
           | { dev_repo = None; package; _ } ->
               Logs.warn (fun l ->
                   l
@@ -120,6 +123,7 @@ module Repo = struct
     url : 'ref Url.t;
     hashes : OpamHash.t list;
     provided_packages : OpamPackage.t list;
+    dune_packages : string list;
   }
 
   let log_url_selection ~dev_repo ~packages ~highest_version_package =
@@ -154,6 +158,9 @@ module Repo = struct
   let from_packages ~dev_repo (packages : Package.t list) =
     let open Result.O in
     let provided_packages = List.map packages ~f:(fun p -> p.Package.opam) in
+    let dune_packages =
+      List.map packages ~f:(fun p -> p.Package.dune_packages) |> List.concat
+    in
     let* dir = dir_name_from_dev_repo dev_repo in
     let urls =
       let add acc p =
@@ -163,7 +170,8 @@ module Repo = struct
       |> Unresolved_url_map.bindings
     in
     match urls with
-    | [ (url, hashes) ] -> Ok { dir; url; hashes; provided_packages }
+    | [ (url, hashes) ] ->
+        Ok { dir; url; hashes; provided_packages; dune_packages }
     | _ ->
         (* If packages from the same repo were resolved to different URLs, we need to pick
            a single one. Here we decided to go with the one associated with the package
@@ -181,15 +189,16 @@ module Repo = struct
         log_url_selection ~dev_repo ~packages ~highest_version_package;
         let url = highest_version_package.url in
         let hashes = highest_version_package.hashes in
-        Ok { dir; url; hashes; provided_packages }
+        Ok { dir; url; hashes; provided_packages; dune_packages }
 
   let equal equal_ref t t' =
-    let { dir; url; hashes; provided_packages } = t in
+    let { dir; url; hashes; provided_packages; dune_packages } = t in
     let {
       dir = dir';
       url = url';
       hashes = hashes';
       provided_packages = provided_packages';
+      dune_packages = dune_packages';
     } =
       t'
     in
@@ -197,14 +206,15 @@ module Repo = struct
     && Url.equal equal_ref url url'
     && Base.List.equal Opam.Hash.equal hashes hashes'
     && Base.List.equal OpamPackage.equal provided_packages provided_packages'
+    && Base.List.equal String.equal dune_packages dune_packages'
 
-  let pp pp_ref fmt { dir; url; hashes; provided_packages } =
+  let pp pp_ref fmt { dir; url; hashes; provided_packages; dune_packages } =
     let open Pp_combinators.Ocaml in
     Format.fprintf fmt
-      "@[<hov 2>{ dir = %a;@ url = %a;@ hashes = %a;@ provided_packages = %a \
-       }@]"
+      "@[<hov 2>{ dir = %a;@ url = %a;@ hashes = %a;@ provided_packages = %a;@ \
+       dune_packages = %a }@]"
       string dir (Url.pp pp_ref) url (list Opam.Pp.hash) hashes
-      (list Opam.Pp.raw_package) provided_packages
+      (list Opam.Pp.raw_package) provided_packages (list string) dune_packages
 
   let resolve ~resolve_ref ({ url; _ } as t) =
     let open Result.O in

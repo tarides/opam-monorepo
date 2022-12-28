@@ -20,6 +20,7 @@ module Repo : sig
     url : 'ref Url.t;
     hashes : OpamHash.t list;
     provided_packages : OpamPackage.t list;
+    dune_packages : string list;
   }
   (** Type of dependencies to clone in the duniverse *)
 
@@ -37,6 +38,7 @@ module Repo : sig
       dev_repo : string;
       url : unresolved Url.t;
       hashes : OpamHash.t list;
+      dune_packages : string list;
     }
 
     val equal : t -> t -> bool
