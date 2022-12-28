@@ -57,9 +57,9 @@ module Repo = struct
       type t = string
 
       let equal a b =
-        let a = a |> Uri.of_string |> Uri_utils.canonicalize in
-        let b = b |> Uri.of_string |> Uri_utils.canonicalize in
-        Uri.equal a b
+        let a = a |> Uri.of_string |> Uri_utils.Normalized.of_uri in
+        let b = b |> Uri.of_string |> Uri_utils.Normalized.of_uri in
+        Uri_utils.Normalized.equal a b
     end
 
     type t = {

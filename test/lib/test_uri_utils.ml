@@ -1,5 +1,5 @@
-module Uri = struct
-  include Uri
+module Normalized = struct
+  include Duniverse_lib.Uri_utils.Normalized
 
   let testable = Alcotest.testable pp equal
 end
@@ -7,11 +7,11 @@ end
 let test_canonical_uri =
   let make_test ~name ~supplied ~expected =
     let supplied = Uri.of_string supplied in
-    let expected = Uri.of_string expected in
+    let expected = Uri.of_string expected |> Normalized.Private.unescaped in
     let test_name = Fmt.str "canonicizing: %s" name in
     let test_fun () =
-      let actual = Duniverse_lib.Uri_utils.canonicalize supplied in
-      Alcotest.(check Uri.testable) test_name expected actual
+      let actual = Normalized.of_uri supplied in
+      Alcotest.(check Normalized.testable) test_name expected actual
     in
     (test_name, `Quick, test_fun)
   in
