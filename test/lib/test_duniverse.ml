@@ -28,7 +28,8 @@ let opam_factory ~name ~version =
   OpamPackage.create name version
 
 let summary_factory ?(name = "undefined") ?(version = "1") ?dev_repo ?url_src
-    ?(hashes = []) ?(depexts = []) ?(flags = []) ?(build_commands = []) () =
+    ?(hashes = []) ?(depexts = []) ?(flags = []) ?(build_commands = [])
+    ?(dune_packages = []) () =
   let package = opam_factory ~name ~version in
   {
     Opam.Package_summary.package;
@@ -38,6 +39,7 @@ let summary_factory ?(name = "undefined") ?(version = "1") ?dev_repo ?url_src
     depexts;
     flags;
     build_commands;
+    dune_packages;
   }
 
 let dependency_factory ?(vendored = true) ?name ?version ?dev_repo ?url_src

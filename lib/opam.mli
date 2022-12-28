@@ -22,6 +22,7 @@ module Package_summary : sig
     depexts : (OpamSysPkg.Set.t * OpamTypes.filter) list;
     flags : OpamTypes.package_flag list;
     build_commands : OpamTypes.command list;
+    dune_packages : string list;
   }
 
   val pp : t Fmt.t
