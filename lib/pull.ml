@@ -126,11 +126,8 @@ let write_duniverse_dir_documentation ~duniverse_dir =
   written
 
 let filter_preserved ~preserved duniverse =
-  List.filter_map
-    ~f:(fun ({ Duniverse.Repo.dir; _ } as entry) ->
-      match List.mem dir ~set:preserved with
-      | true -> None
-      | false -> Some entry)
+  List.filter
+    ~f:(fun { Duniverse.Repo.dir; _ } -> not @@ List.mem dir ~set:preserved)
     duniverse
 
 let duniverse ~full ~preserve_symlinks ~root ~global_state ~trim_clone duniverse
