@@ -54,8 +54,8 @@ let info =
         "You can access the functionality directly via the $(i,monorepo-lock) \
          and $(i,monorepo-pull) commands,";
       `P
-        "Also see $(i,https://github.com/avsm/platform) for an example of a \
-         fully bootstrapping use of this tool.";
+        "Also see $(i,https://github.com/realworldocaml/book) for an example \
+         of the usage of this tool.";
     ]
   in
   Cmd.info "opam-monorepo" ~version:Common.Arg.version ~doc ~man_xrefs ~sdocs
