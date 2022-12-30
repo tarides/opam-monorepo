@@ -83,7 +83,7 @@ let pre_pull_clean_up ~full ~preserve_symlinks ~duniverse_dir duniverse =
                 in
                 Ok None)
       in
-      preserved |> List.filter_map ~f:Base.Fn.id |> Result.ok
+      preserved |> List.filter_map ~f:Fun.id |> Result.ok
 
 let duniverse_documentation =
   {|# duniverse
