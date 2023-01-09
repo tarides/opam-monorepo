@@ -82,13 +82,8 @@ let postprocess_project ~keep directory =
       let* res =
         Bos.OS.File.with_oc path
           (fun oc sexps ->
-            List.iter
-              ~f:(fun sexp ->
-                let s = Fmt.str "%a\n" pp_sexp sexp in
-                output_string oc s
-                (* Sexplib.Sexp.output oc sexp; *)
-                (* output_char oc '\n' *))
-              sexps;
+            let ppf = Format.formatter_of_out_channel oc in
+            List.iter ~f:(fun sexp -> Fmt.pf ppf "%a\n" pp_sexp sexp) sexps;
             Ok ())
           sexps
       in
