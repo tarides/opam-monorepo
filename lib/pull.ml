@@ -38,10 +38,9 @@ let preprocess_dune dfp ~keep ~translations dune_file =
    to escape values like \ and thus generates dune files that dune can't
    read *)
 let rec pp_sexp ppf = function
-  | Sexplib0.Sexp.List xs ->
-      Fmt.pf ppf "(";
-      List.iter ~f:(fun x -> Fmt.pf ppf "%a " pp_sexp x) xs;
-      Fmt.pf ppf ")"
+  | Sexplib0.Sexp.List items ->
+      let pp_items = Fmt.list ~sep:(Fmt.any " ") pp_sexp in
+      Fmt.pf ppf "(%a)" pp_items items
   | Atom "" -> Fmt.string ppf {|""|}
   | Atom s -> (
       match
