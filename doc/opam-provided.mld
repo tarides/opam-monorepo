@@ -1,4 +1,4 @@
-{1 opam Provided Dependencies}
+{1 [opam]-provided Dependencies}
 
 This section documents a feature that’s useful when some dependencies cannot be
 installed via [opam-monorepo]. This workflow isn’t meant for regular use but
