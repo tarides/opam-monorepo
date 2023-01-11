@@ -1,0 +1,220 @@
+{1 Considerations}
+
+When using opam-monorepo the question arises: how to manage it in comparison to
+the regular opam workflow? Compared to regular opam usage using opam-monorepo
+brings lockfiles and a duniverse folder into the repository. There are multiple
+ways to handle this, with multiple advantages and disadvantages. This document
+explains the considerations behind dealing with each of those, along with our
+recommendations.
+
+The document mentions Git for source control as it currently is the most
+popular choice, but similar considerations are valid for most other version
+control systems as well.
+
+{1 Methods}
+
+We assume the opam file is committed to the repository. Running [opam monorepo
+lock] will create a [.locked] opam file in addition to the original opam file.
+Calling [opam monorepo pull] will create a [duniverse] folder into which it
+will unpack the sources of the packages that are mentioned in the lockfile.
+
+In either case, the regular way of installing dependencies via Opam is not
+compromised, as the [.opam] files stay untouched. Only in the case of
+{!label-duniverse-in-git} [dune] will prefer the vendored dependencies over the
+installed ones.
+
+{2:lockfile-in-git Lockfile in Git}
+
+This approach is very similar to the regular opam workflow, but in addition
+to having the [.opam] file committed to the repository, the lockfile that
+[opam monorepo lock] generates is committed as well.
+
+Advantages include:
+
+{ul
+{- The project repository only grows by one file, thus easy to adopt}
+{- The packages to be installed are reproducible between different machines
+   and contributors}
+{- Easier management of dependencies over dependencies installed in opam
+   switches}
+{- Having the dependencies built by Dune enables additional Dune features like
+   simplified cross-compilation, using a shared Dune cache between projects,
+   etc.}
+}
+
+Disadvantages might be
+
+{ul
+{- Everyone who wants to build the dependencies with Dune needs to have
+   [opam-monorepo] installed to pull the dependencies first}
+{- Not self-contained - contributors need to [pull] the sources themselves}
+}
+
+{3 Adoption}
+
+To adopt this workflow, the initial lockfiles needs to be created. Because not
+all packages build with Dune, most likely the [opam-overlays] repository has to
+be added initially to supply Dune ports for some packages:
+
+{[
+$ opam repository add dune-universe git+https://github.com/dune-universe/opam-overlays.git
+]}
+
+From here on, a lockfile can be created.
+
+{[
+$ opam monorepo lock
+]}
+
+This creates a [.opam.locked] file for the project, this has to be added to the
+repository:
+
+{[
+$ git add *.opam.locked
+]}
+
+As [opam monorepo pull] creates a [duniverse] folder with all the sources of
+the vendored dependencies, it should be excluded by an entry in the
+[.gitignore] file:
+
+{[
+duniverse/
+]}
+
+{3 Dealing with conflicts}
+
+Since multiple contributors can run [opam monorepo lock] which will produce a
+different lock file depending on the state of the used OPAM repositories. This
+might lead to merge conflicts of the lockfiles when merging.
+
+As such instead of manually trying to resolve all conflicts it is suggested to
+just fix conflicts in [.opam] files and regenerate the lock file with [opam
+monorepo lock], which will produce a new, conflict-free solution.
+
+{2:duniverse-in-git Duniverse in Git}
+
+The most extreme approach is to create a lockfile with [opam monorepo lock],
+download all the dependencies via [opam monorepo pull] and then commit both the
+lockfile as well as the pulled sources.
+
+This approach has some advantages:
+
+{ul
+{- Does not require [opam] to be installed or set-up: only [ocaml] and [dune]}
+{- Only the person that creates the lockfile and duniverse must have
+   [opam-monorepo] installed}
+{- The repository can be immediately used after cloning as everything is
+   self-contained}
+{- Easy to modify dependencies if required}
+{- Can be used offline}
+}
+
+Yet unfortunately it also has some disadvantages:
+
+{ul
+{- Can lead to lots of files in repository}
+{- Potentially complicated merge conflicts if multiple contributors update
+   versions of locked packages}
+{- Users might modify the committed sources, yet those patches will be
+   overwritten when [opam monorepo pull] is run, leading to changes
+   disappearing}
+{- Pulled sources can interact with version control in unexpected ways,
+   see {!label-git-add}}
+}
+
+{3 Adoption}
+
+The approach to adopt this workflow is very similar to the others:
+
+{[
+$ opam monorepo lock
+$ opam monorepo pull
+]}
+
+When deciding to store the Duniverse in Git, some things need to be kept in
+mind. Since [opam-monorepo] unpacks source tarballs, the content of them might
+interfere with the repository, e.g. by including large files or [.gitignore]
+files.
+
+Thus it is important to force [git] to include {e all} files that were unpacked
+by [opam-monorepo], i.e. ignoring [.gitignore] files that might exist in
+subfolders:
+
+{[
+$ git add *.opam.locked
+$ git add -A duniverse/
+$ git commit -m "Import duniverse"
+]}
+
+On the other hand, neither the lockfiles nor the duniverse folder should be
+added to [.gitignore], to make sure future updates to the source will be
+committed as well.
+
+{3 Dealing with conflicts}
+
+Similar as with the lock file in the repository when multiple people update
+their lock files and pull separately merge conflicts might happen. The easy
+solution again is not to try to solve the conflict, but instead lock and pull
+again and replace all conflicting files:
+
+{[
+$ opam monorepo lock
+$ git add *.opam.locked
+$ opam monorepo pull
+$ git add -A duniverse/
+]}
+
+{2:unlocked Not locked}
+
+While this is not a [opam-monorepo] workflow per se, projects that do not use
+[opam-monorepo] can still be used with [opam-monorepo] and can bring some
+advantages to the project.
+
+In this workflow such every contributor is responsible for creating and
+maintianing their own lockfile and duniverse.
+
+Advantages include:
+
+{ul
+{- No opt-in to [opam-monorepo] required, every developer can chose to use it
+   or not}
+{- Easier management of dependencies over dependencies installed in opam
+   switches}
+{- No merge conflicts when multiple collaborators change versions}
+{- Having the dependencies built by Dune makes cross-compilation easier}
+}
+
+If comes however with some caveats:
+
+{ul
+{- Everyone might end up with different packages in their duniverse, thus low
+   reproducability}
+{- Not self-contained}
+}
+
+{3 Adoption}
+
+Using this workflow is very simple
+
+{[
+$ opam monorepo lock
+$ opam monorepo pull
+]}
+
+This will lock the versions of packages into a lock file and will download the
+sources into the [duniverse] folder. Thus a subsequent [dune build] will also
+build the dependencies.
+
+To make sure the files don't get committed by accident, it is useful to add the
+following excludes to the [.gitignore] file:
+
+{[
+*.opam.locked
+duniverse/
+]}
+
+{2:recommendations Recommendations}
+
+[opam-monorepo] maintainers encourage the approach of {!label-lockfile-in-git},
+since it provides a compromise between reproducibility and changes required to
+the repository.
