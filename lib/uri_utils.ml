@@ -1,53 +1,29 @@
 open Import
 
-let path_ok path = path |> Fpath.to_string |> Result.ok
-let flip f a b = f b a
-
-let dump_result =
-  let dump_msg ppf (`Msg s) = Fmt.pf ppf "`Msg %S" s in
-  Fmt.Dump.result ~ok:Fmt.Dump.string ~error:dump_msg
-
 module Normalized = struct
-  type t = Uri.t
+  type t = Github of { user : string; repo : string } | Other of Uri.t
 
   let of_uri uri =
-    let open Result.O in
-    let new_path =
-      let* fpath = Fpath.of_string (Uri.path uri) in
-      let fpath =
-        match Fpath.has_ext ".git" fpath with
-        | true -> fpath
-        | false -> Fpath.add_ext ".git" fpath
-      in
-      path_ok fpath
-    in
-    let new_scheme =
-      match Uri.scheme uri with
-      | Some "https" -> Ok "git+https"
-      | Some "git" -> Ok "git+https"
-      | Some ("git+https" as git_https) -> Ok git_https
-      | Some other_scheme ->
-          Fmt.error_msg "Can't canonicalize unknown scheme %s" other_scheme
-      | None -> Fmt.error_msg "No scheme provided in %a" Uri.pp uri
-    in
-    match (new_path, new_scheme) with
-    | Ok new_path, Ok new_scheme ->
-        uri
-        |> (flip Uri.with_path) new_path
-        |> (flip Uri.with_scheme) (Some new_scheme)
-        |> (flip Uri.with_fragment) None
-    | failed_path, failed_scheme ->
-        Logs.warn (fun l ->
-            l
-              "Canonicalization of URL %a failed, passing unchanged \
-               (canonicialized path: %a canonicalized scheme: %a)"
-              Uri.pp uri dump_result failed_path dump_result failed_scheme);
-        uri
+    match Uri.host uri with
+    | Some "github.com" -> (
+        let path = Uri.path uri in
+        match Base.String.lsplit2 path ~on:'/' with
+        | None -> Other uri
+        | Some (user, gitrepo) -> (
+            match Base.String.rsplit2 gitrepo ~on:'.' with
+            | None -> Github { user; repo = gitrepo }
+            | Some (repo, "git") -> Github { user; repo }
+            | Some _ -> Other uri))
+    | Some _ | None -> Other uri
 
-  let equal = Uri.equal
-  let pp ppf v = Fmt.pf ppf "<Normalized %a>" Uri.pp v
+  let equal a b =
+    match (a, b) with
+    | Other a, Other b -> Uri.equal a b
+    | Github { user; repo }, Github { user = user'; repo = repo' } ->
+        String.equal user user' && String.equal repo repo'
+    | _, _ -> false
 
-  module Private = struct
-    let unescaped = Base.Fn.id
-  end
+  let pp ppf = function
+    | Github { user; repo } -> Fmt.pf ppf "<Github user=%s repo=%s>" user repo
+    | Other uri -> Fmt.pf ppf "<Other %a>" Uri.pp uri
 end

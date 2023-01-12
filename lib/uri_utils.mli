@@ -12,14 +12,4 @@ module Normalized : sig
 
   val pp : t Fmt.t
   (** Pretty printer for normalized URLs. *)
-
-  (**/**)
-
-  module Private : sig
-    val unescaped : Uri.t -> t
-    (** Convert a [Uri.t] into a [t] without escaping. Only used for testing
-        purposes, as it breaks the security guarantees. *)
-  end
-
-  (**/**)
 end
