@@ -51,9 +51,10 @@ module Repo : sig
   end
 
   val from_packages :
+    deduplicate_packages:bool ->
     dev_repo:Dev_repo.t ->
     Package.t list ->
-    (unresolved t, Rresult.R.msg) result
+    (unresolved t list, Rresult.R.msg) result
 
   (**/**)
 end
@@ -64,6 +65,7 @@ type t = resolved Repo.t list
 val equal : t -> t -> bool
 
 val from_dependency_entries :
+  deduplicate_packages:bool ->
   get_default_branch:(string -> (string, Rresult.R.msg) result) ->
   Opam.Dependency_entry.t list ->
   (unresolved Repo.t list, [ `Msg of string ]) result

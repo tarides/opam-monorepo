@@ -155,41 +155,63 @@ module Repo = struct
     Dev_repo.repo_name dev_repo
     |> Base.Result.map ~f:(function "dune" -> "dune_" | name -> name)
 
-  let from_packages ~dev_repo (packages : Package.t list) =
+  let dir_name_from_package package =
+    let name = OpamPackage.name package in
+    let version = OpamPackage.version package in
+    Fmt.str "%a.%a" Opam.Pp.package_name name Opam.Pp.version version
+
+  let from_packages ~deduplicate_packages ~dev_repo (packages : Package.t list)
+      =
     let open Result.O in
-    let provided_packages = List.map packages ~f:(fun p -> p.Package.opam) in
-    let dune_packages =
-      List.map packages ~f:(fun p -> p.Package.dune_packages) |> List.concat
-    in
-    let* dir = dir_name_from_dev_repo dev_repo in
-    let urls =
-      let add acc p =
-        Unresolved_url_map.set acc p.Package.url p.Package.hashes
-      in
-      List.fold_left packages ~init:Unresolved_url_map.empty ~f:add
-      |> Unresolved_url_map.bindings
-    in
-    match urls with
-    | [ (url, hashes) ] ->
-        Ok { dir; url; hashes; provided_packages; dune_packages }
-    | _ ->
-        (* If packages from the same repo were resolved to different URLs, we need to pick
-           a single one. Here we decided to go with the one associated with the package
-           that has the higher version. We need a better long term solution as this won't
-           play nicely with pins for instance.
-           The best solution here would be to use source trimming, so we can pull each individual
-           package to its own directory and strip out all the unrelated source code but we would
-           need dune to provide that feature. *)
-        let* highest_version_package =
-          Base.List.max_elt packages ~compare:(fun p p' ->
-              OpamPackage.Version.compare p.Package.opam.version p'.opam.version)
-          |> Base.Result.of_option
-               ~error:(Rresult.R.msg "No packages to compare, internal failure")
+    match deduplicate_packages with
+    | false ->
+        let repos =
+          List.map packages
+            ~f:(fun Package.{ url; hashes; opam; dune_packages; dev_repo = _ }
+               ->
+              let provided_packages = [ opam ] in
+              let dir = dir_name_from_package opam in
+              { dir; url; hashes; provided_packages; dune_packages })
         in
-        log_url_selection ~dev_repo ~packages ~highest_version_package;
-        let url = highest_version_package.url in
-        let hashes = highest_version_package.hashes in
-        Ok { dir; url; hashes; provided_packages; dune_packages }
+        Ok repos
+    | true -> (
+        let provided_packages =
+          List.map packages ~f:(fun p -> p.Package.opam)
+        in
+        let dune_packages =
+          List.map packages ~f:(fun p -> p.Package.dune_packages) |> List.concat
+        in
+        let* dir = dir_name_from_dev_repo dev_repo in
+        let urls =
+          let add acc p =
+            Unresolved_url_map.set acc p.Package.url p.Package.hashes
+          in
+          List.fold_left packages ~init:Unresolved_url_map.empty ~f:add
+          |> Unresolved_url_map.bindings
+        in
+        match urls with
+        | [ (url, hashes) ] ->
+            Ok [ { dir; url; hashes; provided_packages; dune_packages } ]
+        | _ ->
+            (* If packages from the same repo were resolved to different URLs, we need to pick
+               a single one. Here we decided to go with the one associated with the package
+               that has the higher version. We need a better long term solution as this won't
+               play nicely with pins for instance.
+               The best solution here would be to use source trimming, so we can pull each individual
+               package to its own directory and strip out all the unrelated source code but we would
+               need dune to provide that feature. *)
+            let* highest_version_package =
+              Base.List.max_elt packages ~compare:(fun p p' ->
+                  OpamPackage.Version.compare p.Package.opam.version
+                    p'.opam.version)
+              |> Base.Result.of_option
+                   ~error:
+                     (Rresult.R.msg "No packages to compare, internal failure")
+            in
+            log_url_selection ~dev_repo ~packages ~highest_version_package;
+            let url = highest_version_package.url in
+            let hashes = highest_version_package.hashes in
+            Ok [ { dir; url; hashes; provided_packages; dune_packages } ])
 
   let equal equal_ref t t' =
     let { dir; url; hashes; provided_packages; dune_packages } = t in
@@ -241,7 +263,8 @@ let dev_repo_map_from_packages packages =
         | Some pkgs -> Some (pkg :: pkgs)
         | None -> Some [ pkg ]))
 
-let from_dependency_entries ~get_default_branch dependencies =
+let from_dependency_entries ~deduplicate_packages ~get_default_branch
+    dependencies =
   let open Result.O in
   let summaries =
     List.filter_map
@@ -259,8 +282,9 @@ let from_dependency_entries ~get_default_branch dependencies =
   let dev_repo_map = dev_repo_map_from_packages pkgs in
   Dev_repo.Map.fold dev_repo_map ~init:[]
     ~f:(fun ~key:dev_repo ~data:pkgs acc ->
-      Repo.from_packages ~dev_repo pkgs :: acc)
+      Repo.from_packages ~deduplicate_packages ~dev_repo pkgs :: acc)
   |> Base.Result.all
+  |> Base.Result.map ~f:List.concat
 
 let resolve ~resolve_ref t =
   Parallel.map ~f:(Repo.resolve ~resolve_ref) t |> Base.Result.all
