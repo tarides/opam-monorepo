@@ -10,6 +10,10 @@
 
 ### Changed
 
+- Canonicalize the URLs of the OPAM `dev-repo` fields to be able to detect more
+  semantically equivalent URLs, this should reduce the risk of build failures
+  due to duplicate code pulled (#118, #365 @TheLortex, @Leonidas-from-XIV)
+
 ### Deprecated
 
 ### Fixed
