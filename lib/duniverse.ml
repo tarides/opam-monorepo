@@ -127,15 +127,16 @@ module Repo = struct
   }
 
   let log_url_selection ~dev_repo ~packages ~highest_version_package =
-    let url_to_string : unresolved Url.t -> string = function
-      | Git { repo; ref } -> Printf.sprintf "%s#%s" repo ref
-      | Other s -> s
+    let pp_url : unresolved Url.t Fmt.t =
+     fun ppf -> function
+      | Git { repo; ref } -> Fmt.pf ppf "%s#%s" repo ref
+      | Other s -> Fmt.string ppf s
     in
-    let pp_package fmt { Package.opam = { name; version }; url; _ } =
-      Format.fprintf fmt "%a.%a: %s" Opam.Pp.package_name name Opam.Pp.version
-        version (url_to_string url)
+    let pp_package ppf { Package.opam = { name; version }; url; _ } =
+      Fmt.pf ppf "%a.%a: %a" Opam.Pp.package_name name Opam.Pp.version version
+        pp_url url
     in
-    let sep fmt () = Format.fprintf fmt "\n" in
+    let sep = Fmt.any "\n" in
     Logs.warn (fun l ->
         l
           "The following packages come from the same repository %s but are \
