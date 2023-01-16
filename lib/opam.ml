@@ -392,4 +392,22 @@ module Value = struct
       in
       Pos.with_default pelem
   end
+
+  module Option = struct
+    let from_value ~key:key_from_value ~elem:elm_from_value value =
+      let open Result.O in
+      match (value : OpamParserTypes.FullPos.value) with
+      | { pelem = Option (key, { pelem = values; _ }); _ } ->
+          let* key = key_from_value key in
+          let* values = Result.List.map ~f:elm_from_value values in
+          Ok (key, values)
+      | _ -> Pos.unexpected_value_error ~expected:"a group" value
+
+    let to_value ~key:key_to_value ~elem:elm_to_value (key, values) =
+      let values =
+        Pos.with_default (Stdlib.ListLabels.map ~f:elm_to_value values)
+      in
+      let key = key_to_value key in
+      OpamParserTypes.FullPos.Option (key, values) |> Pos.with_default
+  end
 end

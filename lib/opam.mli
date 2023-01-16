@@ -140,6 +140,20 @@ module Value : sig
       OpamParserTypes.FullPos.value ->
       ('a list, Rresult.R.msg) result
   end
+
+  module Option : sig
+    val to_value :
+      key:('a -> OpamParserTypes.FullPos.value) ->
+      elem:('b -> OpamParserTypes.FullPos.value) ->
+      'a * 'b list ->
+      OpamParserTypes.FullPos.value
+
+    val from_value :
+      key:(OpamParserTypes.FullPos.value -> ('a, Rresult.R.msg) result) ->
+      elem:(OpamParserTypes.FullPos.value -> ('b, Rresult.R.msg) result) ->
+      OpamParserTypes.FullPos.value ->
+      ('a * 'b list, Rresult.R.msg) result
+  end
 end
 
 val avoid_version : OpamFile.OPAM.t -> bool
