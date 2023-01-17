@@ -369,23 +369,36 @@ module Pos = struct
 end
 
 module Value = struct
-  module String = struct
-    let from_value value =
-      match (value : OpamParserTypes.FullPos.value) with
-      | { pelem = String s; _ } -> Ok s
-      | _ -> Pos.unexpected_value_error ~expected:"a string" value
-
-    let to_value s = Pos.with_default (OpamParserTypes.FullPos.String s)
+  module type CONST = sig
+    val string_to_constr : string -> OpamParserTypes.FullPos.value_kind
+    val const_match : OpamParserTypes.FullPos.value -> string option
+    val expected : string
   end
 
-  module Ident = struct
+  module ConstStr (M : CONST) = struct
     let from_value value =
-      match (value : OpamParserTypes.FullPos.value) with
-      | { pelem = Ident s; _ } -> Ok s
-      | _ -> Pos.unexpected_value_error ~expected:"an identifier" value
+      match M.const_match value with
+      | Some s -> Ok s
+      | None -> Pos.unexpected_value_error ~expected:M.expected value
 
-    let to_value s = Pos.with_default (OpamParserTypes.FullPos.Ident s)
+    let to_value s = Pos.with_default (M.string_to_constr s)
   end
+
+  module String = ConstStr (struct
+    open OpamParserTypes.FullPos
+
+    let string_to_constr s = String s
+    let const_match = function { pelem = String s; _ } -> Some s | _ -> None
+    let expected = "a string"
+  end)
+
+  module Ident = ConstStr (struct
+    open OpamParserTypes.FullPos
+
+    let string_to_constr s = Ident s
+    let const_match = function { pelem = Ident s; _ } -> Some s | _ -> None
+    let expected = "an identifier"
+  end)
 
   module List = struct
     let from_value elm_from_value value =
