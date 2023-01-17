@@ -129,6 +129,13 @@ module Value : sig
       OpamParserTypes.FullPos.value -> (string, Rresult.R.msg) result
   end
 
+  module Ident : sig
+    val to_value : string -> OpamParserTypes.FullPos.value
+
+    val from_value :
+      OpamParserTypes.FullPos.value -> (string, Rresult.R.msg) result
+  end
+
   module List : sig
     val to_value :
       ('a -> OpamParserTypes.FullPos.value) ->

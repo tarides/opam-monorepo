@@ -378,6 +378,15 @@ module Value = struct
     let to_value s = Pos.with_default (OpamParserTypes.FullPos.String s)
   end
 
+  module Ident = struct
+    let from_value value =
+      match (value : OpamParserTypes.FullPos.value) with
+      | { pelem = Ident s; _ } -> Ok s
+      | _ -> Pos.unexpected_value_error ~expected:"an identifier" value
+
+    let to_value s = Pos.with_default (OpamParserTypes.FullPos.Ident s)
+  end
+
   module List = struct
     let from_value elm_from_value value =
       match (value : OpamParserTypes.FullPos.value) with
