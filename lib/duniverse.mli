@@ -50,11 +50,13 @@ module Repo : sig
       (t option, [ `Msg of string ]) result
   end
 
-  val from_packages :
-    deduplicate_packages:bool ->
+  val from_packages_by_dev_repo :
     dev_repo:Dev_repo.t ->
     Package.t list ->
-    (unresolved t list, Rresult.R.msg) result
+    (unresolved t, Rresult.R.msg) result
+
+  val from_packages :
+    Package.t list -> (unresolved t list, Rresult.R.msg) result
 
   (**/**)
 end

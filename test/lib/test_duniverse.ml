@@ -128,14 +128,15 @@ module Repo = struct
 
   let test_from_packages =
     let make_test ~name ~dev_repo ~packages ~expected () =
-      let test_name = Printf.sprintf "Repo.from_packages: %s" name in
+      let test_name =
+        Printf.sprintf "Repo.from_packages_by_dev_repo: %s" name
+      in
       let test_fun () =
         let dev_repo = Dev_repo.from_string dev_repo in
         let actual =
-          Duniverse.Repo.from_packages ~deduplicate_packages:true ~dev_repo
-            packages
+          Duniverse.Repo.from_packages_by_dev_repo ~dev_repo packages
         in
-        Alcotest.(check (result (list Testable.Repo.unresolved) Testable.r_msg))
+        Alcotest.(check (result Testable.Repo.unresolved Testable.r_msg))
           test_name expected actual
       in
       (test_name, `Quick, test_fun)
@@ -149,16 +150,14 @@ module Repo = struct
           ]
         ~expected:
           (Ok
-             [
-               Duniverse.Repo.
-                 {
-                   dir = "d";
-                   url = Other "u";
-                   hashes = [];
-                   provided_packages = [ opam_factory ~name:"p" ~version:"v" ];
-                   dune_packages = [];
-                 };
-             ])
+             Duniverse.Repo.
+               {
+                 dir = "d";
+                 url = Other "u";
+                 hashes = [];
+                 provided_packages = [ opam_factory ~name:"p" ~version:"v" ];
+                 dune_packages = [];
+               })
         ();
       make_test ~name:"Uses repository name as dir"
         ~dev_repo:"https://github.com/org/repo.git"
@@ -169,16 +168,14 @@ module Repo = struct
           ]
         ~expected:
           (Ok
-             [
-               Duniverse.Repo.
-                 {
-                   dir = "repo";
-                   url = Other "u";
-                   hashes = [];
-                   provided_packages = [ opam_factory ~name:"p" ~version:"v" ];
-                   dune_packages = [];
-                 };
-             ])
+             Duniverse.Repo.
+               {
+                 dir = "repo";
+                 url = Other "u";
+                 hashes = [];
+                 provided_packages = [ opam_factory ~name:"p" ~version:"v" ];
+                 dune_packages = [];
+               })
         ();
       make_test ~name:"Expection for dune"
         ~dev_repo:"https://github.com/ocaml/dune.git"
@@ -189,16 +186,14 @@ module Repo = struct
           ]
         ~expected:
           (Ok
-             [
-               Duniverse.Repo.
-                 {
-                   dir = "dune_";
-                   url = Other "u";
-                   hashes = [];
-                   provided_packages = [ opam_factory ~name:"p" ~version:"v" ];
-                   dune_packages = [];
-                 };
-             ])
+             Duniverse.Repo.
+               {
+                 dir = "dune_";
+                 url = Other "u";
+                 hashes = [];
+                 provided_packages = [ opam_factory ~name:"p" ~version:"v" ];
+                 dune_packages = [];
+               })
         ();
       make_test ~name:"Add all to provided packages" ~dev_repo:"d"
         ~packages:
@@ -210,20 +205,18 @@ module Repo = struct
           ]
         ~expected:
           (Ok
-             [
-               Duniverse.Repo.
-                 {
-                   dir = "d";
-                   url = Other "u";
-                   hashes = [];
-                   provided_packages =
-                     [
-                       opam_factory ~name:"d" ~version:"zdev";
-                       opam_factory ~name:"d-lwt" ~version:"zdev";
-                     ];
-                   dune_packages = [];
-                 };
-             ])
+             Duniverse.Repo.
+               {
+                 dir = "d";
+                 url = Other "u";
+                 hashes = [];
+                 provided_packages =
+                   [
+                     opam_factory ~name:"d" ~version:"zdev";
+                     opam_factory ~name:"d-lwt" ~version:"zdev";
+                   ];
+                 dune_packages = [];
+               })
         ();
       make_test ~name:"Pick URL from highest version package" ~dev_repo:"d"
         ~packages:
@@ -235,20 +228,18 @@ module Repo = struct
           ]
         ~expected:
           (Ok
-             [
-               Duniverse.Repo.
-                 {
-                   dir = "d";
-                   url = Other "u2";
-                   hashes = [];
-                   provided_packages =
-                     [
-                       opam_factory ~name:"d" ~version:"1";
-                       opam_factory ~name:"d-lwt" ~version:"2";
-                     ];
-                   dune_packages = [];
-                 };
-             ])
+             Duniverse.Repo.
+               {
+                 dir = "d";
+                 url = Other "u2";
+                 hashes = [];
+                 provided_packages =
+                   [
+                     opam_factory ~name:"d" ~version:"1";
+                     opam_factory ~name:"d-lwt" ~version:"2";
+                   ];
+                 dune_packages = [];
+               })
         ();
       make_test ~name:"An empty string dev_repo results in an error"
         ~dev_repo:"" ~packages:[]
