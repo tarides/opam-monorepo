@@ -34,7 +34,7 @@ module Packages : sig
 
   type t
 
-  val init : unit -> t
+  val init : string -> t
 
   type 'a rename_result = {
     changed : bool;

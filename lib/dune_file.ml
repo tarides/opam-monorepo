@@ -72,16 +72,10 @@ module Packages = struct
   module Set = Set.Make (String)
   module Map = Map.Make (String)
 
-  type t = Random.State.t
+  type t = Digest.t
 
-  let init = Random.State.make_self_init
-
-  let random_valid_identifier t =
-    let int_range ~start ~end_ = Random.State.int t (end_ - start) + start in
-    let lower_case_letter_range () = int_range ~start:97 ~end_:122 in
-    (* Seq.init exists only in 4.14+ *)
-    List.init ~len:8 ~f:(fun _ -> Char.chr (lower_case_letter_range ()))
-    |> List.to_seq |> String.of_seq
+  let init disambiguation = Digest.string disambiguation
+  let random_valid_identifier t = Digest.to_hex t
 
   let random_public_name v original =
     let suffix = random_valid_identifier v in

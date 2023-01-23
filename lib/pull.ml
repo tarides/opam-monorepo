@@ -51,14 +51,14 @@ let rec pp_sexp ppf = function
           let s = String.escaped s in
           Fmt.pf ppf {|"%s"|} s)
 
-let postprocess_project ~keep directory =
+let postprocess_project ~keep ~disambiguation directory =
   let open Result.O in
   let is_dune_file path =
     let filename = Fpath.filename path in
     Ok (String.equal filename "dune")
   in
   let elements = `Sat is_dune_file in
-  let dfp = Dune_file.Packages.init () in
+  let dfp = Dune_file.Packages.init disambiguation in
   let renames = Dune_file.Packages.Map.empty in
   (* determine files and their mappings first *)
   let* files, renames =
@@ -99,7 +99,9 @@ let pull ?(trim_clone = false) ~global_state ~duniverse_dir src_dep =
     Opam.pull_tree ~url ~hashes ~dir:output_dir global_state @@| fun result ->
     let* () = result in
     let* () = if trim_clone then do_trim_clone output_dir else Ok () in
-    let* () = postprocess_project ~keep:dune_packages output_dir in
+    let* () =
+      postprocess_project ~keep:dune_packages ~disambiguation:dir output_dir
+    in
     Ok ()
   else
     let error =
