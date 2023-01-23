@@ -104,11 +104,11 @@ module Packages = struct
     in
     match matches with [] -> None | [ x ] -> Some x | _ -> None
 
-  (* type rename_result = { *)
-  (*   changed: bool; *)
-  (*   sexp: Sexplib0.Sexp.t; *)
-  (*   renames: string Map.t; *)
-  (* } *)
+  type 'a rename_result = {
+    changed : bool;
+    stanzas : 'a;
+    renames : string Map.t;
+  }
 
   (* determine whether the package should be kept or not, handles [pkg.name] and [pkg] *)
   let should_keep ~keep name =
@@ -123,10 +123,10 @@ module Packages = struct
     let public_name = find_by_name "public_name" stanzas in
     let name = find_by_name "name" stanzas in
     match public_name with
-    | None -> (false, stanzas, renames)
+    | None -> { changed = false; stanzas; renames }
     | Some public_name -> (
         match should_keep ~keep public_name with
-        | true -> (false, stanzas, renames)
+        | true -> { changed = false; stanzas; renames }
         | false ->
             let stanzas =
               List.filter stanzas ~f:(function
@@ -153,15 +153,15 @@ module Packages = struct
                   in
                   (stanzas, renames)
             in
-            (true, stanzas, renames))
+            { changed = true; stanzas; renames })
 
   let rename_one t ~keep renames = function
     | List (Atom "library" :: stanzas) ->
-        let changed, stanzas, renames =
+        let { changed; stanzas; renames } =
           rename_library t ~keep renames stanzas
         in
-        (changed, List (Atom "library" :: stanzas), renames)
-    | otherwise -> (false, otherwise, renames)
+        { changed; stanzas = List (Atom "library" :: stanzas); renames }
+    | stanzas -> { changed = false; stanzas; renames }
 
   let translate_lib renames = function
     | Atom old_name as original -> (
@@ -188,20 +188,21 @@ module Packages = struct
     | List (Atom "*" :: Atom "-*-" :: Atom "tuareg" :: Atom "-*-" :: _) :: _ ->
         (* if the first sexp is the tuareg stanza, then it is an ocaml file,
            do not modify *)
-        (changed, sexps, renames)
+        { changed; stanzas = sexps; renames }
     | sexps ->
-        let changed, sexps, renames =
+        let { changed; stanzas; renames } =
           List.fold_left
-            ~f:(fun (changed, acc, renames) sexp ->
-              let recursively_changed, v, renames =
+            ~f:(fun { changed; stanzas = acc; renames } sexp ->
+              let { changed = recursively_changed; stanzas = v; renames } =
                 rename_one t ~keep renames sexp
               in
               let changed = changed || recursively_changed in
-              (changed, v :: acc, renames))
-            ~init:(changed, [], renames) sexps
+              { changed; stanzas = v :: acc; renames })
+            ~init:{ changed; stanzas = []; renames }
+            sexps
         in
-        let sexps = List.rev sexps in
-        (changed, sexps, renames)
+        let stanzas = List.rev stanzas in
+        { changed; stanzas; renames }
 end
 
 module Raw = struct

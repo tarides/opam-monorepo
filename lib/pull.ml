@@ -14,7 +14,7 @@ let do_trim_clone output_dir =
   in
   Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
 
-let preprocess_dune dfp ~keep ~translations dune_file =
+let preprocess_dune dfp ~keep ~renames dune_file =
   let open Result.O in
   let* sexps =
     Bos.OS.File.with_ic dune_file
@@ -27,12 +27,12 @@ let preprocess_dune dfp ~keep ~translations dune_file =
   match sexps with
   | None -> Ok None
   | Some sexps -> (
-      let changed, sexps, translations =
-        Dune_file.Packages.rename dfp ~keep translations sexps
+      let Dune_file.Packages.{ changed; stanzas; renames } =
+        Dune_file.Packages.rename dfp ~keep renames sexps
       in
       match changed with
       | false -> Ok None
-      | true -> Ok (Some (sexps, translations)))
+      | true -> Ok (Some (stanzas, renames)))
 
 (* can't use Sexplib pretty printer here because Sexplib tries too hard
    to escape values like \ and thus generates dune files that dune can't
@@ -59,25 +59,25 @@ let postprocess_project ~keep directory =
   in
   let elements = `Sat is_dune_file in
   let dfp = Dune_file.Packages.init () in
-  let translations = Dune_file.Packages.Map.empty in
+  let renames = Dune_file.Packages.Map.empty in
   (* determine files and their mappings first *)
-  let* files, translations =
+  let* files, renames =
     Bos.OS.Path.fold ~elements
-      (fun path (acc, translations) ->
-        match preprocess_dune dfp ~keep ~translations path with
-        | Ok (Some (sexps, translations)) ->
+      (fun path (acc, renames) ->
+        match preprocess_dune dfp ~keep ~renames path with
+        | Ok (Some (sexps, renames)) ->
             let v = (path, sexps) in
-            (v :: acc, translations)
-        | Ok None -> (acc, translations)
+            (v :: acc, renames)
+        | Ok None -> (acc, renames)
         | Error (`Msg msg) ->
             Logs.err (fun l -> l "Error while preprocessing: %s" msg);
-            (acc, translations))
-      ([], translations) [ directory ]
+            (acc, renames))
+      ([], renames) [ directory ]
   in
   (* apply the renames to the files *)
   Result.List.iter files ~f:(fun (path, sexps) ->
       Logs.debug (fun l -> l "Rewriting %a to make names unique" Fpath.pp path);
-      let sexps = Dune_file.Packages.update_references translations sexps in
+      let sexps = Dune_file.Packages.update_references renames sexps in
       let* res =
         Bos.OS.File.with_oc path
           (fun oc sexps ->

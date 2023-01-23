@@ -36,12 +36,18 @@ module Packages : sig
 
   val init : unit -> t
 
+  type 'a rename_result = {
+    changed : bool;
+    stanzas : 'a;
+    renames : string Map.t;
+  }
+
   val rename :
     t ->
     keep:string list ->
     string Map.t ->
     Sexplib0.Sexp.t list ->
-    bool * Sexplib0.Sexp.t list * string Map.t
+    Sexplib0.Sexp.t list rename_result
 
   val update_references :
     string Map.t -> Sexplib0.Sexp.t list -> Sexplib0.Sexp.t list
