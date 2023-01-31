@@ -1,0 +1,12 @@
+opam-version: "2.0"
+depends: [
+  "dune"
+]
+dev-repo: "https://github.com/tarides/some-dev-repo"
+build: [ "dune" "build" "-p" name ]
+url {
+  src: "https://tarides.com/same-dev-repo.tbz"
+  checksum: [
+    "sha256=0000000000000000000000000000000000000000000000000000000000000000"
+  ]
+}

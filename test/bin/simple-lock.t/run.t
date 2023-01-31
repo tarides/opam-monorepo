@@ -49,22 +49,22 @@ The lockfile should contain the base packages, dune and our 2 dependencies
   ]
   x-opam-monorepo-duniverse-dirs: [
     [
-      "https://b.com/b.tbz"
-      "b"
-      [
-        "sha256=0000000000000000000000000000000000000000000000000000000000000000"
-      ]
+      url {"https://b.com/b.tbz"}
+      dir {"b"}
+      hashes
+        {"sha256=0000000000000000000000000000000000000000000000000000000000000000"}
+      dune-packages {}
     ]
     [
-      "https://c.com/c.tbz"
-      "c"
-      [
-        "sha256=0000000000000000000000000000000000000000000000000000000000000001"
-      ]
+      url {"https://c.com/c.tbz"}
+      dir {"c"}
+      hashes
+        {"sha256=0000000000000000000000000000000000000000000000000000000000000001"}
+      dune-packages {}
     ]
   ]
   x-opam-monorepo-opam-repositories: [
     "file://$OPAM_MONOREPO_CWD/minimal-repo" "file://$OPAM_MONOREPO_CWD/repo"
   ]
   x-opam-monorepo-root-packages: ["simple-lock"]
-  x-opam-monorepo-version: "0.3"
+  x-opam-monorepo-version: "0.4"

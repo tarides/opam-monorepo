@@ -20,6 +20,7 @@ module Repo : sig
     url : 'ref Url.t;
     hashes : OpamHash.t list;
     provided_packages : OpamPackage.t list;
+    dune_packages : string list;
   }
   (** Type of dependencies to clone in the duniverse *)
 
@@ -37,6 +38,7 @@ module Repo : sig
       dev_repo : string;
       url : unresolved Url.t;
       hashes : OpamHash.t list;
+      dune_packages : string list;
     }
 
     val equal : t -> t -> bool
@@ -48,10 +50,13 @@ module Repo : sig
       (t option, [ `Msg of string ]) result
   end
 
-  val from_packages :
+  val from_packages_by_dev_repo :
     dev_repo:Dev_repo.t ->
     Package.t list ->
     (unresolved t, Rresult.R.msg) result
+
+  val from_packages :
+    Package.t list -> (unresolved t list, Rresult.R.msg) result
 
   (**/**)
 end
@@ -62,6 +67,7 @@ type t = resolved Repo.t list
 val equal : t -> t -> bool
 
 val from_dependency_entries :
+  deduplicate_packages:bool ->
   get_default_branch:(string -> (string, Rresult.R.msg) result) ->
   Opam.Dependency_entry.t list ->
   (unresolved Repo.t list, [ `Msg of string ]) result

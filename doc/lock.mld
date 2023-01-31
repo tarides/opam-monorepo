@@ -196,3 +196,40 @@ opam monorepo lock --add-opam-provided [some-other-package]
 When the field is set in multiple opam files and eventually through the
 [--add-opam-provided] option, they are combinded into a set, removing
 duplicates.
+
+{3 Deduplication}
+
+To build the vendored packages, the vendored solution has to be unambigious.
+That means the dune package names have to be unique and not be repeated in
+multiple vendored libraries, otherwise dune will refuse the compilation as it
+is not clear which package is being referenced.
+
+Duplicate package names can sometimes occur if multiple packages from the same
+repository share a tarball, then unpacking the tarball for every package would
+lead to overlaps.
+
+By default [opam monorepo] deduplicates packages from the same repository
+(using the [dev-repo] field of OPAM) and choses just one of the packages. In
+the case of version conflicts where one package has a newer version than
+another, it will pick the one with the newest version.
+
+While this is a working solution for a lot of cases, this can lead to issues
+where it might seem that the version constraints are not respected.
+
+If this leads to issues, there exists the experimental option
+[--deduplicate-packages=false] to disable the behavior. In such case the
+vendored source code will be duplicated. To rectify this, on [pull] the
+vendored source trees will be rewritten, attempting to deduplicate package
+names in [dune] files.
+
+To use this feature, lock your project with this command:
+
+{[
+opam monorepo lock --deduplicate-packages=false
+]}
+
+The generated lockfile will be slightly different, as it will now include every
+package, so the amount of packages reported as locked might go up slightly.
+
+From there a regular [opam monorepo pull] will make sure to rewrite the pulled
+source trees automatically.

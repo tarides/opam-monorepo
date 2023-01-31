@@ -67,6 +67,7 @@ module Repo = struct
       dev_repo : Dev_repo.t;
       url : unresolved Url.t;
       hashes : OpamHash.t list;
+      dune_packages : string list;
     }
 
     let equal t t' =
@@ -74,12 +75,13 @@ module Repo = struct
       && Dev_repo.equal t.dev_repo t'.dev_repo
       && Url.equal Git.Ref.equal t.url t'.url
 
-    let pp fmt { opam; dev_repo; url; hashes } =
+    let pp fmt { opam; dev_repo; url; hashes; dune_packages } =
       let open Pp_combinators.Ocaml in
       Format.fprintf fmt
-        "@[<hov 2>{ opam = %a;@ dev_repo = %a;@ url = %a;@ hashes = %a }@]"
+        "@[<hov 2>{ opam = %a;@ dev_repo = %a;@ url = %a;@ hashes = %a;@ \
+         dune_packages = %a }@]"
         Opam.Pp.raw_package opam string dev_repo (Url.pp Git.Ref.pp) url
-        (list Opam.Pp.hash) hashes
+        (list Opam.Pp.hash) hashes (list string) dune_packages
 
     let from_package_summary ~get_default_branch ps =
       let open Opam.Package_summary in
@@ -101,10 +103,11 @@ module Repo = struct
            package;
            dev_repo = Some dev_repo;
            hashes;
+           dune_packages;
            _;
           } ->
               let* url = url url_src in
-              Ok (Some { opam = package; dev_repo; url; hashes })
+              Ok (Some { opam = package; dev_repo; url; hashes; dune_packages })
           | { dev_repo = None; package; _ } ->
               Logs.warn (fun l ->
                   l
@@ -120,18 +123,20 @@ module Repo = struct
     url : 'ref Url.t;
     hashes : OpamHash.t list;
     provided_packages : OpamPackage.t list;
+    dune_packages : string list;
   }
 
   let log_url_selection ~dev_repo ~packages ~highest_version_package =
-    let url_to_string : unresolved Url.t -> string = function
-      | Git { repo; ref } -> Printf.sprintf "%s#%s" repo ref
-      | Other s -> s
+    let pp_url : unresolved Url.t Fmt.t =
+     fun ppf -> function
+      | Git { repo; ref } -> Fmt.pf ppf "%s#%s" repo ref
+      | Other s -> Fmt.string ppf s
     in
-    let pp_package fmt { Package.opam = { name; version }; url; _ } =
-      Format.fprintf fmt "%a.%a: %s" Opam.Pp.package_name name Opam.Pp.version
-        version (url_to_string url)
+    let pp_package ppf { Package.opam = { name; version }; url; _ } =
+      Fmt.pf ppf "%a.%a: %a" Opam.Pp.package_name name Opam.Pp.version version
+        pp_url url
     in
-    let sep fmt () = Format.fprintf fmt "\n" in
+    let sep = Fmt.any "\n" in
     Logs.warn (fun l ->
         l
           "The following packages come from the same repository %s but are \
@@ -151,9 +156,17 @@ module Repo = struct
     Dev_repo.repo_name dev_repo
     |> Base.Result.map ~f:(function "dune" -> "dune_" | name -> name)
 
-  let from_packages ~dev_repo (packages : Package.t list) =
+  let dir_name_from_package package =
+    let name = OpamPackage.name package in
+    let version = OpamPackage.version package in
+    Fmt.str "%a.%a" Opam.Pp.package_name name Opam.Pp.version version
+
+  let from_packages_by_dev_repo ~dev_repo (packages : Package.t list) =
     let open Result.O in
     let provided_packages = List.map packages ~f:(fun p -> p.Package.opam) in
+    let dune_packages =
+      List.map packages ~f:(fun p -> p.Package.dune_packages) |> List.concat
+    in
     let* dir = dir_name_from_dev_repo dev_repo in
     let urls =
       let add acc p =
@@ -163,7 +176,8 @@ module Repo = struct
       |> Unresolved_url_map.bindings
     in
     match urls with
-    | [ (url, hashes) ] -> Ok { dir; url; hashes; provided_packages }
+    | [ (url, hashes) ] ->
+        Ok { dir; url; hashes; provided_packages; dune_packages }
     | _ ->
         (* If packages from the same repo were resolved to different URLs, we need to pick
            a single one. Here we decided to go with the one associated with the package
@@ -181,15 +195,26 @@ module Repo = struct
         log_url_selection ~dev_repo ~packages ~highest_version_package;
         let url = highest_version_package.url in
         let hashes = highest_version_package.hashes in
-        Ok { dir; url; hashes; provided_packages }
+        Ok { dir; url; hashes; provided_packages; dune_packages }
+
+  let from_packages (packages : Package.t list) =
+    let repos =
+      List.map packages
+        ~f:(fun Package.{ url; hashes; opam; dune_packages; dev_repo = _ } ->
+          let provided_packages = [ opam ] in
+          let dir = dir_name_from_package opam in
+          { dir; url; hashes; provided_packages; dune_packages })
+    in
+    Ok repos
 
   let equal equal_ref t t' =
-    let { dir; url; hashes; provided_packages } = t in
+    let { dir; url; hashes; provided_packages; dune_packages } = t in
     let {
       dir = dir';
       url = url';
       hashes = hashes';
       provided_packages = provided_packages';
+      dune_packages = dune_packages';
     } =
       t'
     in
@@ -197,14 +222,15 @@ module Repo = struct
     && Url.equal equal_ref url url'
     && Base.List.equal Opam.Hash.equal hashes hashes'
     && Base.List.equal OpamPackage.equal provided_packages provided_packages'
+    && Base.List.equal String.equal dune_packages dune_packages'
 
-  let pp pp_ref fmt { dir; url; hashes; provided_packages } =
+  let pp pp_ref fmt { dir; url; hashes; provided_packages; dune_packages } =
     let open Pp_combinators.Ocaml in
     Format.fprintf fmt
-      "@[<hov 2>{ dir = %a;@ url = %a;@ hashes = %a;@ provided_packages = %a \
-       }@]"
+      "@[<hov 2>{ dir = %a;@ url = %a;@ hashes = %a;@ provided_packages = %a;@ \
+       dune_packages = %a }@]"
       string dir (Url.pp pp_ref) url (list Opam.Pp.hash) hashes
-      (list Opam.Pp.raw_package) provided_packages
+      (list Opam.Pp.raw_package) provided_packages (list string) dune_packages
 
   let resolve ~resolve_ref ({ url; _ } as t) =
     let open Result.O in
@@ -231,7 +257,8 @@ let dev_repo_map_from_packages packages =
         | Some pkgs -> Some (pkg :: pkgs)
         | None -> Some [ pkg ]))
 
-let from_dependency_entries ~get_default_branch dependencies =
+let from_dependency_entries ~deduplicate_packages ~get_default_branch
+    dependencies =
   let open Result.O in
   let summaries =
     List.filter_map
@@ -246,11 +273,14 @@ let from_dependency_entries ~get_default_branch dependencies =
   in
   let* pkg_opts = Base.Result.all results in
   let pkgs = Base.List.filter_opt pkg_opts in
-  let dev_repo_map = dev_repo_map_from_packages pkgs in
-  Dev_repo.Map.fold dev_repo_map ~init:[]
-    ~f:(fun ~key:dev_repo ~data:pkgs acc ->
-      Repo.from_packages ~dev_repo pkgs :: acc)
-  |> Base.Result.all
+  match deduplicate_packages with
+  | true ->
+      let dev_repo_map = dev_repo_map_from_packages pkgs in
+      Dev_repo.Map.fold dev_repo_map ~init:[]
+        ~f:(fun ~key:dev_repo ~data:pkgs acc ->
+          Repo.from_packages_by_dev_repo ~dev_repo pkgs :: acc)
+      |> Base.Result.all
+  | false -> Repo.from_packages pkgs
 
 let resolve ~resolve_ref t =
   Parallel.map ~f:(Repo.resolve ~resolve_ref) t |> Base.Result.all
