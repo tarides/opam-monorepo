@@ -8,7 +8,9 @@ depends: [
   "astring" {= "0.8.5+dune" & ?vendor}
   "base" {= "v0.15.1" & ?vendor}
   "base-bigarray" {= "base"}
-  "base-bytes" {= "base"}
+  "base-bytes" {= "base+dune" & ?vendor}
+  "base-domains" {= "base"}
+  "base-nnp" {= "base"}
   "base-threads" {= "base"}
   "base-unix" {= "base"}
   "bigstringaf" {= "0.9.0" & ?vendor}
@@ -17,30 +19,28 @@ depends: [
   "conf-pkg-config" {= "2"}
   "cppo" {= "1.6.9" & ?vendor}
   "csexp" {= "1.5.1" & ?vendor}
-  "dune" {= "3.5.0"}
-  "dune-build-info" {= "3.5.0" & ?vendor}
-  "dune-configurator" {= "3.5.0" & ?vendor}
-  "findlib" {= "1.8.1+dune" & ?vendor}
+  "dune" {= "3.6.1"}
+  "dune-build-info" {= "3.6.1" & ?vendor}
+  "dune-configurator" {= "3.6.1" & ?vendor}
   "fmt" {= "0.9.0+dune" & ?vendor}
   "fpath" {= "0.7.3+dune" & ?vendor}
   "logs" {= "0.7.0+dune2" & ?vendor}
   "lwt" {= "5.6.1" & ?vendor}
   "num" {= "1.4+dune2" & ?vendor}
-  "ocaml" {= "4.14.0"}
-  "ocaml-base-compiler" {= "4.14.0"}
-  "ocaml-config" {= "2"}
+  "ocaml" {= "5.0.0"}
+  "ocaml-base-compiler" {= "5.0.0"}
+  "ocaml-config" {= "3"}
   "ocaml-options-vanilla" {= "1"}
   "ocaml-syntax-shims" {= "1.0.0" & ?vendor}
   "ocaml-version" {= "3.5.0" & ?vendor}
-  "ocamlfind" {= "1.8.1+dune" & ?vendor}
   "ocamlgraph" {= "2.0.0" & ?vendor}
   "ocplib-endian" {= "1.2" & ?vendor}
   "opam-0install" {= "0.4.3" & ?vendor}
-  "opam-core" {= "2.1.3" & ?vendor}
-  "opam-file-format" {= "2.1.4" & ?vendor}
-  "opam-format" {= "2.1.3" & ?vendor}
-  "opam-repository" {= "2.1.3" & ?vendor}
-  "opam-state" {= "2.1.3" & ?vendor}
+  "opam-core" {= "2.1.4" & ?vendor}
+  "opam-file-format" {= "2.1.5" & ?vendor}
+  "opam-format" {= "2.1.4" & ?vendor}
+  "opam-repository" {= "2.1.4" & ?vendor}
+  "opam-state" {= "2.1.4" & ?vendor}
   "parsexp" {= "v0.15.0" & ?vendor}
   "re" {= "1.10.4" & ?vendor}
   "result" {= "1.5" & ?vendor}
@@ -94,6 +94,10 @@ pin-depends: [
     "https://github.com/janestreet/base/archive/refs/tags/v0.15.1.tar.gz"
   ]
   [
+    "base-bytes.base+dune"
+    "https://github.com/kit-ty-kate/bytes/archive/v0.1.0.tar.gz"
+  ]
+  [
     "bigstringaf.0.9.0"
     "https://github.com/inhabitedtype/bigstringaf/archive/0.9.0.tar.gz"
   ]
@@ -114,16 +118,12 @@ pin-depends: [
     "https://github.com/ocaml-dune/csexp/releases/download/1.5.1/csexp-1.5.1.tbz"
   ]
   [
-    "dune-build-info.3.5.0"
-    "https://github.com/ocaml/dune/releases/download/3.5.0/dune-3.5.0.tbz"
+    "dune-build-info.3.6.1"
+    "https://github.com/ocaml/dune/releases/download/3.6.1/dune-3.6.1.tbz"
   ]
   [
-    "dune-configurator.3.5.0"
-    "https://github.com/ocaml/dune/releases/download/3.5.0/dune-3.5.0.tbz"
-  ]
-  [
-    "findlib.1.8.1+dune"
-    "https://github.com/dune-universe/lib-findlib/archive/v1.8.1+dune.tar.gz"
+    "dune-configurator.3.6.1"
+    "https://github.com/ocaml/dune/releases/download/3.6.1/dune-3.6.1.tbz"
   ]
   [
     "fmt.0.9.0+dune"
@@ -151,10 +151,6 @@ pin-depends: [
     "https://github.com/ocurrent/ocaml-version/releases/download/v3.5.0/ocaml-version-3.5.0.tbz"
   ]
   [
-    "ocamlfind.1.8.1+dune"
-    "https://github.com/dune-universe/lib-findlib/archive/v1.8.1+dune.tar.gz"
-  ]
-  [
     "ocamlgraph.2.0.0"
     "https://github.com/backtracking/ocamlgraph/releases/download/2.0.0/ocamlgraph-2.0.0.tbz"
   ]
@@ -167,24 +163,24 @@ pin-depends: [
     "https://github.com/ocaml-opam/opam-0install-solver/releases/download/v0.4.3/opam-0install-cudf-0.4.3.tbz"
   ]
   [
-    "opam-core.2.1.3"
-    "https://github.com/ocaml/opam/archive/refs/tags/2.1.3.tar.gz"
+    "opam-core.2.1.4"
+    "https://github.com/ocaml/opam/archive/refs/tags/2.1.4.tar.gz"
   ]
   [
-    "opam-file-format.2.1.4"
-    "https://github.com/ocaml/opam-file-format/archive/refs/tags/2.1.4.tar.gz"
+    "opam-file-format.2.1.5"
+    "https://github.com/ocaml/opam-file-format/archive/refs/tags/2.1.5.tar.gz"
   ]
   [
-    "opam-format.2.1.3"
-    "https://github.com/ocaml/opam/archive/refs/tags/2.1.3.tar.gz"
+    "opam-format.2.1.4"
+    "https://github.com/ocaml/opam/archive/refs/tags/2.1.4.tar.gz"
   ]
   [
-    "opam-repository.2.1.3"
-    "https://github.com/ocaml/opam/archive/refs/tags/2.1.3.tar.gz"
+    "opam-repository.2.1.4"
+    "https://github.com/ocaml/opam/archive/refs/tags/2.1.4.tar.gz"
   ]
   [
-    "opam-state.2.1.3"
-    "https://github.com/ocaml/opam/archive/refs/tags/2.1.3.tar.gz"
+    "opam-state.2.1.4"
+    "https://github.com/ocaml/opam/archive/refs/tags/2.1.4.tar.gz"
   ]
   [
     "parsexp.v0.15.0"
@@ -299,13 +295,6 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/dune-universe/lib-findlib/archive/v1.8.1+dune.tar.gz"
-    "lib-findlib"
-    [
-      "sha256=1a337aaedca94837d4d6a1689ed18109e4a2cfd4aa99a56252a6f19fe1291bb0"
-    ]
-  ]
-  [
     "https://github.com/dune-universe/logs/releases/download/v0.7.0%2Bdune2/logs-0.7.0.dune2.tbz"
     "logs"
     [
@@ -372,6 +361,13 @@ x-opam-monorepo-duniverse-dirs: [
     ["md5=ab8fd6273f35a792cad48cbb3024a7f9"]
   ]
   [
+    "https://github.com/kit-ty-kate/bytes/archive/v0.1.0.tar.gz"
+    "bytes"
+    [
+      "sha256=795b9bf545841714aaf0e517b62834a589937f65ad815ed4589ea56fa614d238"
+    ]
+  ]
+  [
     "https://github.com/mirage/alcotest/releases/download/1.6.0/alcotest-1.6.0.tbz"
     "alcotest"
     [
@@ -420,11 +416,11 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/ocaml/dune/releases/download/3.5.0/dune-3.5.0.tbz"
+    "https://github.com/ocaml/dune/releases/download/3.6.1/dune-3.6.1.tbz"
     "dune_"
     [
-      "sha256=77bd4c6704359fae1969636cfc3cd7a517ba3604819ef89c919c0762b5093610"
-      "sha512=acaed76ab8618977118579641a1f6734ed4a225ab46494c6c5fd8e1bf9a0889e62db9adc7bd11770da602f4dd4785cef5ece4ad26512d08b64b8f3bd8954c80d"
+      "sha256=f1d5ac04b7a027f3d549e25cf885ebf7acc135e0291c18e6b43123a799c143ce"
+      "sha512=64714ab6155cd04bc33d693fc7a6d9d61aa7a278357eeff159df324e083914fcd556459a3945acacf1bbc3775f2232ab0c78006ab8a434dc58dcf95ffdffac52"
     ]
   ]
   [
@@ -436,19 +432,19 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/ocaml/opam-file-format/archive/refs/tags/2.1.4.tar.gz"
+    "https://github.com/ocaml/opam-file-format/archive/refs/tags/2.1.5.tar.gz"
     "opam-file-format"
     [
-      "md5=cd9dac41c2153d07067c5f30cdcf77db"
-      "sha512=fb5e584080d65c5b5d04c7d2ac397b69a3fd077af3f51eb22967131be22583fea507390eb0d7e6f5c92035372a9e753adbfbc8bfd056d8fd4697c6f95dd8e0ad"
+      "md5=46dadff2565d8371cdc606d33d408fc4"
+      "sha512=9bb9daa31877e1555b75c6d91566bceee175397f37bf8359ffce3cac16a72f48543d6ff5a03e8bf42aef6e1e499b3a2ce6054b00356a937214848b6b87c2315f"
     ]
   ]
   [
-    "https://github.com/ocaml/opam/archive/refs/tags/2.1.3.tar.gz"
+    "https://github.com/ocaml/opam/archive/refs/tags/2.1.4.tar.gz"
     "opam"
     [
-      "md5=e55ac537cd9ab3d987454633fa439fa4"
-      "sha512=040e4f58f93e962ff422617ce0d35ed45dd86921a9aac3505914c33dd942d0e5e5771e7e1774046504f9aa84f32bc4fbd6ac7720fbea862d48bf1ca29e02cefc"
+      "md5=f8123b6840e93000fcf228aa9cb23891"
+      "sha512=276fdbe4e114a0d23b9d4b7938d87bf39c06b4716fae601588da7d5d2d5d9b5c584855d96edfed2eb5ac8a36ee9431c4ea7d281c52acdab28b9a3bdcbf10ce57"
     ]
   ]
   [
