@@ -22,6 +22,9 @@
 
 ### Fixed
 
+- Process all `dune` in the project after renaming libraries to avoid pointing
+  to non-existing vendored libraries (#370, #371 @Leonidas-from-XIV)
+
 ### Removed
 
 ### Security
