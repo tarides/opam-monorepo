@@ -169,8 +169,12 @@ module Packages = struct
         | None -> { changed = false; stanzas = original; renames })
     | otherwise -> { changed = false; stanzas = otherwise; renames }
 
+  let is_tuareg = function
+    | List (Atom "*" :: Atom "-*-" :: Atom "tuareg" :: Atom "-*-" :: _) -> true
+    | _ -> false
+
   let rec update_reference renames = function
-    | Atom _ as original -> { changed = false; stanzas = original; renames }
+    | Atom _ as stanzas -> { changed = false; stanzas; renames }
     | List ((Atom "libraries" as stanza) :: libs) ->
         let changed, libs =
           List.fold_left
@@ -198,26 +202,32 @@ module Packages = struct
         { changed; stanzas = List sexps; renames }
 
   let update_references renames sexps =
-    let changed, sexps =
-      List.fold_left
-        ~f:(fun (changed_before, acc) sexp ->
-          let { changed; stanzas; renames = _ } =
-            update_reference renames sexp
-          in
-          (changed_before || changed, stanzas :: acc))
-        ~init:(false, []) sexps
-    in
-    let sexps = List.rev sexps in
-    { changed; stanzas = sexps; renames }
+    let changed = false in
+    match sexps with
+    | [] -> { changed; stanzas = []; renames }
+    | first :: _ as stanzas when is_tuareg first ->
+        { changed; stanzas; renames }
+    | sexps ->
+        let changed, sexps =
+          List.fold_left
+            ~f:(fun (changed_before, acc) sexp ->
+              let { changed; stanzas; renames = _ } =
+                update_reference renames sexp
+              in
+              (changed_before || changed, stanzas :: acc))
+            ~init:(false, []) sexps
+        in
+        let sexps = List.rev sexps in
+        { changed; stanzas = sexps; renames }
 
   let rename t ~keep renames sexps =
     let keep = Set.of_list keep in
     let changed = false in
     match sexps with
-    | List (Atom "*" :: Atom "-*-" :: Atom "tuareg" :: Atom "-*-" :: _) :: _ ->
+    | first :: _ as stanzas when is_tuareg first ->
         (* if the first sexp is the tuareg stanza, then it is an ocaml file,
            do not modify *)
-        { changed; stanzas = sexps; renames }
+        { changed; stanzas; renames }
     | sexps ->
         let { changed; stanzas; renames } =
           List.fold_left
