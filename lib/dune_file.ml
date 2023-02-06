@@ -169,8 +169,11 @@ module Packages = struct
         | None -> { changed = false; stanzas = original; renames })
     | otherwise -> { changed = false; stanzas = otherwise; renames }
 
+  (* the file is an ML file if the first stanza starts with the emacs tuareg mode
+     comment *)
   let is_tuareg = function
-    | List (Atom "*" :: Atom "-*-" :: Atom "tuareg" :: Atom "-*-" :: _) -> true
+    | List (Atom "*" :: Atom "-*-" :: Atom "tuareg" :: Atom "-*-" :: _) :: _ ->
+        true
     | _ -> false
 
   let rec update_reference renames = function
@@ -201,34 +204,32 @@ module Packages = struct
         let sexps = List.rev sexps in
         { changed; stanzas = List sexps; renames }
 
-  let update_references renames sexps =
+  let update_references renames stanzas =
     let changed = false in
-    match sexps with
-    | [] -> { changed; stanzas = []; renames }
-    | first :: _ as stanzas when is_tuareg first ->
-        { changed; stanzas; renames }
-    | sexps ->
-        let changed, sexps =
+    match is_tuareg stanzas with
+    | true -> { changed; stanzas; renames }
+    | false ->
+        let changed, stanzas =
           List.fold_left
             ~f:(fun (changed_before, acc) sexp ->
               let { changed; stanzas; renames = _ } =
                 update_reference renames sexp
               in
               (changed_before || changed, stanzas :: acc))
-            ~init:(false, []) sexps
+            ~init:(false, []) stanzas
         in
-        let sexps = List.rev sexps in
-        { changed; stanzas = sexps; renames }
+        let stanzas = List.rev stanzas in
+        { changed; stanzas; renames }
 
-  let rename t ~keep renames sexps =
+  let rename t ~keep renames stanzas =
     let keep = Set.of_list keep in
     let changed = false in
-    match sexps with
-    | first :: _ as stanzas when is_tuareg first ->
+    match is_tuareg stanzas with
+    | true ->
         (* if the first sexp is the tuareg stanza, then it is an ocaml file,
            do not modify *)
         { changed; stanzas; renames }
-    | sexps ->
+    | false ->
         let { changed; stanzas; renames } =
           List.fold_left
             ~f:(fun { changed; stanzas = acc; renames } sexp ->
@@ -238,7 +239,7 @@ module Packages = struct
               let changed = changed || recursively_changed in
               { changed; stanzas = v :: acc; renames })
             ~init:{ changed; stanzas = []; renames }
-            sexps
+            stanzas
         in
         let stanzas = List.rev stanzas in
         { changed; stanzas; renames }
