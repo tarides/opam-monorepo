@@ -98,10 +98,12 @@ module Packages = struct
     in
     match matches with [] -> None | [ x ] -> Some x | _ -> None
 
+  type new_name = { public_name : string; private_name : string option }
+
   type 'a rename_result = {
     changed : bool;
     stanzas : 'a;
-    renames : string Map.t;
+    renames : new_name Map.t;
   }
 
   (* determine whether the package should be kept or not, handles [pkg.name] and [pkg] *)
@@ -134,20 +136,21 @@ module Packages = struct
 
             let stanzas, renames =
               match name with
-              | Some _private_name ->
-                  let renames =
-                    Map.add ~key:public_name ~data:new_public_name renames
-                  in
+              | Some _ as private_name ->
+                  let data = { public_name = new_public_name; private_name } in
+                  let renames = Map.add ~key:public_name ~data renames in
                   (stanzas, renames)
-              | None ->
+              | None as private_name ->
                   (* we need to add a valid "name" field if there is none *)
                   let new_name = random_library_name t public_name in
                   let stanzas =
                     List [ Atom "name"; Atom new_name ] :: stanzas
                   in
-                  let renames =
-                    Map.add ~key:public_name ~data:new_name renames
-                  in
+                  (* private_name is None, because it means that the old
+                     reference can't have referred to the private name as it
+                     did not exist before *)
+                  let data = { public_name = new_public_name; private_name } in
+                  let renames = Map.add ~key:public_name ~data renames in
                   (stanzas, renames)
             in
             { changed = true; stanzas; renames })
@@ -163,9 +166,13 @@ module Packages = struct
   let update_lib_reference renames = function
     | Atom old_name as original -> (
         match Map.find_opt old_name renames with
-        | Some new_name ->
-            let stanzas = Atom new_name in
-            { changed = true; stanzas; renames }
+        | Some { public_name; private_name } -> (
+            match private_name with
+            | Some name when old_name = name ->
+                { changed = false; stanzas = original; renames }
+            | None | Some _ ->
+                let stanzas = Atom public_name in
+                { changed = true; stanzas; renames })
         | None -> { changed = false; stanzas = original; renames })
     | otherwise -> { changed = false; stanzas = otherwise; renames }
 

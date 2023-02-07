@@ -36,21 +36,23 @@ module Packages : sig
 
   val init : string -> t
 
+  type new_name = { public_name : string; private_name : string option }
+
   type 'a rename_result = {
     changed : bool;
     stanzas : 'a;
-    renames : string Map.t;
+    renames : new_name Map.t;
   }
 
   val rename :
     t ->
     keep:string list ->
-    string Map.t ->
+    new_name Map.t ->
     Sexplib0.Sexp.t list ->
     Sexplib0.Sexp.t list rename_result
 
   val update_references :
-    string Map.t -> Sexplib0.Sexp.t list -> Sexplib0.Sexp.t list rename_result
+    new_name Map.t -> Sexplib0.Sexp.t list -> Sexplib0.Sexp.t list rename_result
 end
 
 module Project : sig
