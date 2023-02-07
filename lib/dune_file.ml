@@ -98,7 +98,11 @@ module Packages = struct
     in
     match matches with [] -> None | [ x ] -> Some x | _ -> None
 
-  type new_name = { public_name : string; private_name : string option }
+  type new_name = {
+    public_name : string;
+    private_name : string option;
+    dune_project : string;
+  }
 
   type 'a rename_result = {
     changed : bool;
@@ -115,7 +119,7 @@ module Packages = struct
     in
     Set.mem test_against keep
 
-  let rename_library t ~keep renames stanzas =
+  let rename_library t ~dune_project ~keep renames stanzas =
     let public_name = find_by_name "public_name" stanzas in
     let name = find_by_name "name" stanzas in
     match public_name with
@@ -137,7 +141,13 @@ module Packages = struct
             let stanzas, renames =
               match name with
               | Some _ as private_name ->
-                  let data = { public_name = new_public_name; private_name } in
+                  let data =
+                    {
+                      public_name = new_public_name;
+                      private_name;
+                      dune_project;
+                    }
+                  in
                   let renames = Map.add ~key:public_name ~data renames in
                   (stanzas, renames)
               | None as private_name ->
@@ -149,26 +159,34 @@ module Packages = struct
                   (* private_name is None, because it means that the old
                      reference can't have referred to the private name as it
                      did not exist before *)
-                  let data = { public_name = new_public_name; private_name } in
+                  let data =
+                    {
+                      public_name = new_public_name;
+                      private_name;
+                      dune_project;
+                    }
+                  in
                   let renames = Map.add ~key:public_name ~data renames in
                   (stanzas, renames)
             in
             { changed = true; stanzas; renames })
 
-  let rename_one t ~keep renames = function
+  let rename_one t ~dune_project ~keep renames = function
     | List (Atom "library" :: stanzas) ->
         let { changed; stanzas; renames } =
-          rename_library t ~keep renames stanzas
+          rename_library t ~dune_project ~keep renames stanzas
         in
         { changed; stanzas = List (Atom "library" :: stanzas); renames }
     | stanzas -> { changed = false; stanzas; renames }
 
-  let update_lib_reference renames = function
+  let update_lib_reference ~dune_project renames = function
     | Atom old_name as original -> (
         match Map.find_opt old_name renames with
-        | Some { public_name; private_name } -> (
+        | Some { public_name; private_name; dune_project = origin_dune_project }
+          -> (
             match private_name with
-            | Some name when old_name = name ->
+            | Some name
+              when old_name = name && dune_project = origin_dune_project ->
                 { changed = false; stanzas = original; renames }
             | None | Some _ ->
                 let stanzas = Atom public_name in
@@ -183,14 +201,14 @@ module Packages = struct
         true
     | _ -> false
 
-  let rec update_reference renames = function
+  let rec update_reference ~dune_project renames = function
     | Atom _ as stanzas -> { changed = false; stanzas; renames }
     | List ((Atom "libraries" as stanza) :: libs) ->
         let changed, libs =
           List.fold_left
             ~f:(fun (changed_before, acc) lib ->
               let { changed; stanzas; renames = _ } =
-                update_lib_reference renames lib
+                update_lib_reference ~dune_project renames lib
               in
               (changed_before || changed, stanzas :: acc))
             ~init:(false, []) libs
@@ -203,7 +221,7 @@ module Packages = struct
           List.fold_left
             ~f:(fun (changed_before, acc) sexp ->
               let { changed; stanzas; renames = _ } =
-                update_reference renames sexp
+                update_reference ~dune_project renames sexp
               in
               (changed_before || changed, stanzas :: acc))
             ~init:(false, []) sexps
@@ -211,7 +229,7 @@ module Packages = struct
         let sexps = List.rev sexps in
         { changed; stanzas = List sexps; renames }
 
-  let update_references renames stanzas =
+  let update_references ~dune_project renames stanzas =
     let changed = false in
     match is_tuareg stanzas with
     | true -> { changed; stanzas; renames }
@@ -220,7 +238,7 @@ module Packages = struct
           List.fold_left
             ~f:(fun (changed_before, acc) sexp ->
               let { changed; stanzas; renames = _ } =
-                update_reference renames sexp
+                update_reference ~dune_project renames sexp
               in
               (changed_before || changed, stanzas :: acc))
             ~init:(false, []) stanzas
@@ -228,7 +246,7 @@ module Packages = struct
         let stanzas = List.rev stanzas in
         { changed; stanzas; renames }
 
-  let rename t ~keep renames stanzas =
+  let rename t ~dune_project ~keep renames stanzas =
     let keep = Set.of_list keep in
     let changed = false in
     match is_tuareg stanzas with
@@ -241,7 +259,7 @@ module Packages = struct
           List.fold_left
             ~f:(fun { changed; stanzas = acc; renames } sexp ->
               let { changed = recursively_changed; stanzas = v; renames } =
-                rename_one t ~keep renames sexp
+                rename_one t ~dune_project ~keep renames sexp
               in
               let changed = changed || recursively_changed in
               { changed; stanzas = v :: acc; renames })

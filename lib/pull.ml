@@ -14,7 +14,7 @@ let do_trim_clone output_dir =
   in
   Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
 
-let preprocess_dune dfp ~keep ~renames dune_file =
+let preprocess_dune dfp ~keep ~dune_project ~renames dune_file =
   let open Result.O in
   let* sexps =
     Bos.OS.File.with_ic dune_file
@@ -28,7 +28,7 @@ let preprocess_dune dfp ~keep ~renames dune_file =
   | None -> Ok None
   | Some sexps -> (
       let Dune_file.Packages.{ changed; stanzas; renames } =
-        Dune_file.Packages.rename dfp ~keep renames sexps
+        Dune_file.Packages.rename dfp ~dune_project ~keep renames sexps
       in
       match changed with
       | false -> Ok None
@@ -63,6 +63,44 @@ let write_sexps path sexps =
   in
   write_result
 
+let name_of_path path =
+  let res =
+    Bos.OS.File.with_ic path
+      (fun ic () ->
+        match Sexplib.Sexp.input_sexps ic with
+        | sexp -> Some sexp
+        | exception _ -> None)
+      ()
+  in
+  match res with
+  | Error _ -> None
+  | Ok None -> None
+  | Ok (Some sexps) -> (
+      let names =
+        List.filter_map sexps ~f:(function
+          | Sexplib0.Sexp.List (Atom "name" :: Atom value :: _) -> Some value
+          | _ -> None)
+      in
+      match names with [] -> None | x :: _ -> Some x)
+
+let rec dune_project_of_dune path =
+  let parent_dir = Fpath.parent path in
+  match Fpath.equal path parent_dir with
+  | true -> None
+  | false -> (
+      let maybe_dune_project = Fpath.(path / "dune-project") in
+      match Bos.OS.Path.exists maybe_dune_project with
+      | Ok true -> (
+          match name_of_path maybe_dune_project with
+          | None ->
+              let basename = Fpath.basename path in
+              Some basename
+          | Some _ as project -> project)
+      | Ok false -> dune_project_of_dune parent_dir
+      | Error _ ->
+          (* TODO error handling *)
+          None)
+
 let postprocess_project ~keep ~disambiguation directory =
   let open Result.O in
   let is_dune_file path =
@@ -76,7 +114,10 @@ let postprocess_project ~keep ~disambiguation directory =
   let* renames =
     Bos.OS.Path.fold ~elements
       (fun path renames ->
-        match preprocess_dune dfp ~keep ~renames path with
+        let dune_project = dune_project_of_dune path in
+        (* TODO handle better *)
+        let dune_project = match dune_project with Some x -> x | None -> "" in
+        match preprocess_dune dfp ~dune_project ~keep ~renames path with
         | Ok (Some (sexps, renames)) -> (
             match write_sexps path sexps with
             | Ok () -> renames
@@ -107,8 +148,13 @@ let postprocess_project ~keep ~disambiguation directory =
         match sexps with
         | None -> acc
         | Some sexps -> (
+            let dune_project = dune_project_of_dune path in
+            (* TODO handle better *)
+            let dune_project =
+              match dune_project with Some x -> x | None -> ""
+            in
             let Dune_file.Packages.{ changed; stanzas; renames = _ } =
-              Dune_file.Packages.update_references renames sexps
+              Dune_file.Packages.update_references ~dune_project renames sexps
             in
             match changed with
             | false -> acc
