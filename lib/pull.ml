@@ -58,7 +58,7 @@ let write_sexps path sexps =
       (fun oc sexps ->
         let ppf = Format.formatter_of_out_channel oc in
         List.iter ~f:(fun sexp -> Fmt.pf ppf "%a\n" pp_sexp sexp) sexps;
-        Ok ())
+        Ok (Fmt.flush ppf ()))
       sexps
   in
   write_result
