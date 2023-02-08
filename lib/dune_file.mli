@@ -42,11 +42,8 @@ module Packages : sig
     dune_project : string;
   }
 
-  type 'a rename_result = {
-    changed : bool;
-    stanzas : 'a;
-    renames : new_name Map.t;
-  }
+  type 'a change = { changed : bool; data : 'a }
+  type 'a rename = { stanzas : 'a; renames : new_name Map.t }
 
   val rename :
     t ->
@@ -54,13 +51,13 @@ module Packages : sig
     keep:string list ->
     new_name Map.t ->
     Sexplib0.Sexp.t list ->
-    Sexplib0.Sexp.t list rename_result
+    Sexplib0.Sexp.t list rename change
 
   val update_references :
     dune_project:string ->
     new_name Map.t ->
     Sexplib0.Sexp.t list ->
-    Sexplib0.Sexp.t list rename_result
+    Sexplib0.Sexp.t list change
 end
 
 module Project : sig

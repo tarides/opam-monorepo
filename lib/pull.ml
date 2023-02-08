@@ -28,7 +28,7 @@ let preprocess_dune dfp ~keep ~dune_project ~renames dune_file =
   match sexps with
   | None -> Ok None
   | Some sexps -> (
-      let Dune_file.Packages.{ changed; stanzas; renames } =
+      let Dune_file.Packages.{ changed; data = { stanzas; renames } } =
         Dune_file.Packages.rename dfp ~dune_project ~keep renames sexps
       in
       match changed with
@@ -148,7 +148,7 @@ let postprocess_project ~keep ~disambiguation directory =
             let dune_project =
               path |> dune_project_of_dune |> if_no_dune_project
             in
-            let Dune_file.Packages.{ changed; stanzas; renames = _ } =
+            let Dune_file.Packages.{ changed; data } =
               Dune_file.Packages.update_references ~dune_project renames sexps
             in
             match changed with
@@ -156,7 +156,7 @@ let postprocess_project ~keep ~disambiguation directory =
             | true ->
                 Logs.debug (fun l ->
                     l "Rewriting %a to make names unique" Fpath.pp path);
-                write_sexps path stanzas))
+                write_sexps path data))
       (Ok ()) [ directory ]
   in
   res
