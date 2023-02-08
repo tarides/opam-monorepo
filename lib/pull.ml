@@ -72,18 +72,13 @@ let name_of_path path =
       None
   | Ok None -> None
   | Ok (Some sexps) -> (
-      let names =
-        List.filter_map sexps ~f:(function
-          | Sexplib0.Sexp.List (Atom "name" :: Atom value :: _) -> Some value
-          | _ -> None)
-      in
-      match names with
-      | [] -> None
-      | [ x ] -> Some x
-      | x :: _ ->
-          Logs.warn (fun l ->
-              l "Multiple `name` stanzas in %a, using first" Fpath.pp path);
-          Some x)
+      match Dune_file.Project.name sexps with
+      | Ok name -> Some name
+      | Error msg ->
+          Logs.debug (fun l ->
+              l "Determining project name of `%a` failed: %a" Fpath.pp path
+                Rresult.R.pp_msg msg);
+          None)
 
 let rec dune_project_of_dune path =
   let parent_dir = Fpath.parent path in
