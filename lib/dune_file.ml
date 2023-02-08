@@ -82,11 +82,6 @@ module Packages = struct
     (* needs to start with `old.` to be part of the same package *)
     Fmt.str "%s.%s" original suffix
 
-  let random_library_name v original =
-    let suffix = random_valid_identifier v in
-    (* needs not to have a dot *)
-    Fmt.str "%s_%s" original suffix
-
   let find_by_name name stanzas =
     let matches =
       List.filter_map stanzas ~f:(function
@@ -151,10 +146,12 @@ module Packages = struct
                   let renames = Map.add ~key:public_name ~data renames in
                   (stanzas, renames)
               | None as private_name ->
-                  (* we need to add a valid "name" field if there is none *)
-                  let new_name = random_library_name t public_name in
+                  (* we need to add a valid "name" field and it has to match the
+                     previous public name to make sure there is no extra level
+                     of wrapping happening if the library comes with its own
+                     entry point module. *)
                   let stanzas =
-                    List [ Atom "name"; Atom new_name ] :: stanzas
+                    List [ Atom "name"; Atom public_name ] :: stanzas
                   in
                   (* private_name is None, because it means that the old
                      reference can't have referred to the private name as it
