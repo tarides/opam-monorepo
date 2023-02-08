@@ -14,16 +14,17 @@ let do_trim_clone output_dir =
   in
   Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
 
+let parse_sexps dune_file =
+  Bos.OS.File.with_ic dune_file
+    (fun ic () ->
+      match Sexplib.Sexp.input_sexps ic with
+      | sexps -> Some sexps
+      | exception _ -> None)
+    ()
+
 let preprocess_dune dfp ~keep ~dune_project ~renames dune_file =
   let open Result.O in
-  let* sexps =
-    Bos.OS.File.with_ic dune_file
-      (fun ic () ->
-        match Sexplib.Sexp.input_sexps ic with
-        | sexp -> Some sexp
-        | exception _ -> None)
-      ()
-  in
+  let* sexps = parse_sexps dune_file in
   match sexps with
   | None -> Ok None
   | Some sexps -> (
@@ -64,16 +65,11 @@ let write_sexps path sexps =
   write_result
 
 let name_of_path path =
-  let res =
-    Bos.OS.File.with_ic path
-      (fun ic () ->
-        match Sexplib.Sexp.input_sexps ic with
-        | sexp -> Some sexp
-        | exception _ -> None)
-      ()
-  in
-  match res with
-  | Error _ -> None
+  match parse_sexps path with
+  | Error msg ->
+      Logs.err (fun l ->
+          l "Error loading file %a: %a" Fpath.pp path Rresult.R.pp_msg msg);
+      None
   | Ok None -> None
   | Ok (Some sexps) -> (
       let names =
@@ -81,7 +77,13 @@ let name_of_path path =
           | Sexplib0.Sexp.List (Atom "name" :: Atom value :: _) -> Some value
           | _ -> None)
       in
-      match names with [] -> None | x :: _ -> Some x)
+      match names with
+      | [] -> None
+      | [ x ] -> Some x
+      | x :: _ ->
+          Logs.warn (fun l ->
+              l "Multiple `name` stanzas in %a, using first" Fpath.pp path);
+          Some x)
 
 let rec dune_project_of_dune path =
   let parent_dir = Fpath.parent path in
@@ -97,9 +99,13 @@ let rec dune_project_of_dune path =
               Some basename
           | Some _ as project -> project)
       | Ok false -> dune_project_of_dune parent_dir
-      | Error _ ->
-          (* TODO error handling *)
+      | Error msg ->
+          Logs.err (fun l ->
+              l "Error determining existance of %a: %a" Fpath.pp
+                maybe_dune_project Rresult.R.pp_msg msg);
           None)
+
+let if_no_dune_project = Option.value ~default:""
 
 let postprocess_project ~keep ~disambiguation directory =
   let open Result.O in
@@ -114,9 +120,7 @@ let postprocess_project ~keep ~disambiguation directory =
   let* renames =
     Bos.OS.Path.fold ~elements
       (fun path renames ->
-        let dune_project = dune_project_of_dune path in
-        (* TODO handle better *)
-        let dune_project = match dune_project with Some x -> x | None -> "" in
+        let dune_project = path |> dune_project_of_dune |> if_no_dune_project in
         match preprocess_dune dfp ~dune_project ~keep ~renames path with
         | Ok (Some (sexps, renames)) -> (
             match write_sexps path sexps with
@@ -137,21 +141,12 @@ let postprocess_project ~keep ~disambiguation directory =
   let* res =
     Bos.OS.Path.fold ~elements
       (fun path acc ->
-        let* sexps =
-          Bos.OS.File.with_ic path
-            (fun ic () ->
-              match Sexplib.Sexp.input_sexps ic with
-              | sexp -> Some sexp
-              | exception _ -> None)
-            ()
-        in
+        let* sexps = parse_sexps path in
         match sexps with
         | None -> acc
         | Some sexps -> (
-            let dune_project = dune_project_of_dune path in
-            (* TODO handle better *)
             let dune_project =
-              match dune_project with Some x -> x | None -> ""
+              path |> dune_project_of_dune |> if_no_dune_project
             in
             let Dune_file.Packages.{ changed; stanzas; renames = _ } =
               Dune_file.Packages.update_references ~dune_project renames sexps
