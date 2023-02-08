@@ -179,19 +179,29 @@ module Packages = struct
         { changed; stanzas = List (Atom "library" :: stanzas); renames }
     | stanzas -> { changed = false; stanzas; renames }
 
+  let library_name ~dune_project renames old_name =
+    let open Option.O in
+    let* { public_name; private_name; dune_project = origin_dune_project } =
+      Map.find_opt old_name renames
+    in
+    match private_name with
+    | Some name when old_name = name && dune_project = origin_dune_project ->
+        None
+    | None | Some _ -> Some public_name
+
   let update_lib_reference ~dune_project renames = function
-    | Atom old_name as original -> (
-        match Map.find_opt old_name renames with
-        | Some { public_name; private_name; dune_project = origin_dune_project }
-          -> (
-            match private_name with
-            | Some name
-              when old_name = name && dune_project = origin_dune_project ->
-                { changed = false; stanzas = original; renames }
-            | None | Some _ ->
-                let stanzas = Atom public_name in
-                { changed = true; stanzas; renames })
-        | None -> { changed = false; stanzas = original; renames })
+    | Atom old_name as stanzas -> (
+        match library_name ~dune_project renames old_name with
+        | None -> { changed = false; stanzas; renames }
+        | Some public_name ->
+            let stanzas = Atom public_name in
+            { changed = true; stanzas; renames })
+    | List [ Atom "re_export"; Atom old_name ] as stanzas -> (
+        match library_name ~dune_project renames old_name with
+        | None -> { changed = false; stanzas; renames }
+        | Some public_name ->
+            let stanzas = List [ Atom "re_export"; Atom public_name ] in
+            { changed = true; stanzas; renames })
     | otherwise -> { changed = false; stanzas = otherwise; renames }
 
   (* the file is an ML file if the first stanza starts with the emacs tuareg mode
