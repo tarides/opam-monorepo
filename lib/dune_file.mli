@@ -58,6 +58,8 @@ module Packages : sig
     new_name Map.t ->
     Sexplib0.Sexp.t list ->
     Sexplib0.Sexp.t list change
+
+  val renamed_opam_file : new_name Map.t -> Fpath.t -> Fpath.t
 end
 
 module Project : sig

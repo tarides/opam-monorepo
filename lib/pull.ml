@@ -108,6 +108,10 @@ let postprocess_project ~keep ~disambiguation directory =
     let filename = Fpath.filename path in
     Ok (String.equal filename "dune")
   in
+  let is_opam_file path =
+    let extension = Fpath.get_ext path in
+    Ok (String.equal extension ".opam")
+  in
   let elements = `Sat is_dune_file in
   let dfp = Dune_file.Packages.init disambiguation in
   let renames = Dune_file.Packages.Map.empty in
@@ -133,7 +137,7 @@ let postprocess_project ~keep ~disambiguation directory =
       renames [ directory ]
   in
   (* iterate over all dune files and rewrite where necessary *)
-  let* res =
+  let* rewritten =
     Bos.OS.Path.fold ~elements
       (fun path acc ->
         let* sexps = parse_sexps path in
@@ -154,7 +158,27 @@ let postprocess_project ~keep ~disambiguation directory =
                 write_sexps path data))
       (Ok ()) [ directory ]
   in
-  res
+  let* () = rewritten in
+  let* () =
+    Bos.OS.Path.fold ~elements:(`Sat is_opam_file)
+      (fun path () ->
+        let new_path = Dune_file.Packages.renamed_opam_file renames path in
+        match Fpath.equal path new_path with
+        | true -> ()
+        | false -> (
+            match Bos.OS.Path.move path new_path with
+            | Ok () ->
+                Logs.debug (fun l ->
+                    l "Renamed OPAM file: %a -> %a\n" Fpath.pp path Fpath.pp
+                      new_path);
+                ()
+            | Error msg ->
+                Logs.err (fun l ->
+                    l "Error moving OPAM file %a: %a" Fpath.pp path
+                      Rresult.R.pp_msg msg)))
+      () [ directory ]
+  in
+  Ok ()
 
 let pull ?(trim_clone = false) ~global_state ~duniverse_dir src_dep =
   let open Result.O in

@@ -79,8 +79,7 @@ module Packages = struct
 
   let random_public_name v original =
     let suffix = random_valid_identifier v in
-    (* needs to start with `old.` to be part of the same package *)
-    Fmt.str "%s.%s" original suffix
+    Fmt.str "%s_%s" original suffix
 
   let find_by_name name stanzas =
     let matches =
@@ -282,6 +281,15 @@ module Packages = struct
         in
         let stanzas = List.rev stanzas in
         modified ~changed ~stanzas ~renames
+
+  let renamed_opam_file renames path =
+    let directory, opam_file_name = Fpath.split_base path in
+    let package_name = Fpath.rem_ext opam_file_name |> Fpath.to_string in
+    match Map.find_opt package_name renames with
+    | None -> path
+    | Some { public_name; private_name = _; dune_project = _ } ->
+        let new_file_name = public_name |> Fpath.v |> Fpath.add_ext "opam" in
+        Fpath.(directory // new_file_name)
 end
 
 module Raw = struct
