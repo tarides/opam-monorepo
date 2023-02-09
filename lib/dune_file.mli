@@ -36,21 +36,28 @@ module Packages : sig
 
   val init : string -> t
 
-  type 'a rename_result = {
-    changed : bool;
-    stanzas : 'a;
-    renames : string Map.t;
+  type new_name = {
+    public_name : string;
+    private_name : string option;
+    dune_project : string;
   }
+
+  type 'a change = { changed : bool; data : 'a }
+  type 'a rename = { stanzas : 'a; renames : new_name Map.t }
 
   val rename :
     t ->
+    dune_project:string ->
     keep:string list ->
-    string Map.t ->
+    new_name Map.t ->
     Sexplib0.Sexp.t list ->
-    Sexplib0.Sexp.t list rename_result
+    Sexplib0.Sexp.t list rename change
 
   val update_references :
-    string Map.t -> Sexplib0.Sexp.t list -> Sexplib0.Sexp.t list rename_result
+    dune_project:string ->
+    new_name Map.t ->
+    Sexplib0.Sexp.t list ->
+    Sexplib0.Sexp.t list change
 end
 
 module Project : sig

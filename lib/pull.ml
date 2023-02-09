@@ -14,21 +14,22 @@ let do_trim_clone output_dir =
   in
   Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
 
-let preprocess_dune dfp ~keep ~renames dune_file =
+let parse_sexps dune_file =
+  Bos.OS.File.with_ic dune_file
+    (fun ic () ->
+      match Sexplib.Sexp.input_sexps ic with
+      | sexps -> Some sexps
+      | exception _ -> None)
+    ()
+
+let preprocess_dune dfp ~keep ~dune_project ~renames dune_file =
   let open Result.O in
-  let* sexps =
-    Bos.OS.File.with_ic dune_file
-      (fun ic () ->
-        match Sexplib.Sexp.input_sexps ic with
-        | sexp -> Some sexp
-        | exception _ -> None)
-      ()
-  in
+  let* sexps = parse_sexps dune_file in
   match sexps with
   | None -> Ok None
   | Some sexps -> (
-      let Dune_file.Packages.{ changed; stanzas; renames } =
-        Dune_file.Packages.rename dfp ~keep renames sexps
+      let Dune_file.Packages.{ changed; data = { stanzas; renames } } =
+        Dune_file.Packages.rename dfp ~dune_project ~keep renames sexps
       in
       match changed with
       | false -> Ok None
@@ -58,10 +59,48 @@ let write_sexps path sexps =
       (fun oc sexps ->
         let ppf = Format.formatter_of_out_channel oc in
         List.iter ~f:(fun sexp -> Fmt.pf ppf "%a\n" pp_sexp sexp) sexps;
-        Ok ())
+        Ok (Fmt.flush ppf ()))
       sexps
   in
   write_result
+
+let name_of_path path =
+  match parse_sexps path with
+  | Error msg ->
+      Logs.err (fun l ->
+          l "Error loading file %a: %a" Fpath.pp path Rresult.R.pp_msg msg);
+      None
+  | Ok None -> None
+  | Ok (Some sexps) -> (
+      match Dune_file.Project.name sexps with
+      | Ok name -> Some name
+      | Error msg ->
+          Logs.debug (fun l ->
+              l "Determining project name of `%a` failed: %a" Fpath.pp path
+                Rresult.R.pp_msg msg);
+          None)
+
+let rec dune_project_of_dune path =
+  let parent_dir = Fpath.parent path in
+  match Fpath.equal path parent_dir with
+  | true -> None
+  | false -> (
+      let maybe_dune_project = Fpath.(path / "dune-project") in
+      match Bos.OS.Path.exists maybe_dune_project with
+      | Ok true -> (
+          match name_of_path maybe_dune_project with
+          | None ->
+              let basename = Fpath.basename path in
+              Some basename
+          | Some _ as project -> project)
+      | Ok false -> dune_project_of_dune parent_dir
+      | Error msg ->
+          Logs.err (fun l ->
+              l "Error determining existance of %a: %a" Fpath.pp
+                maybe_dune_project Rresult.R.pp_msg msg);
+          None)
+
+let if_no_dune_project = Option.value ~default:""
 
 let postprocess_project ~keep ~disambiguation directory =
   let open Result.O in
@@ -76,7 +115,8 @@ let postprocess_project ~keep ~disambiguation directory =
   let* renames =
     Bos.OS.Path.fold ~elements
       (fun path renames ->
-        match preprocess_dune dfp ~keep ~renames path with
+        let dune_project = path |> dune_project_of_dune |> if_no_dune_project in
+        match preprocess_dune dfp ~dune_project ~keep ~renames path with
         | Ok (Some (sexps, renames)) -> (
             match write_sexps path sexps with
             | Ok () -> renames
@@ -96,26 +136,22 @@ let postprocess_project ~keep ~disambiguation directory =
   let* res =
     Bos.OS.Path.fold ~elements
       (fun path acc ->
-        let* sexps =
-          Bos.OS.File.with_ic path
-            (fun ic () ->
-              match Sexplib.Sexp.input_sexps ic with
-              | sexp -> Some sexp
-              | exception _ -> None)
-            ()
-        in
+        let* sexps = parse_sexps path in
         match sexps with
         | None -> acc
         | Some sexps -> (
-            let Dune_file.Packages.{ changed; stanzas; renames = _ } =
-              Dune_file.Packages.update_references renames sexps
+            let dune_project =
+              path |> dune_project_of_dune |> if_no_dune_project
+            in
+            let Dune_file.Packages.{ changed; data } =
+              Dune_file.Packages.update_references ~dune_project renames sexps
             in
             match changed with
             | false -> acc
             | true ->
                 Logs.debug (fun l ->
                     l "Rewriting %a to make names unique" Fpath.pp path);
-                write_sexps path stanzas))
+                write_sexps path data))
       (Ok ()) [ directory ]
   in
   res
