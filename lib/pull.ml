@@ -133,7 +133,6 @@ let rewrite_dune_project renames directory =
   | false -> Ok ()
   | true -> (
       let* parsed = parse_sexps dune_project_file in
-      Fmt.epr "Rewriting %a\n" Fpath.pp dune_project_file;
       match parsed with
       | None -> Ok ()
       | Some sexps -> (
@@ -148,7 +147,10 @@ let postprocess_project ~keep ~disambiguation directory =
   let open Result.O in
   let is_dune_file path =
     let filename = Fpath.filename path in
-    Ok (String.equal filename "dune")
+    let matches =
+      Base.List.mem ~equal:String.equal [ "dune"; "dune.inc" ] filename
+    in
+    Ok matches
   in
   let elements = `Sat is_dune_file in
   let dfp = Dune_file.Packages.init disambiguation in

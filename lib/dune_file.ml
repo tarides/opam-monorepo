@@ -77,9 +77,27 @@ module Packages = struct
   let init disambiguation = Digest.string disambiguation
   let random_valid_identifier t = Digest.to_hex t
 
+  type redirected_name = { package_name : string; subpackage : string option }
+
+  let public_name_of_redirect { package_name; subpackage } =
+    match subpackage with
+    | None -> package_name
+    | Some subpackage -> Fmt.str "%s.%s" package_name subpackage
+
   let random_public_name v original =
-    let suffix = random_valid_identifier v in
-    Fmt.str "%s_%s" original suffix
+    let disamb = random_valid_identifier v in
+    match Base.String.lsplit2 original ~on:'.' with
+    | Some (package, subpackage) ->
+        let package_name = Fmt.str "%s_%s" package disamb in
+        { package_name; subpackage = Some subpackage }
+    | None ->
+        let package_name = Fmt.str "%s_%s" original disamb in
+        { package_name; subpackage = None }
+
+  let package_name name =
+    match Base.String.lsplit2 name ~on:'.' with
+    | Some (package, _) -> package
+    | None -> name
 
   let find_by_name name stanzas =
     let matches =
@@ -132,7 +150,23 @@ module Packages = struct
             in
             let new_public_name = random_public_name t public_name in
             let stanzas =
-              List [ Atom "public_name"; Atom new_public_name ] :: stanzas
+              List
+                [
+                  Atom "public_name";
+                  Atom (public_name_of_redirect new_public_name);
+                ]
+              :: stanzas
+            in
+            (* add a redirect from base name to new name *)
+            let renames =
+              Map.add ~key:(package_name public_name)
+                ~data:
+                  {
+                    public_name = new_public_name.package_name;
+                    private_name = None;
+                    dune_project;
+                  }
+                renames
             in
 
             let stanzas, renames =
@@ -140,7 +174,7 @@ module Packages = struct
               | Some _ as private_name ->
                   let data =
                     {
-                      public_name = new_public_name;
+                      public_name = public_name_of_redirect new_public_name;
                       private_name;
                       dune_project;
                     }
@@ -160,7 +194,7 @@ module Packages = struct
                      did not exist before *)
                   let data =
                     {
-                      public_name = new_public_name;
+                      public_name = public_name_of_redirect new_public_name;
                       private_name;
                       dune_project;
                     }
@@ -215,12 +249,12 @@ module Packages = struct
 
   let rec update_reference ~dune_project renames = function
     | Atom _ as data -> { changed = false; data }
-    | (List (Atom "package" :: Atom old_name :: _)) as data -> (
-      match Map.find_opt old_name renames with
-      | None -> {changed = false; data }
-      | Some {public_name; private_name = _; dune_project = _ } ->
-        { changed = true; data = List [Atom "package"; Atom public_name] }
-    )
+    | List (Atom "package" :: Atom old_name :: _) as data -> (
+        match Map.find_opt old_name renames with
+        | None -> { changed = false; data }
+        | Some { public_name; private_name = _; dune_project = _ } ->
+            { changed = true; data = List [ Atom "package"; Atom public_name ] }
+        )
     | List ((Atom "libraries" as stanza) :: libs) ->
         let changed, libs =
           List.fold_left
@@ -300,7 +334,6 @@ module Packages = struct
   let update_dune_project_stanzas renames sexp =
     match sexp with
     | List (Atom "package" :: sexps) ->
-        Fmt.epr "Found package\n";
         let changed, sexps =
           List.fold_left
             ~f:(fun (changed, acc) sexp ->
