@@ -215,6 +215,12 @@ module Packages = struct
 
   let rec update_reference ~dune_project renames = function
     | Atom _ as data -> { changed = false; data }
+    | (List (Atom "package" :: Atom old_name :: _)) as data -> (
+      match Map.find_opt old_name renames with
+      | None -> {changed = false; data }
+      | Some {public_name; private_name = _; dune_project = _ } ->
+        { changed = true; data = List [Atom "package"; Atom public_name] }
+    )
     | List ((Atom "libraries" as stanza) :: libs) ->
         let changed, libs =
           List.fold_left
@@ -290,6 +296,38 @@ module Packages = struct
     | Some { public_name; private_name = _; dune_project = _ } ->
         let new_file_name = public_name |> Fpath.v |> Fpath.add_ext "opam" in
         Fpath.(directory // new_file_name)
+
+  let update_dune_project_stanzas renames sexp =
+    match sexp with
+    | List (Atom "package" :: sexps) ->
+        Fmt.epr "Found package\n";
+        let changed, sexps =
+          List.fold_left
+            ~f:(fun (changed, acc) sexp ->
+              match sexp with
+              | List [ Atom "name"; Atom old_name ] as data -> (
+                  match Map.find_opt old_name renames with
+                  | None -> (changed, data :: acc)
+                  | Some { public_name; private_name = _; dune_project = _ } ->
+                      (true, List [ Atom "name"; Atom public_name ] :: acc))
+              | data -> (changed, data :: acc))
+            ~init:(false, []) sexps
+        in
+        let sexps = List.rev sexps in
+        let data = List (Atom "package" :: sexps) in
+        { changed; data }
+    | data -> { changed = false; data }
+
+  let update_dune_project_references renames sexps =
+    let changed, sexps =
+      List.fold_left
+        ~f:(fun (changed_before, acc) sexp ->
+          let { changed; data } = update_dune_project_stanzas renames sexp in
+          (changed_before || changed, data :: acc))
+        ~init:(false, []) sexps
+    in
+    let sexps = List.rev sexps in
+    { changed; data = sexps }
 end
 
 module Raw = struct

@@ -60,6 +60,9 @@ module Packages : sig
     Sexplib0.Sexp.t list change
 
   val renamed_opam_file : new_name Map.t -> Fpath.t -> Fpath.t
+
+  val update_dune_project_references :
+    new_name Map.t -> Sexplib0.Sexp.t list -> Sexplib0.Sexp.t list change
 end
 
 module Project : sig

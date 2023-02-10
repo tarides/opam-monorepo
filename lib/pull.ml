@@ -14,8 +14,8 @@ let do_trim_clone output_dir =
   in
   Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
 
-let parse_sexps dune_file =
-  Bos.OS.File.with_ic dune_file
+let parse_sexps path =
+  Bos.OS.File.with_ic path
     (fun ic () ->
       match Sexplib.Sexp.input_sexps ic with
       | sexps -> Some sexps
@@ -102,15 +102,53 @@ let rec dune_project_of_dune path =
 
 let if_no_dune_project = Option.value ~default:""
 
+let rename_opam_files renames directory =
+  let is_opam_file path =
+    let extension = Fpath.get_ext path in
+    Ok (String.equal extension ".opam")
+  in
+  Bos.OS.Path.fold ~elements:(`Sat is_opam_file)
+    (fun path () ->
+      let new_path = Dune_file.Packages.renamed_opam_file renames path in
+      match Fpath.equal path new_path with
+      | true -> ()
+      | false -> (
+          match Bos.OS.Path.move path new_path with
+          | Ok () ->
+              Logs.debug (fun l ->
+                  l "Renamed OPAM file: %a -> %a\n" Fpath.pp path Fpath.pp
+                    new_path);
+              ()
+          | Error msg ->
+              Logs.err (fun l ->
+                  l "Error moving OPAM file %a: %a" Fpath.pp path
+                    Rresult.R.pp_msg msg)))
+    () [ directory ]
+
+let rewrite_dune_project renames directory =
+  let open Result.O in
+  let dune_project_file = Fpath.(directory / "dune-project") in
+  let* exists = Bos.OS.File.exists dune_project_file in
+  match exists with
+  | false -> Ok ()
+  | true -> (
+      let* parsed = parse_sexps dune_project_file in
+      Fmt.epr "Rewriting %a\n" Fpath.pp dune_project_file;
+      match parsed with
+      | None -> Ok ()
+      | Some sexps -> (
+          let Dune_file.Packages.{ changed; data } =
+            Dune_file.Packages.update_dune_project_references renames sexps
+          in
+          match changed with
+          | false -> Ok ()
+          | true -> write_sexps dune_project_file data))
+
 let postprocess_project ~keep ~disambiguation directory =
   let open Result.O in
   let is_dune_file path =
     let filename = Fpath.filename path in
     Ok (String.equal filename "dune")
-  in
-  let is_opam_file path =
-    let extension = Fpath.get_ext path in
-    Ok (String.equal extension ".opam")
   in
   let elements = `Sat is_dune_file in
   let dfp = Dune_file.Packages.init disambiguation in
@@ -159,25 +197,8 @@ let postprocess_project ~keep ~disambiguation directory =
       (Ok ()) [ directory ]
   in
   let* () = rewritten in
-  let* () =
-    Bos.OS.Path.fold ~elements:(`Sat is_opam_file)
-      (fun path () ->
-        let new_path = Dune_file.Packages.renamed_opam_file renames path in
-        match Fpath.equal path new_path with
-        | true -> ()
-        | false -> (
-            match Bos.OS.Path.move path new_path with
-            | Ok () ->
-                Logs.debug (fun l ->
-                    l "Renamed OPAM file: %a -> %a\n" Fpath.pp path Fpath.pp
-                      new_path);
-                ()
-            | Error msg ->
-                Logs.err (fun l ->
-                    l "Error moving OPAM file %a: %a" Fpath.pp path
-                      Rresult.R.pp_msg msg)))
-      () [ directory ]
-  in
+  let* () = rename_opam_files renames directory in
+  let* () = rewrite_dune_project renames directory in
   Ok ()
 
 let pull ?(trim_clone = false) ~global_state ~duniverse_dir src_dep =
