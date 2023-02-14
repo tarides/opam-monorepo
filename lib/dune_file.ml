@@ -82,6 +82,11 @@ module Packages = struct
     (* needs to start with `old.` to be part of the same package *)
     Fmt.str "%s.%s" original suffix
 
+  let random_library_name v original =
+    let suffix = random_valid_identifier v in
+    (* needs not to have a dot *)
+    Fmt.str "%s_%s" original suffix
+
   let find_by_name name stanzas =
     let matches =
       List.filter_map stanzas ~f:(function
@@ -93,20 +98,11 @@ module Packages = struct
     in
     match matches with [] -> None | [ x ] -> Some x | _ -> None
 
-  type new_name = {
-    public_name : string;
-    private_name : string option;
-    dune_project : string;
+  type 'a rename_result = {
+    changed : bool;
+    stanzas : 'a;
+    renames : string Map.t;
   }
-
-  type 'a change = { changed : bool; data : 'a }
-  type 'a rename = { stanzas : 'a; renames : new_name Map.t }
-
-  let modified ~changed ~stanzas ~renames =
-    { changed; data = { stanzas; renames } }
-
-  let changed = modified ~changed:true
-  let unchanged = modified ~changed:false
 
   (* determine whether the package should be kept or not, handles [pkg.name] and [pkg] *)
   let should_keep ~keep name =
@@ -117,14 +113,14 @@ module Packages = struct
     in
     Set.mem test_against keep
 
-  let rename_library t ~dune_project ~keep renames stanzas =
+  let rename_library t ~keep renames stanzas =
     let public_name = find_by_name "public_name" stanzas in
     let name = find_by_name "name" stanzas in
     match public_name with
-    | None -> unchanged ~stanzas ~renames
+    | None -> { changed = false; stanzas; renames }
     | Some public_name -> (
         match should_keep ~keep public_name with
-        | true -> unchanged ~stanzas ~renames
+        | true -> { changed = false; stanzas; renames }
         | false ->
             let stanzas =
               List.filter stanzas ~f:(function
@@ -138,74 +134,40 @@ module Packages = struct
 
             let stanzas, renames =
               match name with
-              | Some _ as private_name ->
-                  let data =
-                    {
-                      public_name = new_public_name;
-                      private_name;
-                      dune_project;
-                    }
+              | Some _private_name ->
+                  let renames =
+                    Map.add ~key:public_name ~data:new_public_name renames
                   in
-                  let renames = Map.add ~key:public_name ~data renames in
                   (stanzas, renames)
-              | None as private_name ->
-                  (* we need to add a valid "name" field and it has to match the
-                     previous public name to make sure there is no extra level
-                     of wrapping happening if the library comes with its own
-                     entry point module. *)
+              | None ->
+                  (* we need to add a valid "name" field if there is none *)
+                  let new_name = random_library_name t public_name in
                   let stanzas =
-                    List [ Atom "name"; Atom public_name ] :: stanzas
+                    List [ Atom "name"; Atom new_name ] :: stanzas
                   in
-                  (* private_name is None, because it means that the old
-                     reference can't have referred to the private name as it
-                     did not exist before *)
-                  let data =
-                    {
-                      public_name = new_public_name;
-                      private_name;
-                      dune_project;
-                    }
+                  let renames =
+                    Map.add ~key:public_name ~data:new_name renames
                   in
-                  let renames = Map.add ~key:public_name ~data renames in
                   (stanzas, renames)
             in
-            changed ~stanzas ~renames)
+            { changed = true; stanzas; renames })
 
-  let rename_one t ~dune_project ~keep renames = function
+  let rename_one t ~keep renames = function
     | List (Atom "library" :: stanzas) ->
-        let { changed; data = { stanzas; renames } } =
-          rename_library t ~dune_project ~keep renames stanzas
+        let { changed; stanzas; renames } =
+          rename_library t ~keep renames stanzas
         in
-        {
-          changed;
-          data = { stanzas = List (Atom "library" :: stanzas); renames };
-        }
-    | stanzas -> { changed = false; data = { stanzas; renames } }
+        { changed; stanzas = List (Atom "library" :: stanzas); renames }
+    | stanzas -> { changed = false; stanzas; renames }
 
-  let library_name ~dune_project renames old_name =
-    let open Option.O in
-    let* { public_name; private_name; dune_project = origin_dune_project } =
-      Map.find_opt old_name renames
-    in
-    match private_name with
-    | Some name when old_name = name && dune_project = origin_dune_project ->
-        None
-    | None | Some _ -> Some public_name
-
-  let update_lib_reference ~dune_project renames = function
-    | Atom old_name as data -> (
-        match library_name ~dune_project renames old_name with
-        | None -> { changed = false; data }
-        | Some public_name ->
-            let data = Atom public_name in
-            { changed = true; data })
-    | List [ Atom "re_export"; Atom old_name ] as data -> (
-        match library_name ~dune_project renames old_name with
-        | None -> { changed = false; data }
-        | Some public_name ->
-            let data = List [ Atom "re_export"; Atom public_name ] in
-            { changed = true; data })
-    | otherwise -> { changed = false; data = otherwise }
+  let update_lib_reference renames = function
+    | Atom old_name as original -> (
+        match Map.find_opt old_name renames with
+        | Some new_name ->
+            let stanzas = Atom new_name in
+            { changed = true; stanzas; renames }
+        | None -> { changed = false; stanzas = original; renames })
+    | otherwise -> { changed = false; stanzas = otherwise; renames }
 
   (* the file is an ML file if the first stanza starts with the emacs tuareg mode
      comment *)
@@ -214,74 +176,73 @@ module Packages = struct
         true
     | _ -> false
 
-  let rec update_reference ~dune_project renames = function
-    | Atom _ as data -> { changed = false; data }
+  let rec update_reference renames = function
+    | Atom _ as stanzas -> { changed = false; stanzas; renames }
     | List ((Atom "libraries" as stanza) :: libs) ->
         let changed, libs =
           List.fold_left
             ~f:(fun (changed_before, acc) lib ->
-              let { changed; data } =
-                update_lib_reference ~dune_project renames lib
+              let { changed; stanzas; renames = _ } =
+                update_lib_reference renames lib
               in
-              (changed_before || changed, data :: acc))
+              (changed_before || changed, stanzas :: acc))
             ~init:(false, []) libs
         in
         let libs = List.rev libs in
-        let data = List (stanza :: libs) in
-        { changed; data }
+        let stanzas = List (stanza :: libs) in
+        { changed; stanzas; renames }
     | List sexps ->
         let changed, sexps =
           List.fold_left
             ~f:(fun (changed_before, acc) sexp ->
-              let { changed; data } =
-                update_reference ~dune_project renames sexp
+              let { changed; stanzas; renames = _ } =
+                update_reference renames sexp
               in
-              (changed_before || changed, data :: acc))
+              (changed_before || changed, stanzas :: acc))
             ~init:(false, []) sexps
         in
         let sexps = List.rev sexps in
-        { changed; data = List sexps }
+        { changed; stanzas = List sexps; renames }
 
-  let update_references ~dune_project renames data =
+  let update_references renames stanzas =
     let changed = false in
-    match is_tuareg data with
-    | true -> { changed; data }
+    match is_tuareg stanzas with
+    | true -> { changed; stanzas; renames }
     | false ->
-        let changed, data =
+        let changed, stanzas =
           List.fold_left
             ~f:(fun (changed_before, acc) sexp ->
-              let { changed; data } =
-                update_reference ~dune_project renames sexp
+              let { changed; stanzas; renames = _ } =
+                update_reference renames sexp
               in
-              (changed_before || changed, data :: acc))
-            ~init:(false, []) data
+              (changed_before || changed, stanzas :: acc))
+            ~init:(false, []) stanzas
         in
-        let data = List.rev data in
-        { changed; data }
+        let stanzas = List.rev stanzas in
+        { changed; stanzas; renames }
 
-  let rename t ~dune_project ~keep renames stanzas =
+  let rename t ~keep renames stanzas =
     let keep = Set.of_list keep in
+    let changed = false in
     match is_tuareg stanzas with
     | true ->
         (* if the first sexp is the tuareg stanza, then it is an ocaml file,
            do not modify *)
-        unchanged ~stanzas ~renames
+        { changed; stanzas; renames }
     | false ->
-        let changed, stanzas, renames =
+        let { changed; stanzas; renames } =
           List.fold_left
-            ~f:(fun (changed, stanzas, renames) sexp ->
-              let {
-                changed = recursively_changed;
-                data = { stanzas = v; renames };
-              } =
-                rename_one t ~dune_project ~keep renames sexp
+            ~f:(fun { changed; stanzas = acc; renames } sexp ->
+              let { changed = recursively_changed; stanzas = v; renames } =
+                rename_one t ~keep renames sexp
               in
               let changed = changed || recursively_changed in
-              (changed, v :: stanzas, renames))
-            ~init:(false, [], renames) stanzas
+              { changed; stanzas = v :: acc; renames })
+            ~init:{ changed; stanzas = []; renames }
+            stanzas
         in
         let stanzas = List.rev stanzas in
-        modified ~changed ~stanzas ~renames
+        { changed; stanzas; renames }
 end
 
 module Raw = struct
