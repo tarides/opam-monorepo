@@ -212,13 +212,10 @@ let rec dune_packages_from_args env args =
 let dune_packages_from_build_command env cmd =
   let args, _filters = cmd in
   let simple_args = List.map ~f:fst args in
-  let rec find_dune_invocation = function
-    | [] -> []
-    | OpamTypes.CString "dune" :: dune_args ->
-        dune_packages_from_args env dune_args
-    | _ :: other_args -> find_dune_invocation other_args
-  in
-  find_dune_invocation simple_args
+  match simple_args with
+  | OpamTypes.CString "dune" :: dune_args ->
+      dune_packages_from_args env dune_args
+  | _ -> []
 
 let dune_packages_from_build_commands env cmds =
   cmds
