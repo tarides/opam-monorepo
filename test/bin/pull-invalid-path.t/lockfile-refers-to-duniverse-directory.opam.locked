@@ -10,13 +10,12 @@ pin-depends: [
 ]
 x-opam-monorepo-duniverse-dirs: [
   [
-    url {"https://foo.com/foo.tbz"}
-    dir {""} # <--------------------------- repo name is the empty string
-    hashes {
+    "https://foo.com/foo.tbz"
+    "" # <--------------------------- repo name is the empty string
+    [
       "sha256=0000000000000000000000000000000000000000000000000000000000000000"
-    }
-    dune-packages {}
+    ]
   ]
 ]
 x-opam-monorepo-root-packages: ["foo"]
-x-opam-monorepo-version: "0.4"
+x-opam-monorepo-version: "0.3"

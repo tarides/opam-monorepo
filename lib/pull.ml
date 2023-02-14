@@ -14,95 +14,17 @@ let do_trim_clone output_dir =
   in
   Bos.OS.Dir.delete ~recurse:true Fpath.(output_dir // Config.vendor_dir)
 
-let preprocess_dune dfp ~keep ~renames dune_file =
-  let open Result.O in
-  let* sexps =
-    Bos.OS.File.with_ic dune_file
-      (fun ic () ->
-        match Sexplib.Sexp.input_sexps ic with
-        | sexp -> Some sexp
-        | exception _ -> None)
-      ()
-  in
-  match sexps with
-  | None -> Ok None
-  | Some sexps -> (
-      let Dune_file.Packages.{ changed; stanzas; renames } =
-        Dune_file.Packages.rename dfp ~keep renames sexps
-      in
-      match changed with
-      | false -> Ok None
-      | true -> Ok (Some (stanzas, renames)))
-
-(* can't use Sexplib pretty printer here because Sexplib tries too hard
-   to escape values like \ and thus generates dune files that dune can't
-   read *)
-let rec pp_sexp ppf = function
-  | Sexplib0.Sexp.List items ->
-      let pp_items = Fmt.list ~sep:(Fmt.any " ") pp_sexp in
-      Fmt.pf ppf "(%a)" pp_items items
-  | Atom "" -> Fmt.string ppf {|""|}
-  | Atom s -> (
-      match
-        String.contains s ' ' || String.contains s '(' || String.contains s ')'
-      with
-      | false -> Fmt.string ppf s
-      | true ->
-          let s = String.escaped s in
-          Fmt.pf ppf {|"%s"|} s)
-
-let postprocess_project ~keep ~disambiguation directory =
-  let open Result.O in
-  let is_dune_file path =
-    let filename = Fpath.filename path in
-    Ok (String.equal filename "dune")
-  in
-  let elements = `Sat is_dune_file in
-  let dfp = Dune_file.Packages.init disambiguation in
-  let renames = Dune_file.Packages.Map.empty in
-  (* determine files and their mappings first *)
-  let* files, renames =
-    Bos.OS.Path.fold ~elements
-      (fun path (acc, renames) ->
-        match preprocess_dune dfp ~keep ~renames path with
-        | Ok (Some (sexps, renames)) ->
-            let v = (path, sexps) in
-            (v :: acc, renames)
-        | Ok None -> (acc, renames)
-        | Error (`Msg msg) ->
-            Logs.err (fun l -> l "Error while preprocessing: %s" msg);
-            (acc, renames))
-      ([], renames) [ directory ]
-  in
-  (* apply the renames to the files *)
-  Result.List.iter files ~f:(fun (path, sexps) ->
-      Logs.debug (fun l -> l "Rewriting %a to make names unique" Fpath.pp path);
-      let sexps = Dune_file.Packages.update_references renames sexps in
-      let* res =
-        Bos.OS.File.with_oc path
-          (fun oc sexps ->
-            let ppf = Format.formatter_of_out_channel oc in
-            List.iter ~f:(fun sexp -> Fmt.pf ppf "%a\n" pp_sexp sexp) sexps;
-            Ok ())
-          sexps
-      in
-      res)
-
 let pull ?(trim_clone = false) ~global_state ~duniverse_dir src_dep =
   let open Result.O in
   let open Duniverse.Repo in
-  let { dir; url; hashes; provided_packages = _; dune_packages } = src_dep in
+  let { dir; url; hashes; _ } = src_dep in
   let output_dir = Fpath.(duniverse_dir / dir) in
   if is_in_universe_dir ~duniverse_dir ~output_dir then
     let url = Url.to_opam_url url in
     let open OpamProcess.Job.Op in
     Opam.pull_tree ~url ~hashes ~dir:output_dir global_state @@| fun result ->
     let* () = result in
-    let* () = if trim_clone then do_trim_clone output_dir else Ok () in
-    let* () =
-      postprocess_project ~keep:dune_packages ~disambiguation:dir output_dir
-    in
-    Ok ()
+    if trim_clone then do_trim_clone output_dir else Ok ()
   else
     let error =
       Rresult.R.error_msgf

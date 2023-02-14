@@ -29,30 +29,6 @@ module Lang : sig
       Return the string unmodified if there was previously no lang stanza. *)
 end
 
-module Packages : sig
-  module Map : Stdext.Map.S
-
-  type t
-
-  val init : string -> t
-
-  type 'a rename_result = {
-    changed : bool;
-    stanzas : 'a;
-    renames : string Map.t;
-  }
-
-  val rename :
-    t ->
-    keep:string list ->
-    string Map.t ->
-    Sexplib0.Sexp.t list ->
-    Sexplib0.Sexp.t list rename_result
-
-  val update_references :
-    string Map.t -> Sexplib0.Sexp.t list -> Sexplib0.Sexp.t list
-end
-
 module Project : sig
   val name : Sexplib0.Sexp.t list -> (string, [> `Msg of string ]) result
   (** Returns the dune-project's name given the content of the file as a list of S-expressions,
