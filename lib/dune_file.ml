@@ -134,13 +134,10 @@ module Packages = struct
 
             let stanzas, renames =
               match name with
-              | Some _private_name ->
-                  let renames =
-                    Map.add ~key:public_name ~data:new_public_name renames
-                  in
+              | Some name ->
+                  let renames = Map.add ~key:public_name ~data:name renames in
                   (stanzas, renames)
               | None ->
-                  (* we need to add a valid "name" field if there is none *)
                   let new_name = random_library_name t public_name in
                   let stanzas =
                     List [ Atom "name"; Atom new_name ] :: stanzas
@@ -160,55 +157,23 @@ module Packages = struct
         { changed; stanzas = List (Atom "library" :: stanzas); renames }
     | stanzas -> { changed = false; stanzas; renames }
 
-  let update_lib_reference renames = function
+  let translate_lib renames = function
     | Atom old_name as original -> (
         match Map.find_opt old_name renames with
-        | Some new_name ->
-            let stanzas = Atom new_name in
-            { changed = true; stanzas; renames }
-        | None -> { changed = false; stanzas = original; renames })
-    | otherwise -> { changed = false; stanzas = otherwise; renames }
+        | Some new_name -> Atom new_name
+        | None -> original)
+    | otherwise -> otherwise
 
-  let rec update_reference renames = function
-    | Atom _ as original -> { changed = false; stanzas = original; renames }
+  let rec translate renames = function
+    | Atom _ as original -> original
     | List ((Atom "libraries" as stanza) :: libs) ->
-        let changed, libs =
-          List.fold_left
-            ~f:(fun (changed_before, acc) lib ->
-              let { changed; stanzas; renames = _ } =
-                update_lib_reference renames lib
-              in
-              (changed_before || changed, stanzas :: acc))
-            ~init:(false, []) libs
-        in
-        let libs = List.rev libs in
-        let stanzas = List (stanza :: libs) in
-        { changed; stanzas; renames }
+        let libs = List.map ~f:(translate_lib renames) libs in
+        List (stanza :: libs)
     | List sexps ->
-        let changed, sexps =
-          List.fold_left
-            ~f:(fun (changed_before, acc) sexp ->
-              let { changed; stanzas; renames = _ } =
-                update_reference renames sexp
-              in
-              (changed_before || changed, stanzas :: acc))
-            ~init:(false, []) sexps
-        in
-        let sexps = List.rev sexps in
-        { changed; stanzas = List sexps; renames }
+        let sexps = List.map ~f:(translate renames) sexps in
+        List sexps
 
-  let update_references renames sexps =
-    let changed, sexps =
-      List.fold_left
-        ~f:(fun (changed_before, acc) sexp ->
-          let { changed; stanzas; renames = _ } =
-            update_reference renames sexp
-          in
-          (changed_before || changed, stanzas :: acc))
-        ~init:(false, []) sexps
-    in
-    let sexps = List.rev sexps in
-    { changed; stanzas = sexps; renames }
+  let update_references renames = List.map ~f:(translate renames)
 
   let rename t ~keep renames sexps =
     let keep = Set.of_list keep in

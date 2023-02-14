@@ -50,7 +50,7 @@ module Packages : sig
     Sexplib0.Sexp.t list rename_result
 
   val update_references :
-    string Map.t -> Sexplib0.Sexp.t list -> Sexplib0.Sexp.t list rename_result
+    string Map.t -> Sexplib0.Sexp.t list -> Sexplib0.Sexp.t list
 end
 
 module Project : sig

@@ -51,18 +51,6 @@ let rec pp_sexp ppf = function
           let s = String.escaped s in
           Fmt.pf ppf {|"%s"|} s)
 
-let write_sexps path sexps =
-  let open Result.O in
-  let* write_result =
-    Bos.OS.File.with_oc path
-      (fun oc sexps ->
-        let ppf = Format.formatter_of_out_channel oc in
-        List.iter ~f:(fun sexp -> Fmt.pf ppf "%a\n" pp_sexp sexp) sexps;
-        Ok ())
-      sexps
-  in
-  write_result
-
 let postprocess_project ~keep ~disambiguation directory =
   let open Result.O in
   let is_dune_file path =
@@ -72,53 +60,33 @@ let postprocess_project ~keep ~disambiguation directory =
   let elements = `Sat is_dune_file in
   let dfp = Dune_file.Packages.init disambiguation in
   let renames = Dune_file.Packages.Map.empty in
-  (* determine mappings first *)
-  let* renames =
+  (* determine files and their mappings first *)
+  let* files, renames =
     Bos.OS.Path.fold ~elements
-      (fun path renames ->
+      (fun path (acc, renames) ->
         match preprocess_dune dfp ~keep ~renames path with
-        | Ok (Some (sexps, renames)) -> (
-            match write_sexps path sexps with
-            | Ok () -> renames
-            | Error msg ->
-                Logs.err (fun l ->
-                    l "Error while writing file %a: %a" Fpath.pp path
-                      Rresult.R.pp_msg msg);
-                renames)
-        | Ok None -> renames
-        | Error msg ->
-            Logs.err (fun l ->
-                l "Error while preprocessing: %a " Rresult.R.pp_msg msg);
-            renames)
-      renames [ directory ]
+        | Ok (Some (sexps, renames)) ->
+            let v = (path, sexps) in
+            (v :: acc, renames)
+        | Ok None -> (acc, renames)
+        | Error (`Msg msg) ->
+            Logs.err (fun l -> l "Error while preprocessing: %s" msg);
+            (acc, renames))
+      ([], renames) [ directory ]
   in
-  (* iterate over all dune files and rewrite where necessary *)
-  let* res =
-    Bos.OS.Path.fold ~elements
-      (fun path acc ->
-        let* sexps =
-          Bos.OS.File.with_ic path
-            (fun ic () ->
-              match Sexplib.Sexp.input_sexps ic with
-              | sexp -> Some sexp
-              | exception _ -> None)
-            ()
-        in
-        match sexps with
-        | None -> acc
-        | Some sexps -> (
-            let Dune_file.Packages.{ changed; stanzas; renames = _ } =
-              Dune_file.Packages.update_references renames sexps
-            in
-            match changed with
-            | false -> acc
-            | true ->
-                Logs.debug (fun l ->
-                    l "Rewriting %a to make names unique" Fpath.pp path);
-                write_sexps path stanzas))
-      (Ok ()) [ directory ]
-  in
-  res
+  (* apply the renames to the files *)
+  Result.List.iter files ~f:(fun (path, sexps) ->
+      Logs.debug (fun l -> l "Rewriting %a to make names unique" Fpath.pp path);
+      let sexps = Dune_file.Packages.update_references renames sexps in
+      let* res =
+        Bos.OS.File.with_oc path
+          (fun oc sexps ->
+            let ppf = Format.formatter_of_out_channel oc in
+            List.iter ~f:(fun sexp -> Fmt.pf ppf "%a\n" pp_sexp sexp) sexps;
+            Ok ())
+          sexps
+      in
+      res)
 
 let pull ?(trim_clone = false) ~global_state ~duniverse_dir src_dep =
   let open Result.O in
