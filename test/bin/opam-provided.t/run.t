@@ -35,11 +35,9 @@ The lockfile should thus contain the package "b" and mark it as `vendor` since
   "ocaml-options-vanilla" {= "1"}
   $ opam show --just-file --raw -fx-opam-monorepo-duniverse-dirs ./vendored.opam.locked
   [
-    url {"https://b.com/b.tbz"}
-    dir {"b"}
-    hashes
-      {"sha256=0000000000000000000000000000000000000000000000000000000000000000"}
-    dune-packages {}
+    "https://b.com/b.tbz"
+    "b"
+    ["sha256=0000000000000000000000000000000000000000000000000000000000000000"]
   ]
 
 Let's now check with the same Opam file but this one adds `opam`-provided.

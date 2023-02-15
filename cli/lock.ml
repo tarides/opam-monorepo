@@ -61,12 +61,11 @@ let opam_to_git_remote remote =
   | Some ("git", remote) -> remote
   | _ -> remote
 
-let compute_duniverse ~deduplicate_packages ~dependency_entries =
+let compute_duniverse ~dependency_entries =
   let get_default_branch remote =
     D.Exec.git_default_branch ~remote:(opam_to_git_remote remote) ()
   in
-  D.Duniverse.from_dependency_entries ~deduplicate_packages ~get_default_branch
-    dependency_entries
+  D.Duniverse.from_dependency_entries ~get_default_branch dependency_entries
 
 let resolve_ref deps =
   let resolve_ref ~repo ~ref =
@@ -523,8 +522,7 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
     (`Allow_jbuilder allow_jbuilder) (`Ocaml_version ocaml_version)
     (`Require_cross_compile require_cross_compile)
     (`Minimal_update minimal_update) (`Config_adjustment adjustment)
-    (`Target_packages specified_packages) (`Lockfile explicit_lockfile)
-    (`Deduplicate_packages deduplicate_packages) () =
+    (`Target_packages specified_packages) (`Lockfile explicit_lockfile) () =
   let open Result.O in
   let* local_packages = local_packages ~versions:specified_packages root in
   let* target_packages =
@@ -547,9 +545,7 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
       ~local_opam_files:opam_files ~target_packages
   in
   Common.Logs.app (fun l -> l "Calculating exact pins for each of them.");
-  let* duniverse =
-    compute_duniverse ~deduplicate_packages ~dependency_entries >>= resolve_ref
-  in
+  let* duniverse = compute_duniverse ~dependency_entries >>= resolve_ref in
   let target_depexts = target_depexts opam_files target_packages in
   let lockfile =
     D.Lockfile.create ~source_config ~root_packages:target_packages
@@ -603,18 +599,6 @@ let allow_jbuilder =
   Common.Arg.named
     (fun x -> `Allow_jbuilder x)
     Arg.(value & flag & info ~doc [ "allow-jbuilder" ])
-
-let deduplicate_packages =
-  let doc =
-    "If multiple packages are from the same dev-repo, deduplicate them by \
-     picking the one with the highest version. This setting is to avoid \
-     unpacking the same tarball multiple times and thus potentially causing \
-     the build to fail due to duplicated library names."
-  in
-  let info' = Arg.info ~doc [ "deduplicate-packages" ] in
-  Common.Arg.named
-    (fun x -> `Deduplicate_packages x)
-    Arg.(value & opt ~vopt:true bool true info')
 
 let packages =
   let doc =
@@ -697,6 +681,6 @@ let term =
       const run $ Common.Arg.root $ recurse_opam $ build_only $ allow_jbuilder
       $ ocaml_version $ require_cross_compile $ minimal_update
       $ config_adjustment $ packages $ Common.Arg.lockfile
-      $ deduplicate_packages $ Common.Arg.setup_logs ())
+      $ Common.Arg.setup_logs ())
 
 let cmd = Cmd.v info term

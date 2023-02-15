@@ -196,36 +196,6 @@ module Package_flag = struct
     | Pkgflag_Unknown unknown -> Fmt.pf pps "unknown(%s)" unknown
 end
 
-module OpamVar = Map.Make (String)
-
-let rec dune_packages_from_args env args =
-  match args with
-  | [] -> []
-  | OpamTypes.CString "-p" :: packages :: _ -> (
-      match packages with
-      | OpamTypes.CString pkgs -> String.split_on_char ~sep:',' pkgs
-      | OpamTypes.CIdent ident -> (
-          match OpamVar.find_opt ident env with Some v -> [ v ] | None -> []))
-  (* TODO: handle other cases like --for-release-of-packages=pkgs *)
-  | _ :: xs -> dune_packages_from_args env xs
-
-let dune_packages_from_build_command env cmd =
-  let args, _filters = cmd in
-  let simple_args = List.map ~f:fst args in
-  let rec find_dune_invocation = function
-    | [] -> []
-    | OpamTypes.CString "dune" :: dune_args ->
-        dune_packages_from_args env dune_args
-    | _ :: other_args -> find_dune_invocation other_args
-  in
-  find_dune_invocation simple_args
-
-let dune_packages_from_build_commands env cmds =
-  cmds
-  |> List.map ~f:(dune_packages_from_build_command env)
-  |> List.concat
-  |> List.sort_uniq ~cmp:String.compare
-
 module Package_summary = struct
   type t = {
     package : OpamPackage.t;
@@ -235,31 +205,20 @@ module Package_summary = struct
     depexts : (OpamSysPkg.Set.t * OpamTypes.filter) list;
     flags : Package_flag.t list;
     build_commands : OpamTypes.command list;
-    dune_packages : string list;
   }
 
   let pp fmt
-      {
-        package;
-        url_src;
-        hashes;
-        dev_repo;
-        depexts;
-        flags;
-        build_commands;
-        dune_packages;
-      } =
+      { package; url_src; hashes; dev_repo; depexts; flags; build_commands } =
     let open Pp_combinators.Ocaml in
     Format.fprintf fmt
       "@[<hov 2>{ name = %a;@ version = %a;@ url_src = %a;@ hashes = %a;@ \
-       dev_repo = %a;@ depexts = %a;@ flags = %a;@ build_commands = %a;@ \
-       dune_packages = %a }@]"
+       dev_repo = %a;@ depexts = %a;@ flags = %a;@ build_commands = %a }@]"
       Pp.package_name package.name Pp.version package.version
       (option ~brackets:true Url.pp)
       url_src (list Hash.pp) hashes
       (option ~brackets:true string)
       dev_repo Depexts.pp depexts (list Package_flag.pp) flags (list Command.pp)
-      build_commands (list string) dune_packages
+      build_commands
 
   let from_opam package opam_file =
     let url_field = OpamFile.OPAM.url opam_file in
@@ -273,22 +232,7 @@ module Package_summary = struct
     let depexts = OpamFile.OPAM.depexts opam_file in
     let flags = OpamFile.OPAM.flags opam_file in
     let build_commands = OpamFile.OPAM.build opam_file in
-    let package_name =
-      package |> OpamPackage.name |> OpamPackage.Name.to_string
-    in
-    (* TODO: build env in a smarter way *)
-    let env = OpamVar.empty |> OpamVar.add ~key:"name" ~data:package_name in
-    let dune_packages = dune_packages_from_build_commands env build_commands in
-    {
-      package;
-      url_src;
-      hashes;
-      dev_repo;
-      depexts;
-      flags;
-      build_commands;
-      dune_packages;
-    }
+    { package; url_src; hashes; dev_repo; depexts; flags; build_commands }
 
   let has_flag flag { flags; _ } = List.mem flag ~set:flags
   let is_compiler v = has_flag OpamTypes.Pkgflag_Compiler v
@@ -372,36 +316,14 @@ module Pos = struct
 end
 
 module Value = struct
-  module type CONST = sig
-    val string_to_constr : string -> OpamParserTypes.FullPos.value_kind
-    val const_match : OpamParserTypes.FullPos.value -> string option
-    val expected : string
-  end
-
-  module ConstStr (M : CONST) = struct
+  module String = struct
     let from_value value =
-      match M.const_match value with
-      | Some s -> Ok s
-      | None -> Pos.unexpected_value_error ~expected:M.expected value
+      match (value : OpamParserTypes.FullPos.value) with
+      | { pelem = String s; _ } -> Ok s
+      | _ -> Pos.unexpected_value_error ~expected:"a string" value
 
-    let to_value s = Pos.with_default (M.string_to_constr s)
+    let to_value s = Pos.with_default (OpamParserTypes.FullPos.String s)
   end
-
-  module String = ConstStr (struct
-    open OpamParserTypes.FullPos
-
-    let string_to_constr s = String s
-    let const_match = function { pelem = String s; _ } -> Some s | _ -> None
-    let expected = "a string"
-  end)
-
-  module Ident = ConstStr (struct
-    open OpamParserTypes.FullPos
-
-    let string_to_constr s = Ident s
-    let const_match = function { pelem = Ident s; _ } -> Some s | _ -> None
-    let expected = "an identifier"
-  end)
 
   module List = struct
     let from_value elm_from_value value =
@@ -416,23 +338,5 @@ module Value = struct
           (Pos.with_default (List.map ~f:elm_to_value l))
       in
       Pos.with_default pelem
-  end
-
-  module Option = struct
-    let from_value ~key:key_from_value ~elem:elm_from_value value =
-      let open Result.O in
-      match (value : OpamParserTypes.FullPos.value) with
-      | { pelem = Option (key, { pelem = values; _ }); _ } ->
-          let* key = key_from_value key in
-          let* values = Result.List.map ~f:elm_from_value values in
-          Ok (key, values)
-      | _ -> Pos.unexpected_value_error ~expected:"a group" value
-
-    let to_value ~key:key_to_value ~elem:elm_to_value (key, values) =
-      let values =
-        Pos.with_default (Stdlib.ListLabels.map ~f:elm_to_value values)
-      in
-      let key = key_to_value key in
-      OpamParserTypes.FullPos.Option (key, values) |> Pos.with_default
   end
 end

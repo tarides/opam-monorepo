@@ -7,10 +7,6 @@
 - Add option `--keep-symlinked-dir` to preserve symlinks in `duniverse/`, which
   can be useful for local development. (#348, #366, @hannesm,
   @Leonidas-from-XIV)
-- Add option `--deduplicate-packages` which can be set to `false` to disable
-  the deduplication of packages, instead it will attempt to rewrite vendored
-  `dune` files to resolve conflicts between multiple identical `public_names`.
-  (#367, @Leonidas-from-XIV)
 
 ### Changed
 
@@ -21,11 +17,6 @@
 ### Deprecated
 
 ### Fixed
-
-- Process all `dune` in the project after renaming libraries to avoid pointing
-  to non-existing vendored libraries (#370, #371 @Leonidas-from-XIV)
-- Skip over `dune` files in ML format both when attempting to rename libraries
-  as well as when updating references (#372, @Leonidas-from-XIV)
 
 ### Removed
 
