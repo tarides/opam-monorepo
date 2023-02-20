@@ -27,6 +27,10 @@
 - Fix assertion failure when prefix of "lock" subcommand is used (#381,
   @gridbugs)
 
+- Treat packages without build commands as virtual only if also lack install
+  commands, as some non-virtual packages might only have install commands.
+  (#376 @Leonidas-from-XIV, @gridbugs)
+
 ### Removed
 
 ### Security
