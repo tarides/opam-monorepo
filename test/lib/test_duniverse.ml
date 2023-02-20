@@ -43,10 +43,10 @@ let summary_factory ?(name = "undefined") ?(version = "1") ?dev_repo ?url_src
   }
 
 let dependency_factory ?(vendored = true) ?name ?version ?dev_repo ?url_src
-    ?hashes ?depexts ?flags ?has_build_commands () =
+    ?hashes ?depexts ?flags ?has_build_commands ?has_install_commands () =
   let package_summary =
     summary_factory ?name ?version ?dev_repo ?url_src ?hashes ?depexts ?flags
-      ?has_build_commands ()
+      ?has_build_commands ?has_install_commands ()
   in
   { Opam.Dependency_entry.vendored; package_summary }
 
@@ -69,6 +69,21 @@ module Repo = struct
         in
         (test_name, `Quick, test_fun)
       in
+      let simple_summary ?has_build_commands ?has_install_commands =
+        summary_factory ~dev_repo:"d" ~url_src:(Other "u") ~name:"y"
+          ~version:"v" ~hashes:[] ?has_build_commands ?has_install_commands
+      in
+      let simple_package =
+        Ok
+          (Some
+             Duniverse.Repo.Package.
+               {
+                 opam = opam_factory ~name:"y" ~version:"v";
+                 dev_repo = "d";
+                 url = Other "u";
+                 hashes = [];
+               })
+      in
       [
         make_test ~name:"Base package"
           ~summary:(summary_factory ~name:"dune" ())
@@ -80,19 +95,22 @@ module Repo = struct
           ~summary:(summary_factory ?dev_repo:None ())
           ~expected:(Ok None) ();
         make_test ~name:"Regular"
+          ~summary:(simple_summary ~has_build_commands:true ())
+          ~expected:simple_package ();
+        make_test ~name:"Has only install commands"
+          ~summary:(simple_summary ~has_install_commands:true ())
+          ~expected:simple_package ();
+        make_test ~name:"Has both build & install commands"
           ~summary:
-            (summary_factory ~dev_repo:"d" ~url_src:(Other "u") ~name:"y"
-               ~version:"v" ~hashes:[] ~has_build_commands:true ())
-          ~expected:
-            (Ok
-               (Some
-                  {
-                    opam = opam_factory ~name:"y" ~version:"v";
-                    dev_repo = "d";
-                    url = Other "u";
-                    hashes = [];
-                  }))
-          ();
+            (simple_summary ~has_build_commands:true ~has_install_commands:true
+               ())
+          ~expected:simple_package ();
+        make_test
+          ~name:"Has neither build nor install commands: virtual package"
+          ~summary:
+            (simple_summary ~has_build_commands:false
+               ~has_install_commands:false ())
+          ~expected:(Ok None) ();
         make_test ~name:"Uses default branch when no tag"
           ~get_default_branch:(function
             | "r" -> Ok "master" | _ -> assert false)
@@ -259,6 +277,23 @@ let test_from_dependency_entries =
         [
           dependency_factory ~name:"x" ~version:"v" ~url_src:(Other "u")
             ~dev_repo:"d" ~hashes:[] ~has_build_commands:true ();
+        ]
+      ~expected:
+        (Ok
+           [
+             {
+               dir = "d";
+               url = Other "u";
+               hashes = [];
+               provided_packages = [ opam_factory ~name:"x" ~version:"v" ];
+             };
+           ])
+      ();
+    make_test ~name:"Package with just install commands"
+      ~dependency_entries:
+        [
+          dependency_factory ~name:"x" ~version:"v" ~url_src:(Other "u")
+            ~dev_repo:"d" ~hashes:[] ~has_install_commands:true ();
         ]
       ~expected:
         (Ok
