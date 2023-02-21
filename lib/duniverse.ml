@@ -231,6 +231,58 @@ let dev_repo_map_from_packages packages =
         | Some pkgs -> Some (pkg :: pkgs)
         | None -> Some [ pkg ]))
 
+(* converts a map from dev-repos to lists of packages to a list of repos after
+   checking for errors *)
+let dev_repo_package_map_to_repos dev_repo_package_map =
+  let open Result.O in
+  let dev_repo_to_repo_result_map =
+    Dev_repo.Map.mapi dev_repo_package_map ~f:(fun dev_repo pkgs ->
+        Repo.from_packages ~dev_repo pkgs)
+  in
+  (* Handle any errors relating to individual repos but maintain the
+     association between dev-repo and repo for further error checking. *)
+  let* repo_by_dev_repo =
+    Dev_repo.Map.bindings dev_repo_to_repo_result_map
+    |> List.map ~f:(fun (dev_repo, repo_result) ->
+           Result.map (fun repo -> (dev_repo, repo)) repo_result)
+    |> Base.Result.all
+  in
+  (* Detect the case where multiple different dev-repos are associated with the
+     same duniverse directory. *)
+  let* () =
+    let dev_repos_by_dir =
+      List.fold_left repo_by_dev_repo ~init:String.Map.empty
+        ~f:(fun acc (dev_repo, (repo : _ Repo.t)) ->
+          String.Map.update acc repo.dir ~f:(function
+            | None -> Some [ dev_repo ]
+            | Some dev_repos -> Some (dev_repo :: dev_repos)))
+      |> String.Map.bindings
+    in
+    match
+      List.find_opt dev_repos_by_dir ~f:(fun (_, dev_repos) ->
+          List.length dev_repos > 1)
+    with
+    | None -> Ok ()
+    | Some (dir, dev_repos) ->
+        let dir_path = Fpath.(Config.vendor_dir / dir) in
+        let message_first_line =
+          Format.asprintf
+            "Multiple dev-repos would be vendored into the directory: %a"
+            Fpath.pp dir_path
+        in
+        let message_dev_repos =
+          Format.sprintf "Dev-repos:\n%s"
+            (List.map dev_repos ~f:(fun dev_repo ->
+                 Format.asprintf "- %a" Dev_repo.pp dev_repo)
+            |> String.concat ~sep:"\n")
+        in
+        let message =
+          [ message_first_line; message_dev_repos ] |> String.concat ~sep:"\n"
+        in
+        Error (`Msg message)
+  in
+  Ok (List.map ~f:snd repo_by_dev_repo)
+
 let from_dependency_entries ~get_default_branch dependencies =
   let open Result.O in
   let summaries =
@@ -247,10 +299,7 @@ let from_dependency_entries ~get_default_branch dependencies =
   let* pkg_opts = Base.Result.all results in
   let pkgs = Base.List.filter_opt pkg_opts in
   let dev_repo_map = dev_repo_map_from_packages pkgs in
-  Dev_repo.Map.fold dev_repo_map ~init:[]
-    ~f:(fun ~key:dev_repo ~data:pkgs acc ->
-      Repo.from_packages ~dev_repo pkgs :: acc)
-  |> Base.Result.all
+  dev_repo_package_map_to_repos dev_repo_map
 
 let resolve ~resolve_ref t =
   Parallel.map ~f:(Repo.resolve ~resolve_ref) t |> Base.Result.all
