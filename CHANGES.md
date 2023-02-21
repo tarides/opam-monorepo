@@ -18,6 +18,9 @@
 
 ### Fixed
 
+- Error in case where multiple packages with different dev-repo fields would be
+  placed in the same duniverse directory (#377, @gridbugs)
+
 ### Removed
 
 ### Security

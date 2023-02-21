@@ -4,6 +4,7 @@ type t
 
 val from_string : string -> t
 val to_string : t -> string
+val pp : t Fmt.t
 
 val repo_name : t -> (string, Rresult.R.msg) result
 (** Computes a name for the repo by applying the following method:
