@@ -5,7 +5,7 @@ type t = string
 let compare = String.compare
 let from_string s = s
 let to_string t = t
-let pp fmt t = Format.fprintf fmt "%s" t
+let pp = Fmt.string
 
 let rec repeat_while_some x ~f =
   match f x with None -> x | Some x -> repeat_while_some x ~f

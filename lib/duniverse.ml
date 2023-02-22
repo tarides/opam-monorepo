@@ -266,20 +266,16 @@ let dev_repo_package_map_to_repos dev_repo_package_map =
     | Some (dir, dev_repos) ->
         let dir_path = Fpath.(Config.vendor_dir / dir) in
         let message_first_line =
-          Format.asprintf
-            "Multiple dev-repos would be vendored into the directory: %a"
+          Fmt.str "Multiple dev-repos would be vendored into the directory: %a"
             Fpath.pp dir_path
         in
-        let message_dev_repos =
-          Format.sprintf "Dev-repos:\n%s"
-            (List.map dev_repos ~f:(fun dev_repo ->
-                 Format.asprintf "- %a" Dev_repo.pp dev_repo)
-            |> String.concat ~sep:"\n")
+        let dev_repos_pp =
+          Fmt.list
+            ~sep:Fmt.(const char '\n')
+            (fun ppf dev_repo -> Fmt.pf ppf "- %a" Dev_repo.pp dev_repo)
         in
-        let message =
-          [ message_first_line; message_dev_repos ] |> String.concat ~sep:"\n"
-        in
-        Error (`Msg message)
+        Rresult.R.error_msgf "%s\nDev-repos:\n%a" message_first_line
+          dev_repos_pp dev_repos
   in
   Ok (List.map ~f:snd repo_by_dev_repo)
 
