@@ -21,7 +21,7 @@ let cmds = [ Lock.cmd; Pull.cmd; Depext.cmd; List_cmd.cmd ]
 let init_opam () =
   OpamSystem.init ();
   let root = OpamStateConfig.opamroot () in
-  ignore (OpamStateConfig.load_defaults root);
+  ignore (OpamStateConfig.load_defaults ~lock_kind:`Lock_read root);
   OpamFormatConfig.init ();
   OpamCoreConfig.init ~safe_mode:true ();
   OpamRepositoryConfig.init ();
