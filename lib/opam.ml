@@ -193,6 +193,7 @@ module Package_flag = struct
     | Pkgflag_Compiler -> Fmt.pf pps "compiler"
     | Pkgflag_Conf -> Fmt.pf pps "conf"
     | Pkgflag_AvoidVersion -> Fmt.pf pps "avoid-version"
+    | Pkgflag_Deprecated -> Fmt.pf pps "deprecated"
     | Pkgflag_Unknown unknown -> Fmt.pf pps "unknown(%s)" unknown
 end
 
