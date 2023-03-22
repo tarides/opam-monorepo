@@ -21,6 +21,9 @@
 - Error in case where multiple packages with different dev-repo fields would be
   placed in the same duniverse directory (#377, @gridbugs)
 
+- Fix a failure when using opam-monorepo with an opam 2.2 root
+  (#379, @kit-ty-kate)
+
 ### Removed
 
 ### Security
