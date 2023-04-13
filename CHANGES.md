@@ -24,6 +24,9 @@
 - Fix a failure when using opam-monorepo with an opam 2.2 root
   (#379, @kit-ty-kate)
 
+- Fix assertion failure when prefix of "lock" subcommand is used (#381,
+  @gridbugs)
+
 ### Removed
 
 ### Security
