@@ -4,8 +4,8 @@ RUN opam install -y dune
 COPY --chown=opam . /home/opam/src/
 WORKDIR /home/opam/src
 ENV DUNE_CACHE=enabled
-RUN --mount=type=cache,target=/home/opam/.cache,uid=1000 opam exec -- dune build --profile=static @install
-RUN --mount=type=cache,target=/home/opam/.cache,uid=1000 opam exec -- dune install
+RUN --mount=type=cache,target=/home/opam/.cache,uid=1000 opam exec -- dune build --profile=static @install \
+    && --mount=type=cache,target=/home/opam/.cache,uid=1000 opam exec -- dune install
 
 # no-ocaml
 FROM alpine:3.12 as no-ocaml
@@ -14,9 +14,9 @@ COPY --from=base /home/opam/.opam/4.10/bin/duniverse /usr/bin/duniverse
 RUN apk add --update musl-dev gcc g++ make git
 COPY --chown=opam . /src/
 WORKDIR /src
-RUN --mount=type=cache,target=/home/opam/.cache,sharing=locked,uid=1000 duniverse pull
 RUN --mount=type=cache,target=/home/opam/.cache,sharing=private,uid=1000 duniverse tools -vv
-RUN --mount=type=cache,target=/home/opam/.cache,sharing=private,uid=1000 duniverse tools -vv
+RUN --mount=type=cache,target=/home/opam/.cache,sharing=locked,uid=1000 duniverse pull \
+    && --mount=type=cache,target=/home/opam/.cache,sharing=private,uid=1000 duniverse tools -vv
 
 # ocaml-too-old
 FROM alpine:3.8 as ocaml-too-old
