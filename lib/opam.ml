@@ -129,14 +129,6 @@ module Hash = struct
     Format.fprintf fmt "%s:%s" kind contents
 end
 
-module Command = struct
-  type t = OpamTypes.command
-
-  let pp fmt (t : t) =
-    OpamPp.print OpamFormat.V.command t
-    |> OpamPrinter.FullPos.value |> Format.pp_print_string fmt
-end
-
 module Depexts = struct
   let pp fmt t =
     let pp_filter fmt filter =
@@ -204,21 +196,32 @@ module Package_summary = struct
     dev_repo : string option;
     depexts : (OpamSysPkg.Set.t * OpamTypes.filter) list;
     flags : Package_flag.t list;
-    build_commands : OpamTypes.command list;
+    has_build_commands : bool;
+    has_install_commands : bool;
   }
 
   let pp fmt
-      { package; url_src; hashes; dev_repo; depexts; flags; build_commands } =
+      {
+        package;
+        url_src;
+        hashes;
+        dev_repo;
+        depexts;
+        flags;
+        has_build_commands;
+        has_install_commands;
+      } =
     let open Pp_combinators.Ocaml in
     Format.fprintf fmt
       "@[<hov 2>{ name = %a;@ version = %a;@ url_src = %a;@ hashes = %a;@ \
-       dev_repo = %a;@ depexts = %a;@ flags = %a;@ build_commands = %a }@]"
+       dev_repo = %a;@ depexts = %a;@ flags = %a;@ has_build_commands = %B;@ \
+       has_install_commands = %B}@]"
       Pp.package_name package.name Pp.version package.version
       (option ~brackets:true Url.pp)
       url_src (list Hash.pp) hashes
       (option ~brackets:true string)
-      dev_repo Depexts.pp depexts (list Package_flag.pp) flags (list Command.pp)
-      build_commands
+      dev_repo Depexts.pp depexts (list Package_flag.pp) flags
+      has_build_commands has_install_commands
 
   let from_opam package opam_file =
     let url_field = OpamFile.OPAM.url opam_file in
@@ -231,8 +234,21 @@ module Package_summary = struct
     in
     let depexts = OpamFile.OPAM.depexts opam_file in
     let flags = OpamFile.OPAM.flags opam_file in
-    let build_commands = OpamFile.OPAM.build opam_file in
-    { package; url_src; hashes; dev_repo; depexts; flags; build_commands }
+    let has_commands = function [] -> false | _ -> true in
+    let has_build_commands = opam_file |> OpamFile.OPAM.build |> has_commands in
+    let has_install_commands =
+      opam_file |> OpamFile.OPAM.install |> has_commands
+    in
+    {
+      package;
+      url_src;
+      hashes;
+      dev_repo;
+      depexts;
+      flags;
+      has_build_commands;
+      has_install_commands;
+    }
 
   let has_flag flag { flags; _ } = List.mem flag ~set:flags
   let is_compiler v = has_flag OpamTypes.Pkgflag_Compiler v
@@ -241,7 +257,7 @@ module Package_summary = struct
   let is_virtual = function
     | { url_src = None; _ } -> true
     | { dev_repo = None | Some ""; _ } as pkg when is_conf pkg -> true
-    | { build_commands = []; _ } -> true
+    | { has_build_commands = false; has_install_commands = false; _ } -> true
     | _ -> false
 
   let is_compiler_package { package; _ } =

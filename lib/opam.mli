@@ -21,7 +21,8 @@ module Package_summary : sig
     dev_repo : string option;
     depexts : (OpamSysPkg.Set.t * OpamTypes.filter) list;
     flags : OpamTypes.package_flag list;
-    build_commands : OpamTypes.command list;
+    has_build_commands : bool;
+    has_install_commands : bool;
   }
 
   val pp : t Fmt.t
