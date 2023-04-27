@@ -84,25 +84,45 @@ let is_duniverse_repo repo_url =
   let url = OpamUrl.to_string repo_url in
   String.equal url D.Config.duniverse_opam_repo
 
-let check_dune_universe_repo ~repositories non_dune_packages =
+let error_message_when_dependencies_don't_build_with_dune ~repositories
+    non_dune_packages =
   let dune_universe_is_configured =
     List.exists ~f:is_duniverse_repo repositories
   in
-  if not dune_universe_is_configured then
-    Logs.warn (fun l ->
-        l
-          "Couldn't calculate a set of packages to satisfy the request. Note \
-           that %a will fail if not all of the project dependencies use dune \
-           as their build system, in your project that would be %a. To solve \
-           this issue there exists a dune-universe opam-repository which \
-           contains dune ports for some opam packages, but it is currently not \
-           set in your current switch. If you wish to set it up, run the \
-           following command:\n\
-           opam repository add dune-universe %s"
-          Fmt.(styled `Bold string)
-          "opam monorepo lock"
-          Fmt.(list ~sep:comma D.Opam.Pp.package_name)
-          non_dune_packages D.Config.duniverse_opam_repo)
+  let pp_package_name_bulleted_list =
+    Fmt.(
+      list ~sep:(any "\n") (fun ppf p ->
+          Fmt.pf ppf "- %a" D.Opam.Pp.package_name p))
+  in
+  let dune_universe_state_message =
+    if dune_universe_is_configured then
+      Fmt.str
+        "The dune-universe opam repository (%s) contains dune ports of some \
+         popular packages to help build more packages with dune however it \
+         appears to already be set up on this switch. Thus it is possible that \
+         no dune port exists for any of these packages.\n\n\
+         For information on how to contribute a new dune port, see: \
+         https://github.com/dune-universe/opam-overlays"
+        D.Config.duniverse_opam_repo
+    else
+      Fmt.str
+        "The dune-universe opam repository (%s) contains dune ports of some \
+         popular packages to help build more packages with dune. It doesn't \
+         appear to be set up on this switch. Adding it to this switch may fix \
+         this issue. Add the dune-universe opam repository to this switch by \
+         running the command:\n\n\
+         opam repository add dune-universe %s" D.Config.duniverse_opam_repo
+        D.Config.duniverse_opam_repo
+  in
+  Fmt.str
+    "Some dependencies cannot be built with dune!\n\n\
+     opam-monorepo requires that all dependencies use dune as their build \
+     system.\n\n\
+     These dependencies (possibly transitive) don't use dune as their build \
+     system:\n\
+     %a\n\n\
+     %s"
+    pp_package_name_bulleted_list non_dune_packages dune_universe_state_message
 
 let read_opam fpath =
   let filename =
@@ -214,15 +234,21 @@ let could_not_determine_version offending_packages =
 let interpret_solver_error ~repositories solver = function
   | `Msg _ as err -> err
   | `Diagnostics d ->
-      (match D.Opam_solve.unavailable_versions_due_to_constraints solver d with
-      | [] -> ()
-      | offending_packages -> could_not_determine_version offending_packages);
-      (match D.Opam_solve.not_buildable_with_dune solver d with
-      | [] -> ()
-      | offending_packages ->
-          check_dune_universe_repo ~repositories offending_packages);
-      let verbose = display_verbose_diagnostics (Logs.level ()) in
-      D.Opam_solve.diagnostics_message ~verbose solver d
+      let dependencies_which_don't_build_with_dune =
+        D.Opam_solve.not_buildable_with_dune solver d
+      in
+      if List.length dependencies_which_don't_build_with_dune > 0 then
+        `Msg
+          (error_message_when_dependencies_don't_build_with_dune ~repositories
+             dependencies_which_don't_build_with_dune)
+      else (
+        (match
+           D.Opam_solve.unavailable_versions_due_to_constraints solver d
+         with
+        | [] -> ()
+        | offending_packages -> could_not_determine_version offending_packages);
+        let verbose = display_verbose_diagnostics (Logs.level ()) in
+        D.Opam_solve.diagnostics_message ~verbose solver d)
 
 let dirname_of_fpath fpath =
   fpath |> Fpath.to_string |> OpamFilename.Dir.of_string
