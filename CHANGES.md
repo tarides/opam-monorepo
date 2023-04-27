@@ -14,6 +14,11 @@
   semantically equivalent URLs, this should reduce the risk of build failures
   due to duplicate code pulled (#118, #365 @TheLortex, @Leonidas-from-XIV)
 
+- Simple the error message printed when dependencies don't use dune as their
+  build system. The opam-0install diagnostic message is no longer printed in
+  this case and the message has been reformatted and reworded to make the
+  salient information easier to see. (#384, @gridbugs)
+
 ### Deprecated
 
 ### Fixed
