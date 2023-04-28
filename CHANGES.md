@@ -7,6 +7,8 @@
 - Add option `--keep-symlinked-dir` to preserve symlinks in `duniverse/`, which
   can be useful for local development. (#348, #366, @hannesm,
   @Leonidas-from-XIV)
+- Don't run the solver when a direct dependency doesn't depend on dune (#385,
+  #386, @gridbugs)
 
 ### Changed
 

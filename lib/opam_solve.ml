@@ -38,6 +38,17 @@ module type OPAM_MONOREPO_CONTEXT = sig
     Takes into account local packages an pin-depends. *)
 end
 
+let is_valid_dune_wise opam_file ~allow_jbuilder =
+  let pkg = OpamFile.OPAM.package opam_file in
+  let depends = OpamFile.OPAM.depends opam_file in
+  let depopts = OpamFile.OPAM.depopts opam_file in
+  let uses_dune =
+    Opam.depends_on_dune ~allow_jbuilder depends
+    || Opam.depends_on_dune ~allow_jbuilder depopts
+  in
+  let summary = Opam.Package_summary.from_opam pkg opam_file in
+  Opam.Package_summary.is_safe_package summary || uses_dune
+
 module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
   OPAM_MONOREPO_CONTEXT
     with type base_rejection = Base_context.rejection
@@ -85,22 +96,12 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
       preferred_versions;
     }
 
-  let validate_candidate ~allow_jbuilder ~must_cross_compile ~require_dune ~name
-      ~version opam_file =
+  let validate_candidate ~allow_jbuilder ~must_cross_compile ~require_dune
+      opam_file =
     (* this function gets called way too often.. memoize? *)
-    let pkg = OpamPackage.create name version in
-    let depends = OpamFile.OPAM.depends opam_file in
-    let depopts = OpamFile.OPAM.depopts opam_file in
-    let uses_dune =
-      Opam.depends_on_dune ~allow_jbuilder depends
-      || Opam.depends_on_dune ~allow_jbuilder depopts
-    in
-    let summary = Opam.Package_summary.from_opam pkg opam_file in
-    let is_valid_dune_wise =
-      Opam.Package_summary.is_safe_package summary
-      || (not require_dune) || uses_dune
-    in
-    match is_valid_dune_wise with
+    match
+      (not require_dune) || is_valid_dune_wise opam_file ~allow_jbuilder
+    with
     | false -> Error Non_dune
     | true when (not must_cross_compile) || Opam.has_cross_compile_tag opam_file
       ->
@@ -139,7 +140,7 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
     let depends = remove_opam_provided_from_formula opam_provided depends in
     OpamFile.OPAM.with_depends depends opam_file
 
-  let filter_candidates ~allow_jbuilder ~must_cross_compile ~require_dune ~name
+  let filter_candidates ~allow_jbuilder ~must_cross_compile ~require_dune
       versions =
     List.map
       ~f:(fun (version, result) ->
@@ -148,7 +149,7 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
         | Ok opam_file ->
             let res =
               validate_candidate ~allow_jbuilder ~must_cross_compile
-                ~require_dune ~name ~version opam_file
+                ~require_dune opam_file
             in
             (version, res))
       versions
@@ -222,7 +223,7 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
           OpamPackage.Name.Map.find_opt name preferred_versions
         in
         filter_candidates ~allow_jbuilder ~must_cross_compile ~require_dune
-          ~name candidates
+          candidates
         |> remove_opam_provided ~opam_provided
         |> demote_candidates_to_avoid
         |> promote_version preferred_version
