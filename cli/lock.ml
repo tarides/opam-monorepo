@@ -94,6 +94,9 @@ let error_message_when_dependencies_don't_build_with_dune ~repositories
       list ~sep:(any "\n") (fun ppf p ->
           Fmt.pf ppf "- %a" D.Opam.Pp.package_name p))
   in
+  let non_dune_packages_sorted =
+    List.sort ~cmp:OpamPackage.Name.compare non_dune_packages
+  in
   let dune_universe_state_message =
     if dune_universe_is_configured then
       Fmt.str
@@ -122,7 +125,8 @@ let error_message_when_dependencies_don't_build_with_dune ~repositories
      system:\n\
      %a\n\n\
      %s"
-    pp_package_name_bulleted_list non_dune_packages dune_universe_state_message
+    pp_package_name_bulleted_list non_dune_packages_sorted
+    dune_universe_state_message
 
 let read_opam fpath =
   let filename =
