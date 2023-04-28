@@ -541,7 +541,7 @@ let extract_source_config ~adjustment ~opam_monorepo_cwd ~opam_files
 
 let raw_cli_args () =
   match Array.to_list Sys.argv with
-  | _bin :: prefix :: args when String.starts_with ~prefix "lock" -> args
+  | _bin :: prefix :: args when Base.String.is_prefix ~prefix "lock" -> args
   | _ -> assert false
 
 let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
