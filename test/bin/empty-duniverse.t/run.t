@@ -15,7 +15,7 @@ We should be able to successfully lock:
 
 And the lock file should not contain anything to vendor:
 
-  $ opam show --just-file -fdepends ./empty-duniverse.opam.locked | grep "\?vendor"
+  $ opam show --just-file -fdepends ./empty-duniverse.opam.locked | grep "?vendor"
   [1]
 
 Finally, we should be able to pull this lock file, the tool will inform us that
