@@ -1,4 +1,4 @@
-## unreleased
+## 0.3.6
 
 ### Added
 
@@ -19,8 +19,6 @@
   this case and the message has been reformatted and reworded to make the
   salient information easier to see. (#384, @gridbugs)
 
-### Deprecated
-
 ### Fixed
 
 - Error in case where multiple packages with different dev-repo fields would be
@@ -35,10 +33,6 @@
 - Treat packages without build commands as virtual only if also lack install
   commands, as some non-virtual packages might only have install commands.
   (#376 @Leonidas-from-XIV, @gridbugs)
-
-### Removed
-
-### Security
 
 ## 0.3.5
 
