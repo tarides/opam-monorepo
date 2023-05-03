@@ -94,6 +94,9 @@ let error_message_when_dependencies_don't_build_with_dune ~repositories
       list ~sep:(any "\n") (fun ppf p ->
           Fmt.pf ppf "- %a" D.Opam.Pp.package_name p))
   in
+  let non_dune_packages_sorted =
+    List.sort ~cmp:OpamPackage.Name.compare non_dune_packages
+  in
   let dune_universe_state_message =
     if dune_universe_is_configured then
       Fmt.str
@@ -122,7 +125,8 @@ let error_message_when_dependencies_don't_build_with_dune ~repositories
      system:\n\
      %a\n\n\
      %s"
-    pp_package_name_bulleted_list non_dune_packages dune_universe_state_message
+    pp_package_name_bulleted_list non_dune_packages_sorted
+    dune_universe_state_message
 
 let read_opam fpath =
   let filename =
@@ -335,6 +339,64 @@ let extract_opam_env ~source_config global_state =
   | { global_vars = Some env; _ } -> env
   | { global_vars = None; _ } -> opam_env_from_global_state global_state
 
+(* In some cases there will be no solution to the dependencies of a package
+   due to a dependency not building with dune but the solver will omit this
+   fact from its diagnostic information leading to misleading error messages
+   (see https://github.com/tarides/opam-monorepo/issues/385). To avoid this
+   issue in some (but not all!) cases, this function checks the direct
+   dependencies of the local opam files and results in an error if any
+   dependency has no version available in the current switch which builds
+   with dune. If this is found to be the case we can avoid invoking the
+   solver at all. Note that this false negatives; it won't detect when a
+   transitive dependency of an opam file doesn't build with dune. This is
+   deliberate as handling these cases in general would be akin to
+   implementing a solver. This is intended as a temporary workaround of
+   https://github.com/tarides/opam-monorepo/issues/385. *)
+let check_that_direct_dependencies_are_valid_dune_wise ~local_opam_files
+    ~switch_state ~allow_jbuilder =
+  let all_packages =
+    Lazy.force switch_state.OpamStateTypes.available_packages
+  in
+  let is_package_valid_dune_wise package =
+    let opam_file = OpamSwitchState.opam switch_state package in
+    D.Opam_solve.is_valid_dune_wise opam_file ~allow_jbuilder
+  in
+  let dep_candidates_by_name_of_opam opam_file =
+    let dep_formula =
+      OpamFile.OPAM.depends opam_file
+      |> OpamFilter.filter_deps ~build:true ~post:true ~test:false ~doc:false
+           ~dev:false
+    in
+    let dep_candidates = OpamFormula.packages all_packages dep_formula in
+    OpamPackage.Set.fold
+      (fun package map ->
+        let name = OpamPackage.name package in
+        OpamPackage.Name.Map.update name
+          (OpamPackage.Set.add package)
+          OpamPackage.Set.empty map)
+      dep_candidates OpamPackage.Name.Map.empty
+  in
+  let dep_candidate_names_with_no_dune_versions_of_opam opam_file =
+    dep_candidates_by_name_of_opam opam_file
+    |> OpamPackage.Name.Map.filter (fun _ packages ->
+           OpamPackage.Set.is_empty
+             (OpamPackage.Set.filter is_package_valid_dune_wise packages))
+    |> OpamPackage.Name.Map.keys
+  in
+  let direct_dependencies_that_don't_build_with_dune =
+    OpamPackage.Name.Map.values local_opam_files
+    |> List.concat_map ~f:(fun (_, opam_file) ->
+           dep_candidate_names_with_no_dune_versions_of_opam opam_file)
+    |> OpamPackage.Name.Set.of_list |> OpamPackage.Name.Set.elements
+  in
+  if List.length direct_dependencies_that_don't_build_with_dune == 0 then Ok ()
+  else
+    let repositories = current_repos ~switch_state in
+    Error
+      (`Msg
+        (error_message_when_dependencies_don't_build_with_dune ~repositories
+           direct_dependencies_that_don't_build_with_dune))
+
 let calculate_opam ~source_config ~build_only ~allow_jbuilder
     ~require_cross_compile ~preferred_versions ~local_opam_files ~ocaml_version
     ~target_packages =
@@ -380,6 +442,10 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
               Logs.info (fun l ->
                   l "Solve using current opam switch: %s"
                     (OpamSwitch.to_string switch_state.switch));
+              let* () =
+                check_that_direct_dependencies_are_valid_dune_wise
+                  ~local_opam_files ~switch_state ~allow_jbuilder
+              in
               let solver = D.Opam_solve.local_opam_config_solver in
               let dependency_entries =
                 D.Opam_solve.calculate ~build_only ~allow_jbuilder

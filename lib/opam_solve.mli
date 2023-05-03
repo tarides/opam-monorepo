@@ -12,6 +12,8 @@ val local_opam_config_solver : (switch, switch_diagnostics) t
 val explicit_repos_solver :
   (opam_env * explicit_repos, explicit_repos_diagnostics) t
 
+val is_valid_dune_wise : OpamFile.OPAM.t -> allow_jbuilder:bool -> bool
+
 val calculate :
   build_only:bool ->
   allow_jbuilder:bool ->
