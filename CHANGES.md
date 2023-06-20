@@ -37,6 +37,10 @@
   commands, as some non-virtual packages might only have install commands.
   (#376 @Leonidas-from-XIV, @gridbugs)
 
+- Fix bug where a misleading error message would be displayed in some cases
+  where a dependency doesn't build with dune (#390,
+  fixes #385, @gridbugs)
+
 ### Removed
 
 ### Security

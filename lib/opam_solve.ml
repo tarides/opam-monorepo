@@ -36,6 +36,8 @@ module type OPAM_MONOREPO_CONTEXT = sig
   (** Convenience function to return the opam file associated to a pkg
     in the given context.
     Takes into account local packages an pin-depends. *)
+
+  val with_allow_avoided_versions : t -> t
 end
 
 module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
@@ -54,6 +56,7 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
     opam_provided : OpamPackage.Name.Set.t;
     require_cross_compile : bool;
     preferred_versions : OpamTypes.version OpamPackage.Name.Map.t;
+    allow_avoided_versions : bool;
   }
 
   type r =
@@ -83,7 +86,10 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
       opam_provided;
       require_cross_compile;
       preferred_versions;
+      allow_avoided_versions = false;
     }
+
+  let with_allow_avoided_versions t = { t with allow_avoided_versions = true }
 
   let validate_candidate ~allow_jbuilder ~must_cross_compile ~require_dune ~name
       ~version opam_file =
@@ -168,14 +174,14 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
                    in
                    (version, Ok opam_file))
 
-  let demote_candidates_to_avoid versions =
+  let demote_candidates_to_avoid ~allow_avoided_versions versions =
     let avoid_versions, regular_versions =
       List.partition versions ~f:(fun (_version, opam_res) ->
           match opam_res with
           | Ok opam -> Opam.avoid_version opam
           | Error _ -> false)
     in
-    regular_versions @ avoid_versions
+    regular_versions @ if allow_avoided_versions then avoid_versions else []
 
   let promote_version version candidates =
     match version with
@@ -205,6 +211,7 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
         opam_provided;
         require_cross_compile;
         preferred_versions;
+        allow_avoided_versions;
       } name =
     match OpamPackage.Name.Map.find_opt name fixed_packages with
     | Some (version, opam_file) ->
@@ -224,7 +231,7 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
         filter_candidates ~allow_jbuilder ~must_cross_compile ~require_dune
           ~name candidates
         |> remove_opam_provided ~opam_provided
-        |> demote_candidates_to_avoid
+        |> demote_candidates_to_avoid ~allow_avoided_versions
         |> promote_version preferred_version
 
   let user_restrictions { base_context; _ } name =
@@ -235,7 +242,7 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
 
   let opam_file t pkg =
     let name = OpamPackage.name pkg in
-    let candidates = candidates t name in
+    let candidates = candidates (with_allow_avoided_versions t) name in
     let version = OpamPackage.version pkg in
     let res =
       List.find_map candidates ~f:(fun (v, opam_file) ->
@@ -290,17 +297,6 @@ let constraints ~required_packages ~ocaml_version =
       let value = (`Eq, OpamPackage.Version.of_string version) in
       name_map_duplicate_safe_add key value constraints
 
-let mk_request ~allow_compiler_variants packages =
-  let package_names = OpamPackage.Name.Set.elements packages in
-  if allow_compiler_variants then package_names
-  else
-    (* We add ocaml-base-compiler to the solver request to prevent it
-       from selecting a version of OCaml that hasn't been officially
-       released yet but that exists in opam with variants such as
-       ocaml-variants.x+trunk *)
-    let base_compiler = OpamPackage.Name.of_string "ocaml-base-compiler" in
-    base_compiler :: package_names
-
 let depend_on_compiler_variants local_packages =
   OpamPackage.Name.Map.exists
     (fun _name (_version, opam_file) ->
@@ -352,6 +348,29 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
 
   module Solver = Opam_0install.Solver.Make (Context)
 
+  (* If [try_to_avoid_avoid_versions] is true, attempt to run the solver with
+     packages marked `avoid-version` excluded, and if it fails re-run the
+     solver with those packages included. *)
+  let solve_possibly_avoiding_avoid_versions ~try_to_avoid_avoid_versions
+      context names =
+    let solve_allowing_avoided_versions () =
+      Solver.solve (Context.with_allow_avoided_versions context) names
+    in
+    if try_to_avoid_avoid_versions then
+      (* The default behaviour of [Context.t] is to avoid package versions with
+         the `avoid-version` flag. *)
+      match Solver.solve context names with
+      | Error _ ->
+          Logs.info (fun l ->
+              l
+                "Solving opam-provided dependencies could not find a solution \
+                 while avoiding packages with the `avoid-version` flag. \
+                 Attempting to run the solver again allowing packages with the \
+                 `avoid-version` flag...");
+          solve_allowing_avoided_versions ()
+      | Ok _ as ok -> ok
+    else solve_allowing_avoided_versions ()
+
   let build_context ~build_only ~allow_jbuilder ~require_cross_compile
       ~preferred_versions ?opam_provided ?require_dune
       ?(vendored_packages = OpamPackage.Set.empty) ~ocaml_version
@@ -375,7 +394,10 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
 
   let calculate_raw_with_opam_provided ~local_packages ~opam_provided ~request
       context vendored_packages =
-    match Solver.solve context request with
+    match
+      solve_possibly_avoiding_avoid_versions ~try_to_avoid_avoid_versions:true
+        context request
+    with
     | Error e ->
         Logs.err (fun l ->
             l "Solving opam-provided dependencies could not find a solution");
@@ -425,8 +447,12 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
 
   let calculate_raw ~local_packages ~target_packages context =
     let allow_compiler_variants = depend_on_compiler_variants local_packages in
-    let request = mk_request ~allow_compiler_variants target_packages in
-    match Solver.solve context request with
+    let request = OpamPackage.Name.Set.elements target_packages in
+    match
+      solve_possibly_avoiding_avoid_versions
+        ~try_to_avoid_avoid_versions:(not allow_compiler_variants)
+        context request
+    with
     | Error e -> Error (`Diagnostics e)
     | Ok selections -> Ok (request, selections)
 
