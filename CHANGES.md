@@ -8,6 +8,7 @@
   can be useful for local development. (#348, #366, @hannesm,
   @Leonidas-from-XIV)
 - Adopt the OCaml Code of Conduct (#391, @rikusilvola)
+- Add solver tests (#394, @samoht)
 
 ### Changed
 
