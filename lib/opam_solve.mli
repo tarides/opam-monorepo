@@ -6,11 +6,14 @@ type switch = OpamStateTypes.unlocked OpamStateTypes.switch_state
 type ('context, 'diagnostics) t
 type switch_diagnostics
 type explicit_repos_diagnostics
+type mock_diagnostics
 
 val local_opam_config_solver : (switch, switch_diagnostics) t
 
 val explicit_repos_solver :
   (opam_env * explicit_repos, explicit_repos_diagnostics) t
+
+val mock_solver : (opam_env * OpamFile.OPAM.t list, mock_diagnostics) t
 
 val calculate :
   build_only:bool ->

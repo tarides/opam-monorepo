@@ -11,4 +11,5 @@ let () =
       Test_serial_shape.suite;
       Test_source_opam_config.suite;
       Test_uri_utils.suite;
+      Test_solve.suite;
     ]

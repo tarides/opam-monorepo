@@ -675,6 +675,74 @@ module Local_opam_context : BASE_CONTEXT with type input = switch = struct
     create ?test ~constraints switch_state
 end
 
+module Mock_context :
+  BASE_CONTEXT with type input = opam_env * OpamFile.OPAM.t list = struct
+  type rejection = UserConstraint of OpamFormula.atom
+
+  let pp_rejection f = function
+    | UserConstraint x ->
+        Fmt.pf f "Rejected by user-specified constraint %s"
+          (OpamFormula.string_of_atom x)
+
+  type t = {
+    env : string -> OpamVariable.variable_contents option;
+    pkgs : OpamFile.OPAM.t list;
+    constraints : OpamFormula.version_constraint OpamTypes.name_map;
+    test : OpamPackage.Name.Set.t;
+  }
+
+  let user_restrictions t name =
+    OpamPackage.Name.Map.find_opt name t.constraints
+
+  let env t pkg v =
+    if List.mem v ~set:OpamPackageVar.predefined_depends_variables then None
+    else
+      match OpamVariable.Full.to_string v with
+      | "version" ->
+          Some
+            (OpamTypes.S
+               (OpamPackage.Version.to_string (OpamPackage.version pkg)))
+      | x -> t.env x
+
+  let filter_deps t pkg f =
+    let test = OpamPackage.Name.Set.mem (OpamPackage.name pkg) t.test in
+    f
+    |> OpamFilter.partial_filter_formula (env t pkg)
+    |> OpamFilter.filter_deps ~build:true ~post:true ~test ~doc:false ~dev:false
+         ~default:false
+
+  let compare_version x y =
+    OpamPackage.Version.compare (OpamFile.OPAM.version y)
+      (OpamFile.OPAM.version x)
+
+  let candidates t name =
+    let user_constraints = user_restrictions t name in
+    match
+      List.find_all ~f:(fun pkg -> OpamFile.OPAM.name pkg = name) t.pkgs
+    with
+    | [] ->
+        OpamConsole.log "opam-0install" "Package %S not found!"
+          (OpamPackage.Name.to_string name);
+        []
+    | versions ->
+        List.sort ~cmp:compare_version versions
+        |> List.map ~f:(fun pkg ->
+               let v = OpamFile.OPAM.version pkg in
+               match user_constraints with
+               | Some test
+                 when not
+                        (OpamFormula.check_version_formula
+                           (OpamFormula.Atom test) v) ->
+                   (v, Error (UserConstraint (name, Some test)))
+               | _ -> (v, Ok pkg))
+
+  type input = opam_env * OpamFile.OPAM.t list
+
+  let create ?(test = OpamPackage.Name.Set.empty) ~constraints (env, pkgs) =
+    let env varname = String.Map.find_opt varname env in
+    { pkgs; constraints; test; env }
+end
+
 (* The code below aims to provide a unified interface over the two solver
    modules *)
 
@@ -685,9 +753,11 @@ module Local_opam_config_context = Opam_monorepo_context (Local_opam_context)
 module Explicit_repos_context = Opam_monorepo_context (Multi_dir_context)
 module Local_opam_config_solver = Make_solver (Local_opam_config_context)
 module Explicit_repos_solver = Make_solver (Explicit_repos_context)
+module Mock_solver = Make_solver (Opam_monorepo_context (Mock_context))
 
 type switch_diagnostics = Local_opam_config_solver.diagnostics
 type explicit_repos_diagnostics = Explicit_repos_solver.diagnostics
+type mock_diagnostics = Mock_solver.diagnostics
 
 let local_opam_config_solver : (switch, switch_diagnostics) t =
   (module Local_opam_config_solver)
@@ -695,6 +765,8 @@ let local_opam_config_solver : (switch, switch_diagnostics) t =
 let explicit_repos_solver :
     (opam_env * explicit_repos, explicit_repos_diagnostics) t =
   (module Explicit_repos_solver)
+
+let mock_solver : _ t = (module Mock_solver)
 
 let calculate :
     type context diagnostics.
