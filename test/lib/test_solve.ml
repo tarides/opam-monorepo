@@ -1,37 +1,3 @@
-let universe =
-  List.map OpamFile.OPAM.read_from_string
-    [
-      {|
-opam-version: "2.0"
-name: "ocaml-base-compiler"
-version: "3.14"
-|};
-      {|
-opam-version: "2.0"
-name: "p1"
-version: "1"
-|};
-      {|
-opam-version: "2.0"
-name: "p1"
-version: "2"
-|};
-      {|
-opam-version: "2.0"
-name: "p2"
-version: "1"
-|};
-    ]
-
-let root =
-  OpamFile.OPAM.read_from_string
-    {|
-opam-version: "2.0"
-name: "root"
-version: "0"
-depends: ["p1" "p2"]
-|}
-
 let calculate universe root expected =
   let preferred_versions = OpamPackage.Name.Map.empty in
   let local_opam_files = OpamPackage.Name.Map.empty in
@@ -68,7 +34,181 @@ let calculate universe root expected =
   | Error (`Msg e) -> Alcotest.fail e
 
 let simple () =
+  let universe =
+    List.map OpamFile.OPAM.read_from_string
+      [
+        {|
+opam-version: "2.0"
+name: "ocaml-base-compiler"
+version: "3.14"
+|};
+        {|
+opam-version: "2.0"
+name: "p1"
+version: "1"
+|};
+        {|
+opam-version: "2.0"
+name: "p1"
+version: "2"
+|};
+        {|
+opam-version: "2.0"
+name: "p2"
+version: "1"
+|};
+      ]
+  in
+  let root =
+    OpamFile.OPAM.read_from_string
+      {|
+opam-version: "2.0"
+name: "root"
+version: "0"
+depends: ["p1" "p2"]
+|}
+  in
   calculate universe root
     [ ("ocaml-base-compiler", "3.14"); ("p1", "2"); ("p2", "1"); ("root", "0") ]
 
-let suite = ("solve", [ Alcotest.test_case "simple" `Quick simple ])
+let conflicts () =
+  let universe =
+    List.map OpamFile.OPAM.read_from_string
+      [
+        {|
+opam-version: "2.0"
+name: "ocaml-base-compiler"
+version: "3.14"
+|};
+        {|
+opam-version: "2.0"
+name: "p1"
+version: "1"
+|};
+        {|
+opam-version: "2.0"
+name: "p1"
+version: "2"
+conflicts: ["p2" {= "1"}]
+|};
+        {|
+opam-version: "2.0"
+name: "p2"
+version: "1"
+|};
+      ]
+  in
+  let root =
+    OpamFile.OPAM.read_from_string
+      {|
+opam-version: "2.0"
+name: "root"
+version: "0"
+depends: ["p1" "p2"]
+|}
+  in
+  calculate universe root
+    [ ("ocaml-base-compiler", "3.14"); ("p1", "1"); ("p2", "1"); ("root", "0") ]
+
+let conflict_class () =
+  let universe =
+    List.map OpamFile.OPAM.read_from_string
+      [
+        {|
+opam-version: "2.0"
+name: "ocaml-base-compiler"
+version: "3.14"
+|};
+        {|
+opam-version: "2.0"
+name: "p1"
+version: "1"
+conflict-class: ["x"]
+|};
+        {|
+opam-version: "2.0"
+name: "p1"
+version: "2"
+conflict-class: ["y"]
+|};
+        {|
+opam-version: "2.0"
+name: "p2"
+version: "1"
+conflict-class: ["y"]
+|};
+      ]
+  in
+  let root =
+    OpamFile.OPAM.read_from_string
+      {|
+opam-version: "2.0"
+name: "root"
+version: "0"
+depends: ["p1" "p2"]
+|}
+  in
+  calculate universe root
+    [ ("ocaml-base-compiler", "3.14"); ("p1", "1"); ("p2", "1"); ("root", "0") ]
+
+let conflict_url () =
+  let universe =
+    List.map OpamFile.OPAM.read_from_string
+      [
+        {|
+opam-version: "2.0"
+name: "ocaml-base-compiler"
+version: "3.14"
+|};
+        {|
+opam-version: "2.0"
+name: "p1"
+version: "1"
+dev-repo: "x"
+url {
+  src: "https://p.com/p.tbz"
+  checksum: "sha256=0000000000000000000000000000000000000000000000000000000000000003"
+}
+|};
+        {|
+opam-version: "2.0"
+name: "p1"
+version: "2"
+dev-repo: "x"
+url {
+  src: "https://p.com/p.tbz"
+  checksum: "sha256=0000000000000000000000000000000000000000000000000000000000000042"
+}
+|};
+        {|
+opam-version: "2.0"
+name: "p2"
+version: "1"
+dev-repo: "x"
+url {
+  src: "https://p.com/p.tbz"
+  checksum: "sha256=0000000000000000000000000000000000000000000000000000000000000003"
+}
+|};
+      ]
+  in
+  let root =
+    OpamFile.OPAM.read_from_string
+      {|
+opam-version: "2.0"
+name: "root"
+version: "0"
+depends: ["p1" "p2"]
+|}
+  in
+  calculate universe root
+    [ ("ocaml-base-compiler", "3.14"); ("p1", "1"); ("p2", "1"); ("root", "0") ]
+
+let suite =
+  ( "solve",
+    [
+      Alcotest.test_case "simple" `Quick simple;
+      Alcotest.test_case "conflicts" `Quick conflicts;
+      Alcotest.test_case "conflict_class" `Quick conflict_class;
+      Alcotest.test_case "conflict_url" `Quick conflict_url;
+    ] )
