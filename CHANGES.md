@@ -21,6 +21,9 @@
   this case and the message has been reformatted and reworded to make the
   salient information easier to see. (#384, @gridbugs)
 
+- Encode `dev-repo` constraints in the opam solver - this allows to resolve
+  more involved version constraints that were failing before (#396, @samoht)
+
 ### Deprecated
 
 ### Fixed
