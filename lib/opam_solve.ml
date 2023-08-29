@@ -169,13 +169,16 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
                    (version, Ok opam_file))
 
   let demote_candidates_to_avoid versions =
-    let avoid_versions, regular_versions =
-      List.partition versions ~f:(fun (_version, opam_res) ->
+    let regular, avoid, broken =
+      List.fold_left versions ~init:([], [], [])
+        ~f:(fun (regular, avoid, broken) ((_, opam_res) as e) ->
           match opam_res with
-          | Ok opam -> Opam.avoid_version opam
-          | Error _ -> false)
+          | Ok opam ->
+              if Opam.avoid_version opam then (regular, e :: avoid, broken)
+              else (regular, avoid, e :: broken)
+          | Error _ -> (regular, avoid, e :: broken))
     in
-    regular_versions @ avoid_versions
+    List.rev_append regular (List.rev_append avoid broken)
 
   let promote_version version candidates =
     match version with
