@@ -38,6 +38,9 @@
   commands, as some non-virtual packages might only have install commands.
   (#376 @Leonidas-from-XIV, @gridbugs)
 
+- Improve the ordering of package candidates by putting broken packages at
+  then end of the list (#395, @samoht)
+
 ### Removed
 
 ### Security
