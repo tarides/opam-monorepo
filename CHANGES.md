@@ -39,7 +39,7 @@
   (#376 @Leonidas-from-XIV, @gridbugs)
 
 - Improve the ordering of package candidates by putting broken packages at
-  then end of the list (#395, @samoht)
+  then end of the list (#395, #397, @samoht)
 
 ### Removed
 
