@@ -21,3 +21,4 @@ val repo_name : t -> (string, Rresult.R.msg) result
     Returns an error if the result would be the empty string. *)
 
 module Map : Map.S with type key = t
+module Tbl : Hashtbl.S with type key = t

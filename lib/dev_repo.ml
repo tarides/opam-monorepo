@@ -32,3 +32,10 @@ module Map = Map.Make (struct
 
   let compare = compare
 end)
+
+module Tbl = Hashtbl.Make (struct
+  type nonrec t = t
+
+  let hash = Hashtbl.hash
+  let equal = String.equal
+end)

@@ -199,6 +199,83 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
     | Error _ -> false
     | Ok opam_file -> Opam.has_cross_compile_tag opam_file
 
+  (* this is a hack - as we don't have a global view of the package
+     universe, we build the dev_repo table lazily, whenever the 0install
+     solver request more information about a package (by calling
+     [Solver.candidates]. *)
+  let dev_repos = Dev_repo.Tbl.create 13
+
+  let hashes pkg =
+    match OpamFile.OPAM.url pkg with
+    | None -> []
+    | Some url ->
+        (* note: pinned packages do not have any checksums set *)
+        OpamFile.URL.checksum url
+
+  (* build the list of conflicts by removing packages with the same hash *)
+  let conflicts_with_same_dev_repo_but_a_different_hash =
+    let memo = Hashtbl.create 13 in
+    fun (name, version, hashes) pkgs ->
+      match Hashtbl.find_opt memo (name, version) with
+      | Some r -> r
+      | None ->
+          let r =
+            match hashes with
+            | [] -> (* pinned package or virtual package *) []
+            | _ ->
+                let same_hash h = List.exists ~f:(fun h' -> h = h') hashes in
+                let conflict (n, _, hs) =
+                  (* remove self conflicts *)
+                  n <> name
+                  && (* remove packages with the same dev-repo and the same hash *)
+                  not (List.exists ~f:same_hash hs)
+                in
+                List.filter ~f:conflict pkgs
+          in
+          Hashtbl.add memo (name, version) r;
+          r
+
+  let with_conflict pkg =
+    let name = OpamFile.OPAM.name pkg in
+    let version = OpamFile.OPAM.version pkg in
+    let hashes = hashes pkg in
+    let entry = (name, version, hashes) in
+    match OpamFile.OPAM.dev_repo pkg with
+    | None -> pkg
+    | Some dev_repo ->
+        let dev_repo = Dev_repo.from_string (OpamUrl.to_string dev_repo) in
+        let in_conflicts =
+          match Dev_repo.Tbl.find_all dev_repos dev_repo with
+          | [] ->
+              Dev_repo.Tbl.add dev_repos dev_repo entry;
+              []
+          | conflicts ->
+              if not (List.mem entry ~set:conflicts) then
+                Dev_repo.Tbl.add dev_repos dev_repo entry;
+              (* remove packages from the same repo *)
+              conflicts_with_same_dev_repo_but_a_different_hash entry conflicts
+        in
+        let conflicts =
+          in_conflicts
+          |> List.map ~f:(fun (name, version, _) ->
+                 let version =
+                   let open OpamTypes in
+                   let v = OpamPackage.Version.to_string version in
+                   OpamFormula.Atom (Constraint (`Eq, FString v))
+                 in
+                 OpamFormula.Atom (name, version))
+          |> OpamFormula.ors
+        in
+        OpamFile.OPAM.with_conflicts conflicts pkg
+
+  let add_url_conflicts pkgs =
+    List.map
+      ~f:(fun (v, pkg) ->
+        match pkg with
+        | Error _ -> (v, pkg)
+        | Ok pkg -> (v, Ok (with_conflict pkg)))
+      pkgs
+
   let candidates
       {
         base_context;
@@ -229,6 +306,7 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
         |> remove_opam_provided ~opam_provided
         |> demote_candidates_to_avoid
         |> promote_version preferred_version
+        |> add_url_conflicts
 
   let user_restrictions { base_context; _ } name =
     Base_context.user_restrictions base_context name

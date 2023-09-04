@@ -217,27 +217,6 @@ module Repo = struct
                  ];
              })
         ();
-      make_test ~name:"Pick URL from highest version package" ~dev_repo:"d"
-        ~packages:
-          [
-            package_factory ~name:"d" ~version:"1" ~url:(Other "u1") ~hashes:[]
-              ();
-            package_factory ~name:"d-lwt" ~version:"2" ~url:(Other "u2")
-              ~hashes:[] ();
-          ]
-        ~expected:
-          (Ok
-             {
-               dir = "d";
-               url = Other "u2";
-               hashes = [];
-               provided_packages =
-                 [
-                   opam_factory ~name:"d" ~version:"1";
-                   opam_factory ~name:"d-lwt" ~version:"2";
-                 ];
-             })
-        ();
       make_test ~name:"An empty string dev_repo results in an error"
         ~dev_repo:"" ~packages:[]
         ~expected:

@@ -122,25 +122,6 @@ module Repo = struct
     provided_packages : OpamPackage.t list;
   }
 
-  let log_url_selection ~dev_repo ~packages ~highest_version_package =
-    let url_to_string : unresolved Url.t -> string = function
-      | Git { repo; ref } -> Printf.sprintf "%s#%s" repo ref
-      | Other s -> s
-    in
-    let pp_package fmt { Package.opam = { name; version }; url; _ } =
-      Format.fprintf fmt "%a.%a: %s" Opam.Pp.package_name name Opam.Pp.version
-        version (url_to_string url)
-    in
-    let sep fmt () = Format.fprintf fmt "\n" in
-    Logs.warn (fun l ->
-        l
-          "The following packages come from the same repository %s but are \
-           associated with different URLs:\n\
-           %a\n\
-           The url for the highest versioned package was selected: %a"
-          (Dev_repo.to_string dev_repo)
-          (Fmt.list ~sep pp_package) packages pp_package highest_version_package)
-
   module Unresolved_url_map = Map.Make (struct
     type t = unresolved Url.t
 
@@ -165,23 +146,18 @@ module Repo = struct
     match urls with
     | [ (url, hashes) ] -> Ok { dir; url; hashes; provided_packages }
     | _ ->
-        (* If packages from the same repo were resolved to different URLs, we need to pick
-           a single one. Here we decided to go with the one associated with the package
-           that has the higher version. We need a better long term solution as this won't
-           play nicely with pins for instance.
-           The best solution here would be to use source trimming, so we can pull each individual
-           package to its own directory and strip out all the unrelated source code but we would
-           need dune to provide that feature. *)
-        let* highest_version_package =
-          Base.List.max_elt packages ~compare:(fun p p' ->
-              OpamPackage.Version.compare p.Package.opam.version p'.opam.version)
-          |> Base.Result.of_option
-               ~error:(Rresult.R.msg "No packages to compare, internal failure")
-        in
-        log_url_selection ~dev_repo ~packages ~highest_version_package;
-        let url = highest_version_package.url in
-        let hashes = highest_version_package.hashes in
-        Ok { dir; url; hashes; provided_packages }
+        let pp_hash = Fmt.of_to_string OpamHash.to_string in
+        (* this should not happen because we passed extra constraints
+           to the opam solver to avoid this situation *)
+        Fmt.failwith
+          "The following packages have the same `dev-repo' but are using  \
+           different versions of the archive tarballs:\n\
+           %a\n\
+           This should not happen, please report the issue to \
+           https://github.com/tarides/opam-monorepo.\n\
+           %!"
+          Fmt.Dump.(list (pair (Url.pp string) (list pp_hash)))
+          urls
 
   let equal equal_ref t t' =
     let { dir; url; hashes; provided_packages } = t in
