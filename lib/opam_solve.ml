@@ -175,7 +175,7 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
           match opam_res with
           | Ok opam ->
               if Opam.avoid_version opam then (regular, e :: avoid, broken)
-              else (regular, avoid, e :: broken)
+              else (e :: regular, avoid, broken)
           | Error _ -> (regular, avoid, e :: broken))
     in
     List.rev_append regular (List.rev_append avoid broken)
