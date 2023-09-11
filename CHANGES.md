@@ -1,3 +1,17 @@
+## unreleased
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Fixed
+
+### Removed
+
+### Security
+
 ## 0.4.0
 
 ### Added
@@ -24,8 +38,6 @@
 - Encode `dev-repo` constraints in the opam solver - this allows to resolve
   more involved version constraints that were failing before (#396, @samoht)
 
-### Deprecated
-
 ### Fixed
 
 - Error in case where multiple packages with different dev-repo fields would be
@@ -43,10 +55,6 @@
 
 - Improve the ordering of package candidates by putting broken packages at
   then end of the list (#395, #397, @samoht)
-
-### Removed
-
-### Security
 
 ## 0.3.5
 
