@@ -1,5 +1,0 @@
-(melange.emit
- (target output)
- (entries c)
- (libraries impl)
- (module_system commonjs))

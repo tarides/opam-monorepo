@@ -1,5 +1,0 @@
-(melange.emit
- (target multilib)
- (entries c)
- (libraries x)
- (module_system commonjs))

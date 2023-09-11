@@ -1,3 +1,0 @@
-(rule
- (alias default)
- (action (run ./exe/test.exe)))
