@@ -757,7 +757,9 @@ module Local_opam_context : BASE_CONTEXT with type input = switch = struct
 end
 
 module Mock_context :
-  BASE_CONTEXT with type input = opam_env * OpamFile.OPAM.t list = struct
+  BASE_CONTEXT
+    with type input = opam_env * OpamFile.OPAM.t list * OpamPackage.t list =
+struct
   type rejection = UserConstraint of OpamFormula.atom
 
   let pp_rejection f = function
@@ -817,10 +819,31 @@ module Mock_context :
                    (v, Error (UserConstraint (name, Some test)))
                | _ -> (v, Ok pkg))
 
-  type input = opam_env * OpamFile.OPAM.t list
+  type input = opam_env * OpamFile.OPAM.t list * OpamPackage.t list
 
-  let create ?(test = OpamPackage.Name.Set.empty) ~constraints (env, pkgs) =
+  let create ?(test = OpamPackage.Name.Set.empty) ~constraints (env, pkgs, pins)
+      =
     let env varname = String.Map.find_opt varname env in
+    let pins = OpamPackage.Set.of_list pins in
+    (* remove pinned packages from the universe -- as that's what's the
+       opam solver is doing. *)
+    let pp_pkg ppf pkg =
+      Fmt.pf ppf "%s.%s"
+        (OpamPackage.Name.to_string (OpamFile.OPAM.name pkg))
+        (OpamPackage.Version.to_string (OpamFile.OPAM.version pkg))
+    in
+    let pkgs =
+      List.filter pkgs ~f:(fun pkg ->
+          let keep =
+            match
+              OpamPackage.package_of_name_opt pins (OpamFile.OPAM.name pkg)
+            with
+            | None -> true
+            | Some pin -> OpamFile.OPAM.version pkg = OpamPackage.version pin
+          in
+          Logs.debug (fun l -> l "keep %a = %b" pp_pkg pkg keep);
+          keep)
+    in
     { pkgs; constraints; test; env }
 end
 

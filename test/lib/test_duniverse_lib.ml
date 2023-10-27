@@ -1,4 +1,8 @@
 let () =
+  Logs.set_level (Some Logs.Debug);
+  Logs.set_reporter (Logs_fmt.reporter ())
+
+let () =
   Alcotest.run "Duniverse"
     [
       Test_dev_repo.suite;
