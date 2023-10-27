@@ -20,13 +20,14 @@ module Package_summary : sig
     hashes : OpamHash.t list;
     dev_repo : string option;
     depexts : (OpamSysPkg.Set.t * OpamTypes.filter) list;
+    pinned : bool;
     flags : OpamTypes.package_flag list;
     has_build_commands : bool;
     has_install_commands : bool;
   }
 
   val pp : t Fmt.t
-  val from_opam : OpamPackage.t -> OpamFile.OPAM.t -> t
+  val from_opam : OpamPackage.t -> pinned:bool -> OpamFile.OPAM.t -> t
 
   val is_safe_package : t -> bool
   (** A package is safe when it is clear that it can be added to the lockfile

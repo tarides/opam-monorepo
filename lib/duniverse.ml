@@ -67,6 +67,7 @@ module Repo = struct
       dev_repo : Dev_repo.t;
       url : unresolved Url.t;
       hashes : OpamHash.t list;
+      pinned : bool;
     }
 
     let equal t t' =
@@ -74,12 +75,13 @@ module Repo = struct
       && Dev_repo.equal t.dev_repo t'.dev_repo
       && Url.equal Git.Ref.equal t.url t'.url
 
-    let pp fmt { opam; dev_repo; url; hashes } =
+    let pp fmt { opam; dev_repo; url; hashes; pinned } =
       let open Pp_combinators.Ocaml in
       Format.fprintf fmt
-        "@[<hov 2>{ opam = %a;@ dev_repo = %a;@ url = %a;@ hashes = %a }@]"
+        "@[<hov 2>{ opam = %a;@ dev_repo = %a;@ url = %a;@ hashes = %a;@ \
+         pinned = %b; }@]"
         Opam.Pp.raw_package opam string dev_repo (Url.pp Git.Ref.pp) url
-        (list Opam.Pp.hash) hashes
+        (list Opam.Pp.hash) hashes pinned
 
     let from_package_summary ~get_default_branch ps =
       let open Opam.Package_summary in
@@ -101,10 +103,11 @@ module Repo = struct
            package;
            dev_repo = Some dev_repo;
            hashes;
+           pinned;
            _;
           } ->
               let* url = url url_src in
-              Ok (Some { opam = package; dev_repo; url; hashes })
+              Ok (Some { opam = package; dev_repo; url; hashes; pinned })
           | { dev_repo = None; package; _ } ->
               Logs.warn (fun l ->
                   l
@@ -113,6 +116,8 @@ module Repo = struct
                     Opam.Pp.package package);
               Ok None
           | _ -> Ok None)
+
+    let is_pinned { pinned; _ } = pinned
   end
 
   type 'ref t = {
@@ -132,6 +137,27 @@ module Repo = struct
     Dev_repo.repo_name dev_repo
     |> Base.Result.map ~f:(function "dune" -> "dune_" | name -> name)
 
+  let log_url_selection ~dev_repo ~packages pinned_packages =
+    let url_to_string : unresolved Url.t -> string = function
+      | Git { repo; ref } -> Printf.sprintf "%s#%s" repo ref
+      | Other s -> s
+    in
+    let pp_package fmt { Package.opam = { name; version }; url; _ } =
+      Format.fprintf fmt "%a.%a: %s" Opam.Pp.package_name name Opam.Pp.version
+        version (url_to_string url)
+    in
+    let sep fmt () = Format.fprintf fmt "\n" in
+    Logs.warn (fun l ->
+        l
+          "The following packages come from the same repository %s but are \
+           associated with different URLs:\n\
+           %a\n\
+           The url for the pinned package(s) was selected: %a"
+          (Dev_repo.to_string dev_repo)
+          (Fmt.list ~sep pp_package) packages
+          Fmt.(list ~sep pp_package)
+          pinned_packages)
+
   let from_packages ~dev_repo (packages : Package.t list) =
     let open Result.O in
     let provided_packages = List.map packages ~f:(fun p -> p.Package.opam) in
@@ -145,19 +171,33 @@ module Repo = struct
     in
     match urls with
     | [ (url, hashes) ] -> Ok { dir; url; hashes; provided_packages }
-    | _ ->
-        let pp_hash = Fmt.of_to_string OpamHash.to_string in
-        (* this should not happen because we passed extra constraints
-           to the opam solver to avoid this situation *)
-        Fmt.failwith
-          "The following packages have the same `dev-repo' but are using  \
-           different versions of the archive tarballs:\n\
-           %a\n\
-           This should not happen, please report the issue to \
-           https://github.com/tarides/opam-monorepo.\n\
-           %!"
-          Fmt.Dump.(list (pair (Url.pp string) (list pp_hash)))
-          urls
+    | _ -> (
+        match List.filter ~f:Package.is_pinned packages with
+        | [] ->
+            let pp_hash = Fmt.of_to_string OpamHash.to_string in
+            (* this should not happen because we passed extra constraints
+                 to the opam solver to avoid this situation *)
+            Fmt.failwith
+              "The following packages have the same `dev-repo' but are using  \
+               different versions of the archive tarballs:\n\
+               %a\n\
+               This should not happen, please report the issue to \
+               https://github.com/tarides/opam-monorepo.\n\
+               %!"
+              Fmt.Dump.(list (pair (Url.pp string) (list pp_hash)))
+              urls
+        | pinned :: pinneds ->
+            if
+              not
+                (List.for_all pinneds ~f:(fun p ->
+                     String.equal pinned.Package.dev_repo p.Package.dev_repo
+                     && (* not necessary? *)
+                     Url.equal Git.Ref.equal pinned.url p.url))
+            then failwith "multiple pinned packages for same dir";
+            log_url_selection ~dev_repo ~packages (pinned :: pinneds);
+            let url = pinned.url in
+            let hashes = pinned.hashes in
+            Ok { dir; url; hashes; provided_packages })
 
   let equal equal_ref t t' =
     let { dir; url; hashes; provided_packages } = t in

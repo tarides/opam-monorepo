@@ -195,6 +195,7 @@ module Package_summary = struct
     hashes : OpamHash.t list;
     dev_repo : string option;
     depexts : (OpamSysPkg.Set.t * OpamTypes.filter) list;
+    pinned : bool;
     flags : Package_flag.t list;
     has_build_commands : bool;
     has_install_commands : bool;
@@ -207,6 +208,7 @@ module Package_summary = struct
         hashes;
         dev_repo;
         depexts;
+        pinned;
         flags;
         has_build_commands;
         has_install_commands;
@@ -214,16 +216,16 @@ module Package_summary = struct
     let open Pp_combinators.Ocaml in
     Format.fprintf fmt
       "@[<hov 2>{ name = %a;@ version = %a;@ url_src = %a;@ hashes = %a;@ \
-       dev_repo = %a;@ depexts = %a;@ flags = %a;@ has_build_commands = %B;@ \
-       has_install_commands = %B}@]"
+       dev_repo = %a;@ depexts = %a;@ pinned = %b;@ flags = %a;@ \
+       has_build_commands = %B;@ has_install_commands = %B}@]"
       Pp.package_name package.name Pp.version package.version
       (option ~brackets:true Url.pp)
       url_src (list Hash.pp) hashes
       (option ~brackets:true string)
-      dev_repo Depexts.pp depexts (list Package_flag.pp) flags
+      dev_repo Depexts.pp depexts pinned (list Package_flag.pp) flags
       has_build_commands has_install_commands
 
-  let from_opam package opam_file =
+  let from_opam package ~pinned opam_file =
     let url_field = OpamFile.OPAM.url opam_file in
     let url_src = Base.Option.map ~f:Url.from_opam_field url_field in
     let hashes =
@@ -245,6 +247,7 @@ module Package_summary = struct
       hashes;
       dev_repo;
       depexts;
+      pinned;
       flags;
       has_build_commands;
       has_install_commands;

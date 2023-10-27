@@ -28,8 +28,8 @@ let opam_factory ~name ~version =
   OpamPackage.create name version
 
 let summary_factory ?(name = "undefined") ?(version = "1") ?dev_repo ?url_src
-    ?(hashes = []) ?(depexts = []) ?(flags = []) ?(has_build_commands = false)
-    ?(has_install_commands = false) () =
+    ?(hashes = []) ?(depexts = []) ?(pinned = false) ?(flags = [])
+    ?(has_build_commands = false) ?(has_install_commands = false) () =
   let package = opam_factory ~name ~version in
   {
     Opam.Package_summary.package;
@@ -37,6 +37,7 @@ let summary_factory ?(name = "undefined") ?(version = "1") ?dev_repo ?url_src
     url_src;
     hashes;
     depexts;
+    pinned;
     flags;
     has_build_commands;
     has_install_commands;
@@ -82,6 +83,7 @@ module Repo = struct
                  dev_repo = "d";
                  url = Other "u";
                  hashes = [];
+                 pinned = false;
                })
       in
       [
@@ -126,16 +128,17 @@ module Repo = struct
                     dev_repo = "d";
                     url = Git { repo = "r"; ref = "master" };
                     hashes = [];
+                    pinned = false;
                   }))
           ();
       ]
   end
 
   let package_factory ?(name = "") ?(version = "") ?(dev_repo = "")
-      ?(url = Duniverse.Repo.Url.Other "") ?(hashes = []) () =
+      ?(url = Duniverse.Repo.Url.Other "") ?(hashes = []) ?(pinned = false) () =
     let open Duniverse.Repo.Package in
     let opam = opam_factory ~name ~version in
-    { opam; dev_repo; url; hashes }
+    { opam; dev_repo; url; hashes; pinned }
 
   let test_from_packages =
     let make_test ~name ~dev_repo ~packages ~expected () =

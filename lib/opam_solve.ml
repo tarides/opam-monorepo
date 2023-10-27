@@ -5,6 +5,8 @@ module type BASE_CONTEXT = sig
 
   type input
 
+  val is_pinned : t -> OpamTypes.name -> bool
+
   val create :
     ?test:OpamPackage.Name.Set.t ->
     constraints:OpamFormula.version_constraint OpamTypes.name_map ->
@@ -18,6 +20,8 @@ module type OPAM_MONOREPO_CONTEXT = sig
   type r = Non_dune | No_cross_compile | Base_rejection of base_rejection
 
   include Opam_0install.S.CONTEXT with type rejection = r
+
+  val is_pinned : t -> OpamTypes.name -> bool
 
   val create :
     ?install_test_deps_for:OpamPackage.Name.Set.t ->
@@ -56,6 +60,10 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
     preferred_versions : OpamTypes.version OpamPackage.Name.Map.t;
   }
 
+  let is_pinned { base_context; fixed_packages; _ } name =
+    Base_context.is_pinned base_context name
+    || OpamPackage.Name.Map.mem name fixed_packages
+
   type r =
     | Non_dune
     | No_cross_compile
@@ -85,8 +93,9 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
       preferred_versions;
     }
 
-  let validate_candidate ~allow_jbuilder ~must_cross_compile ~require_dune ~name
-      ~version opam_file =
+  let validate_candidate
+      { allow_jbuilder; require_cross_compile; require_dune; _ } ~name ~version
+      opam_file =
     (* this function gets called way too often.. memoize? *)
     let pkg = OpamPackage.create name version in
     let depends = OpamFile.OPAM.depends opam_file in
@@ -95,14 +104,17 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
       Opam.depends_on_dune ~allow_jbuilder depends
       || Opam.depends_on_dune ~allow_jbuilder depopts
     in
-    let summary = Opam.Package_summary.from_opam pkg opam_file in
+    (* is_safe_package doesn't care about ~pinned, so we use a dummy
+       value here. *)
+    let summary = Opam.Package_summary.from_opam pkg ~pinned:false opam_file in
     let is_valid_dune_wise =
       Opam.Package_summary.is_safe_package summary
       || (not require_dune) || uses_dune
     in
     match is_valid_dune_wise with
     | false -> Error Non_dune
-    | true when (not must_cross_compile) || Opam.has_cross_compile_tag opam_file
+    | true
+      when (not require_cross_compile) || Opam.has_cross_compile_tag opam_file
       ->
         Ok opam_file
     | true -> Error No_cross_compile
@@ -139,17 +151,13 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
     let depends = remove_opam_provided_from_formula opam_provided depends in
     OpamFile.OPAM.with_depends depends opam_file
 
-  let filter_candidates ~allow_jbuilder ~must_cross_compile ~require_dune ~name
-      versions =
+  let filter_candidates t name versions =
     List.map
       ~f:(fun (version, result) ->
         match result with
         | Error r -> (version, Error (Base_rejection r))
         | Ok opam_file ->
-            let res =
-              validate_candidate ~allow_jbuilder ~must_cross_compile
-                ~require_dune ~name ~version opam_file
-            in
+            let res = validate_candidate t ~name ~version opam_file in
             (version, res))
       versions
 
@@ -208,9 +216,7 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
   let hashes pkg =
     match OpamFile.OPAM.url pkg with
     | None -> []
-    | Some url ->
-        (* note: pinned packages do not have any checksums set *)
-        OpamFile.URL.checksum url
+    | Some url -> OpamFile.URL.checksum url
 
   (* build the list of conflicts by removing packages with the same hash *)
   let conflicts_with_same_dev_repo_but_a_different_hash =
@@ -235,78 +241,74 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
           Hashtbl.add memo (name, version) r;
           r
 
-  let with_conflict pkg =
-    let name = OpamFile.OPAM.name pkg in
-    let version = OpamFile.OPAM.version pkg in
-    let hashes = hashes pkg in
-    let entry = (name, version, hashes) in
-    match OpamFile.OPAM.dev_repo pkg with
-    | None -> pkg
-    | Some dev_repo ->
-        let dev_repo = Dev_repo.from_string (OpamUrl.to_string dev_repo) in
-        let in_conflicts =
-          match Dev_repo.Tbl.find_all dev_repos dev_repo with
-          | [] ->
-              Dev_repo.Tbl.add dev_repos dev_repo entry;
-              []
-          | conflicts ->
-              if not (List.mem entry ~set:conflicts) then
+  let with_conflict t pkg =
+    if is_pinned t (OpamFile.OPAM.name pkg) then
+      (* skip conflicts if a package is in pin-depends, listed on the
+         CLI or pinned in the local switch. *)
+      pkg
+    else
+      let name = OpamFile.OPAM.name pkg in
+      let version = OpamFile.OPAM.version pkg in
+      let hashes = hashes pkg in
+      let entry = (name, version, hashes) in
+      match OpamFile.OPAM.dev_repo pkg with
+      | None -> pkg
+      | Some dev_repo ->
+          let dev_repo = Dev_repo.from_string (OpamUrl.to_string dev_repo) in
+          let in_conflicts =
+            match Dev_repo.Tbl.find_all dev_repos dev_repo with
+            | [] ->
                 Dev_repo.Tbl.add dev_repos dev_repo entry;
-              (* remove packages from the same repo *)
-              conflicts_with_same_dev_repo_but_a_different_hash entry conflicts
-        in
-        let conflicts =
-          in_conflicts
-          |> List.map ~f:(fun (name, version, _) ->
-                 let version =
-                   let open OpamTypes in
-                   let v = OpamPackage.Version.to_string version in
-                   OpamFormula.Atom (Constraint (`Eq, FString v))
-                 in
-                 OpamFormula.Atom (name, version))
-          |> OpamFormula.ors
-        in
-        OpamFile.OPAM.with_conflicts conflicts pkg
+                []
+            | conflicts ->
+                if not (List.mem entry ~set:conflicts) then
+                  Dev_repo.Tbl.add dev_repos dev_repo entry;
+                (* remove packages from the same repo *)
+                conflicts_with_same_dev_repo_but_a_different_hash entry
+                  conflicts
+          in
+          let conflicts =
+            in_conflicts
+            |> List.map ~f:(fun (name, version, _) ->
+                   let version =
+                     let open OpamTypes in
+                     let v = OpamPackage.Version.to_string version in
+                     OpamFormula.Atom (Constraint (`Eq, FString v))
+                   in
+                   OpamFormula.Atom (name, version))
+            |> OpamFormula.ors
+          in
+          OpamFile.OPAM.with_conflicts conflicts pkg
 
-  let add_url_conflicts pkgs =
+  let add_url_conflicts t pkgs =
     List.map
       ~f:(fun (v, pkg) ->
         match pkg with
         | Error _ -> (v, pkg)
-        | Ok pkg -> (v, Ok (with_conflict pkg)))
+        | Ok pkg -> (v, Ok (with_conflict t pkg)))
       pkgs
 
-  let candidates
-      {
-        base_context;
-        fixed_packages;
-        allow_jbuilder;
-        require_dune;
-        opam_provided;
-        require_cross_compile;
-        preferred_versions;
-      } name =
-    match OpamPackage.Name.Map.find_opt name fixed_packages with
+  let candidates t name =
+    match OpamPackage.Name.Map.find_opt name t.fixed_packages with
     | Some (version, opam_file) ->
         let opam_file =
-          remove_opam_provided_from_dependencies opam_provided opam_file
+          remove_opam_provided_from_dependencies t.opam_provided opam_file
         in
         [ (version, Ok opam_file) ]
     | None ->
-        let candidates = Base_context.candidates base_context name in
-        let must_cross_compile =
-          require_cross_compile
+        let candidates = Base_context.candidates t.base_context name in
+        let require_cross_compile =
+          t.require_cross_compile
           && List.exists ~f:candidate_cross_compile candidates
         in
         let preferred_version =
-          OpamPackage.Name.Map.find_opt name preferred_versions
+          OpamPackage.Name.Map.find_opt name t.preferred_versions
         in
-        filter_candidates ~allow_jbuilder ~must_cross_compile ~require_dune
-          ~name candidates
-        |> remove_opam_provided ~opam_provided
+        filter_candidates { t with require_cross_compile } name candidates
+        |> remove_opam_provided ~opam_provided:t.opam_provided
         |> demote_candidates_to_avoid
         |> promote_version preferred_version
-        |> add_url_conflicts
+        |> add_url_conflicts t
 
   let user_restrictions { base_context; _ } name =
     Base_context.user_restrictions base_context name
@@ -621,8 +623,9 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
   let get_opam_info ~context { package; vendored } =
     match Context.opam_file context package with
     | Ok opam_file ->
+        let pinned = Context.is_pinned context package.name in
         let package_summary =
-          Opam.Package_summary.from_opam package opam_file
+          Opam.Package_summary.from_opam package opam_file ~pinned
         in
         Opam.Dependency_entry.{ package_summary; vendored }
     | Error (`Msg msg) ->
@@ -706,6 +709,8 @@ module Multi_dir_context :
 
   type nonrec t = t list
 
+  let is_pinned _ _ = false
+
   (** Create a Dir_context with multiple repos. The list is ordered by priority.
       First repo in the list as higher priority. If two repos provide the same version
       of a package, the one from the highest priority repo will be used, the other
@@ -750,10 +755,21 @@ end
 module Local_opam_context : BASE_CONTEXT with type input = switch = struct
   include Opam_0install.Switch_context
 
+  type t = {
+    context : Opam_0install.Switch_context.t;
+    state : OpamStateTypes.unlocked OpamStateTypes.switch_state;
+  }
+
   type input = OpamStateTypes.unlocked OpamStateTypes.switch_state
 
-  let create ?test ~constraints switch_state =
-    create ?test ~constraints switch_state
+  let is_pinned t pkg = OpamSwitchState.is_pinned t.state pkg
+  let candidates t = candidates t.context
+  let user_restrictions t = user_restrictions t.context
+  let filter_deps t = filter_deps t.context
+
+  let create ?test ~constraints state =
+    let context = create ?test ~constraints state in
+    { context; state }
 end
 
 module Mock_context :
@@ -770,6 +786,7 @@ struct
   type t = {
     env : string -> OpamVariable.variable_contents option;
     pkgs : OpamFile.OPAM.t list;
+    pins : OpamPackage.Set.t;
     constraints : OpamFormula.version_constraint OpamTypes.name_map;
     test : OpamPackage.Name.Set.t;
   }
@@ -821,6 +838,8 @@ struct
 
   type input = opam_env * OpamFile.OPAM.t list * OpamPackage.t list
 
+  let is_pinned t name = OpamPackage.has_name t.pins name
+
   let create ?(test = OpamPackage.Name.Set.empty) ~constraints (env, pkgs, pins)
       =
     let env varname = String.Map.find_opt varname env in
@@ -844,7 +863,7 @@ struct
           Logs.debug (fun l -> l "keep %a = %b" pp_pkg pkg keep);
           keep)
     in
-    { pkgs; constraints; test; env }
+    { pkgs; constraints; test; env; pins }
 end
 
 (* The code below aims to provide a unified interface over the two solver
