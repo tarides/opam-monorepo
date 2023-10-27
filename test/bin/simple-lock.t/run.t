@@ -43,10 +43,6 @@ The lockfile should contain the base packages, dune and our 2 dependencies
     "ocaml-config" {= "2"}
     "ocaml-options-vanilla" {= "1"}
   ]
-  pin-depends: [
-    ["b.1" "https://b.com/b.tbz"]
-    ["c.1" "https://c.com/c.tbz"]
-  ]
   x-opam-monorepo-duniverse-dirs: [
     [
       "https://b.com/b.tbz"

@@ -170,6 +170,24 @@ let root_pin_depends local_opam_files =
     local_opam_files []
   |> D.Pin_depends.sort_uniq
 
+let get_local_pins source_config =
+  match (source_config : D.Source_opam_config.t) with
+  | { repositories = Some _; _ } ->
+      (* ignore local pins with using x-opam-monorepo-repositories *)
+      []
+  | _ ->
+      OpamGlobalState.with_ `Lock_none @@ fun global_state ->
+      OpamSwitchState.with_ `Lock_none global_state @@ fun switch_state ->
+      OpamPinned.packages switch_state
+      |> OpamPackage.Set.to_seq
+      |> Seq.filter_map (fun pkg ->
+             match OpamSwitchState.url switch_state pkg with
+             | None ->
+                 (* ignore version-pinned packages *)
+                 None
+             | Some url -> Some (pkg, OpamFile.URL.url url))
+      |> List.of_seq
+
 let pull_pin_depends ~global_state pin_depends =
   let open Result.O in
   if Base.List.is_empty pin_depends then Ok OpamPackage.Name.Map.empty
@@ -570,11 +588,28 @@ let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)
       ~require_cross_compile ~preferred_versions ~ocaml_version
       ~local_opam_files:opam_files ~target_packages
   in
+  let dependency_table =
+    let aux { D.Opam.Dependency_entry.package_summary; vendored } =
+      (package_summary.package, vendored)
+    in
+    dependency_entries |> List.to_seq |> Seq.map aux |> OpamPackage.Map.of_seq
+  in
   Common.Logs.app (fun l -> l "Calculating exact pins for each of them.");
   let* duniverse = compute_duniverse ~dependency_entries >>= resolve_ref in
   let target_depexts = target_depexts opam_files target_packages in
+  let* pin_depends = root_pin_depends opam_files in
+  let local_pins = get_local_pins source_config in
+  let pin_depends =
+    List.filter
+      ~f:(fun (p, _) ->
+        match OpamPackage.Map.find_opt p dependency_table with
+        | None -> assert false
+        | Some vendored -> not vendored)
+      pin_depends
+    @ local_pins
+  in
   let lockfile =
-    D.Lockfile.create ~source_config ~root_packages:target_packages
+    D.Lockfile.create ~source_config ~root_packages:target_packages ~pin_depends
       ~dependency_entries ~root_depexts:target_depexts ~duniverse ()
   in
   let cli_args = raw_cli_args () in

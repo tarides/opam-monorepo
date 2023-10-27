@@ -8,6 +8,7 @@ end
 val create :
   source_config:Source_opam_config.t ->
   root_packages:OpamPackage.Name.Set.t ->
+  pin_depends:(OpamPackage.t * OpamUrl.t) list ->
   dependency_entries:Opam.Dependency_entry.t list ->
   root_depexts:(OpamSysPkg.Set.t * OpamTypes.filter) list list ->
   duniverse:Duniverse.t ->
