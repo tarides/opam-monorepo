@@ -28,8 +28,8 @@ let opam_factory ~name ~version =
   OpamPackage.create name version
 
 let summary_factory ?(name = "undefined") ?(version = "1") ?dev_repo ?url_src
-    ?(hashes = []) ?(depexts = []) ?(flags = []) ?(has_build_commands = false)
-    ?(has_install_commands = false) () =
+    ?(hashes = []) ?(depexts = []) ?(pinned = false) ?(flags = [])
+    ?(has_build_commands = false) ?(has_install_commands = false) () =
   let package = opam_factory ~name ~version in
   {
     Opam.Package_summary.package;
@@ -37,6 +37,7 @@ let summary_factory ?(name = "undefined") ?(version = "1") ?dev_repo ?url_src
     url_src;
     hashes;
     depexts;
+    pinned;
     flags;
     has_build_commands;
     has_install_commands;
@@ -73,17 +74,18 @@ module Repo = struct
         summary_factory ~dev_repo:"d" ~url_src:(Other "u") ~name:"y"
           ~version:"v" ~hashes:[] ?has_build_commands ?has_install_commands
       in
-      let simple_package =
-        Ok
-          (Some
-             Duniverse.Repo.Package.
-               {
-                 opam = opam_factory ~name:"y" ~version:"v";
-                 dev_repo = "d";
-                 url = Other "u";
-                 hashes = [];
-               })
+      let pkg =
+        Duniverse.Repo.Package.
+          {
+            opam = opam_factory ~name:"y" ~version:"v";
+            dev_repo = "d";
+            url = Other "u";
+            hashes = [];
+            pinned = false;
+          }
       in
+      let simple_package = Ok (Some pkg) in
+      let pinned_package = Ok (Some { pkg with pinned = true }) in
       [
         make_test ~name:"Base package"
           ~summary:(summary_factory ~name:"dune" ())
@@ -97,6 +99,9 @@ module Repo = struct
         make_test ~name:"Regular"
           ~summary:(simple_summary ~has_build_commands:true ())
           ~expected:simple_package ();
+        make_test ~name:"pinned"
+          ~summary:(simple_summary ~has_build_commands:true ~pinned:true ())
+          ~expected:pinned_package ();
         make_test ~name:"Has only install commands"
           ~summary:(simple_summary ~has_install_commands:true ())
           ~expected:simple_package ();
@@ -126,16 +131,17 @@ module Repo = struct
                     dev_repo = "d";
                     url = Git { repo = "r"; ref = "master" };
                     hashes = [];
+                    pinned = false;
                   }))
           ();
       ]
   end
 
   let package_factory ?(name = "") ?(version = "") ?(dev_repo = "")
-      ?(url = Duniverse.Repo.Url.Other "") ?(hashes = []) () =
+      ?(url = Duniverse.Repo.Url.Other "") ?(hashes = []) ?(pinned = false) () =
     let open Duniverse.Repo.Package in
     let opam = opam_factory ~name ~version in
-    { opam; dev_repo; url; hashes }
+    { opam; dev_repo; url; hashes; pinned }
 
   let test_from_packages =
     let make_test ~name ~dev_repo ~packages ~expected () =

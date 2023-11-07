@@ -37,6 +37,7 @@ module Repo : sig
       dev_repo : string;
       url : unresolved Url.t;
       hashes : OpamHash.t list;
+      pinned : bool;
     }
 
     val equal : t -> t -> bool

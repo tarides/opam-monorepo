@@ -7,6 +7,9 @@
 ### Deprecated
 
 ### Fixed
+- Fix support for pinned packages. In that case, it is not necessary to add
+  dev-repo conflicts as `opam-monorepo` will always use the pinned repository.
+  (#398, #353, @samoht, @reynir, reported by @emillon)
 
 ### Removed
 
