@@ -152,7 +152,7 @@ module Repo = struct
           "The following packages come from the same repository %s but are \
            associated with different URLs:\n\
            %a\n\
-           The url for the pinned package(s) was selected: %a"
+           The URL for the pinned package(s) was selected: %a"
           (Dev_repo.to_string dev_repo)
           (Fmt.list ~sep pp_package) packages
           Fmt.(list ~sep pp_package)
