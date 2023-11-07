@@ -844,23 +844,24 @@ struct
       =
     let env varname = String.Map.find_opt varname env in
     let pins = OpamPackage.Set.of_list pins in
+    let pkg_of_opam pkg =
+      let name = OpamFile.OPAM.name pkg in
+      let version = OpamFile.OPAM.version pkg in
+      OpamPackage.create name version
+    in
     (* remove pinned packages from the universe -- as that's what's the
        opam solver is doing. *)
-    let pp_pkg ppf pkg =
-      Fmt.pf ppf "%s.%s"
-        (OpamPackage.Name.to_string (OpamFile.OPAM.name pkg))
-        (OpamPackage.Version.to_string (OpamFile.OPAM.version pkg))
-    in
     let pkgs =
-      List.filter pkgs ~f:(fun pkg ->
+      List.filter pkgs ~f:(fun opam ->
+          let pkg = pkg_of_opam opam in
           let keep =
             match
-              OpamPackage.package_of_name_opt pins (OpamFile.OPAM.name pkg)
+              OpamPackage.package_of_name_opt pins (OpamPackage.name pkg)
             with
             | None -> true
-            | Some pin -> OpamFile.OPAM.version pkg = OpamPackage.version pin
+            | Some pin -> OpamPackage.version pkg = OpamPackage.version pin
           in
-          Logs.debug (fun l -> l "keep %a = %b" pp_pkg pkg keep);
+          Logs.debug (fun l -> l "keep %a = %b" Opam.Pp.package pkg keep);
           keep)
     in
     { pkgs; constraints; test; env; pins }

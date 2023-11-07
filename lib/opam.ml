@@ -216,7 +216,7 @@ module Package_summary = struct
     let open Pp_combinators.Ocaml in
     Format.fprintf fmt
       "@[<hov 2>{ name = %a;@ version = %a;@ url_src = %a;@ hashes = %a;@ \
-       dev_repo = %a;@ depexts = %a;@ pinned = %b;@ flags = %a;@ \
+       dev_repo = %a;@ depexts = %a;@ pinned = %B;@ flags = %a;@ \
        has_build_commands = %B;@ has_install_commands = %B}@]"
       Pp.package_name package.name Pp.version package.version
       (option ~brackets:true Url.pp)

@@ -142,11 +142,10 @@ module Repo = struct
       | Git { repo; ref } -> Printf.sprintf "%s#%s" repo ref
       | Other s -> s
     in
-    let pp_package fmt { Package.opam = { name; version }; url; _ } =
-      Format.fprintf fmt "%a.%a: %s" Opam.Pp.package_name name Opam.Pp.version
-        version (url_to_string url)
+    let pp_package fmt { Package.opam; url; _ } =
+      Fmt.pf fmt "%a: %s" Opam.Pp.package opam (url_to_string url)
     in
-    let sep fmt () = Format.fprintf fmt "\n" in
+    let pp_packages = Fmt.(list ~sep:(any "\n") pp_package) in
     Logs.warn (fun l ->
         l
           "The following packages come from the same repository %s but are \
@@ -154,9 +153,7 @@ module Repo = struct
            %a\n\
            The URL for the pinned package(s) was selected: %a"
           (Dev_repo.to_string dev_repo)
-          (Fmt.list ~sep pp_package) packages
-          Fmt.(list ~sep pp_package)
-          pinned_packages)
+          pp_packages packages pp_packages pinned_packages)
 
   let from_packages ~dev_repo (packages : Package.t list) =
     let open Result.O in
@@ -186,17 +183,10 @@ module Repo = struct
                %!"
               Fmt.Dump.(list (pair (Url.pp string) (list pp_hash)))
               urls
-        | pinned :: pinneds ->
-            if
-              not
-                (List.for_all pinneds ~f:(fun p ->
-                     String.equal pinned.Package.dev_repo p.Package.dev_repo
-                     && (* not necessary? *)
-                     Url.equal Git.Ref.equal pinned.url p.url))
-            then failwith "multiple pinned packages for same dir";
-            log_url_selection ~dev_repo ~packages (pinned :: pinneds);
-            let url = pinned.url in
-            let hashes = pinned.hashes in
+        | first_pin :: _ as pins ->
+            log_url_selection ~dev_repo ~packages pins;
+            let url = first_pin.url in
+            let hashes = first_pin.hashes in
             Ok { dir; url; hashes; provided_packages })
 
   let equal equal_ref t t' =

@@ -74,18 +74,18 @@ module Repo = struct
         summary_factory ~dev_repo:"d" ~url_src:(Other "u") ~name:"y"
           ~version:"v" ~hashes:[] ?has_build_commands ?has_install_commands
       in
-      let simple_package =
-        Ok
-          (Some
-             Duniverse.Repo.Package.
-               {
-                 opam = opam_factory ~name:"y" ~version:"v";
-                 dev_repo = "d";
-                 url = Other "u";
-                 hashes = [];
-                 pinned = false;
-               })
+      let pkg =
+        Duniverse.Repo.Package.
+          {
+            opam = opam_factory ~name:"y" ~version:"v";
+            dev_repo = "d";
+            url = Other "u";
+            hashes = [];
+            pinned = false;
+          }
       in
+      let simple_package = Ok (Some pkg) in
+      let pinned_package = Ok (Some { pkg with pinned = true }) in
       [
         make_test ~name:"Base package"
           ~summary:(summary_factory ~name:"dune" ())
@@ -99,6 +99,9 @@ module Repo = struct
         make_test ~name:"Regular"
           ~summary:(simple_summary ~has_build_commands:true ())
           ~expected:simple_package ();
+        make_test ~name:"pinned"
+          ~summary:(simple_summary ~has_build_commands:true ~pinned:true ())
+          ~expected:pinned_package ();
         make_test ~name:"Has only install commands"
           ~summary:(simple_summary ~has_install_commands:true ())
           ~expected:simple_package ();
