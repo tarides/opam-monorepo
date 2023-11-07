@@ -33,215 +33,129 @@ let calculate universe ?(pins = []) root expected =
       Alcotest.failf "error: diagnostic %s" e
   | Error (`Msg e) -> Alcotest.fail e
 
+let opam_file stanzas =
+  let opam_stanzas = {|opam-version: "2.0"|} :: stanzas in
+  let pp_stanzas = Fmt.list ~sep:(Fmt.any "\n") Fmt.string in
+  let opam_string = Format.asprintf "%a" pp_stanzas opam_stanzas in
+  OpamFile.OPAM.read_from_string opam_string
+
+let quoted = Printf.sprintf "%s: %S"
+let name = quoted "name"
+let version = quoted "version"
+let dev_repo = quoted "dev-repo"
+
+let url ~src ?checksum () =
+  match checksum with
+  | Some checksum ->
+      Printf.sprintf {|url {
+  src: %S
+  checksum: "sha256=%064d"
+}|} src
+        checksum
+  | None -> Printf.sprintf {|url {
+  src: %S
+}|} src
+
+let depends pkgs =
+  let pp_depends = Fmt.list ~sep:Fmt.sp Fmt.Dump.string in
+  Format.asprintf "depends: [%a]" pp_depends pkgs
+
+let ocaml_base_compiler, ocaml_base_expected =
+  let n = "ocaml-base-compiler" in
+  let v = "3.14" in
+  (opam_file [ name n; version v ], (n, v))
+
 let simple () =
   let universe =
-    List.map OpamFile.OPAM.read_from_string
-      [
-        {|
-opam-version: "2.0"
-name: "ocaml-base-compiler"
-version: "3.14"
-|};
-        {|
-opam-version: "2.0"
-name: "p1"
-version: "1"
-|};
-        {|
-opam-version: "2.0"
-name: "p1"
-version: "2"
-|};
-        {|
-opam-version: "2.0"
-name: "p2"
-version: "1"
-|};
-      ]
+    [
+      ocaml_base_compiler;
+      opam_file [ name "p1"; version "1" ];
+      opam_file [ name "p1"; version "2" ];
+      opam_file [ name "p2"; version "1" ];
+    ]
   in
-  let root =
-    OpamFile.OPAM.read_from_string
-      {|
-opam-version: "2.0"
-name: "root"
-version: "0"
-depends: ["p1" "p2"]
-|}
-  in
+  let root = opam_file [ name "root"; version "0"; {|depends: ["p1" "p2"]|} ] in
   calculate universe root
-    [ ("ocaml-base-compiler", "3.14"); ("p1", "2"); ("p2", "1"); ("root", "0") ]
+    [ ocaml_base_expected; ("p1", "2"); ("p2", "1"); ("root", "0") ]
 
 let conflicts () =
   let universe =
-    List.map OpamFile.OPAM.read_from_string
-      [
-        {|
-opam-version: "2.0"
-name: "ocaml-base-compiler"
-version: "3.14"
-|};
-        {|
-opam-version: "2.0"
-name: "p1"
-version: "1"
-|};
-        {|
-opam-version: "2.0"
-name: "p1"
-version: "2"
-conflicts: ["p2" {= "1"}]
-|};
-        {|
-opam-version: "2.0"
-name: "p2"
-version: "1"
-|};
-      ]
+    [
+      ocaml_base_compiler;
+      opam_file [ name "p1"; version "1" ];
+      opam_file [ name "p1"; version "2"; {|conflicts: ["p2" {= "1"}]|} ];
+      opam_file [ name "p2"; version "1" ];
+    ]
   in
-  let root =
-    OpamFile.OPAM.read_from_string
-      {|
-opam-version: "2.0"
-name: "root"
-version: "0"
-depends: ["p1" "p2"]
-|}
-  in
+  let root = opam_file [ name "root"; version "0"; depends [ "p1"; "p2" ] ] in
   calculate universe root
-    [ ("ocaml-base-compiler", "3.14"); ("p1", "1"); ("p2", "1"); ("root", "0") ]
+    [ ocaml_base_expected; ("p1", "1"); ("p2", "1"); ("root", "0") ]
 
 let conflict_class () =
   let universe =
-    List.map OpamFile.OPAM.read_from_string
-      [
-        {|
-opam-version: "2.0"
-name: "ocaml-base-compiler"
-version: "3.14"
-|};
-        {|
-opam-version: "2.0"
-name: "p1"
-version: "1"
-conflict-class: ["x"]
-|};
-        {|
-opam-version: "2.0"
-name: "p1"
-version: "2"
-conflict-class: ["y"]
-|};
-        {|
-opam-version: "2.0"
-name: "p2"
-version: "1"
-conflict-class: ["y"]
-|};
-      ]
+    [
+      ocaml_base_compiler;
+      opam_file [ name "p1"; version "1"; {|conflict-class: ["x"]|} ];
+      opam_file [ name "p1"; version "2"; {|conflict-class: ["y"] |} ];
+      opam_file [ name "p2"; version "1"; {|conflict-class: ["y"] |} ];
+    ]
   in
-  let root =
-    OpamFile.OPAM.read_from_string
-      {|
-opam-version: "2.0"
-name: "root"
-version: "0"
-depends: ["p1" "p2"]
-|}
-  in
+  let root = opam_file [ name "root"; version "0"; {|depends: ["p1" "p2"]|} ] in
   calculate universe root
-    [ ("ocaml-base-compiler", "3.14"); ("p1", "1"); ("p2", "1"); ("root", "0") ]
+    [ ocaml_base_expected; ("p1", "1"); ("p2", "1"); ("root", "0") ]
 
 let universe_with_url =
-  List.map OpamFile.OPAM.read_from_string
-    [
-      {|
-opam-version: "2.0"
-name: "ocaml-base-compiler"
-version: "3.14"
-|};
-      {|
-opam-version: "2.0"
-name: "p1"
-version: "1"
-dev-repo: "x"
-url {
-  src: "https://p.com/p.tbz"
-  checksum: "sha256=0000000000000000000000000000000000000000000000000000000000000001"
-}
-|};
-      {|
-opam-version: "2.0"
-name: "p1"
-version: "2"
-dev-repo: "x"
-url {
-  src: "https://p.com/p.tbz"
-  checksum: "sha256=0000000000000000000000000000000000000000000000000000000000000002"
-}
-|};
-      {|
-opam-version: "2.0"
-name: "p2"
-version: "1"
-dev-repo: "x"
-url {
-  src: "https://p.com/p.tbz"
-  checksum: "sha256=0000000000000000000000000000000000000000000000000000000000000001"
-}
-|};
-      {|
-opam-version: "2.0"
-name: "p2"
-version: "2"
-dev-repo: "x"
-url {
-  src: "https://p.com/p.tbz"
-  checksum: "sha256=0000000000000000000000000000000000000000000000000000000000000002"
-}
-|};
-    ]
+  [
+    ocaml_base_compiler;
+    opam_file
+      [
+        name "p1";
+        version "1";
+        dev_repo "x";
+        url ~src:"https://p.com/p.tbz" ~checksum:1 ();
+      ];
+    opam_file
+      [
+        name "p1";
+        version "2";
+        dev_repo "x";
+        url ~src:"https://p.com/p.tbz" ~checksum:2 ();
+      ];
+    opam_file
+      [
+        name "p2";
+        version "1";
+        dev_repo "x";
+        url ~src:"https://p.com/p.tbz" ~checksum:1 ();
+      ];
+    opam_file
+      [
+        name "p2";
+        version "2";
+        dev_repo "x";
+        url ~src:"https://p.com/p.tbz" ~checksum:2 ();
+      ];
+  ]
 
 let conflict_url () =
   let universe = universe_with_url in
   let root =
-    OpamFile.OPAM.read_from_string
-      {|
-opam-version: "2.0"
-name: "root"
-version: "0"
-depends: ["p1" {= "1"} "p2"]
-|}
+    opam_file [ name "root"; version "0"; {|depends: ["p1" {= "1"} "p2"] |} ]
   in
   calculate universe root
-    [ ("ocaml-base-compiler", "3.14"); ("p1", "1"); ("p2", "1"); ("root", "0") ]
+    [ ocaml_base_expected; ("p1", "1"); ("p2", "1"); ("root", "0") ]
 
 let no_conflict_with_pin () =
   let p2_dev =
-    OpamFile.OPAM.read_from_string
-      {|
-opam-version: "2.0"
-name: "p2"
-version: "0"
-dev-repo: "x"
-url {
-  src: "git+https://x#hash"
-}
-|}
+    opam_file
+      [ name "p2"; version "0"; dev_repo "x"; url ~src:"git+https://x#hash" () ]
   in
   let universe = p2_dev :: universe_with_url in
-  let root =
-    OpamFile.OPAM.read_from_string
-      {|
-opam-version: "2.0"
-name: "root"
-version: "0"
-depends: ["p1" "p2"]
-|}
-  in
+  let root = opam_file [ name "root"; version "0"; depends [ "p1"; "p2" ] ] in
   calculate
     ~pins:[ OpamPackage.of_string "p2.0" ]
     universe root
-    [ ("ocaml-base-compiler", "3.14"); ("p1", "2"); ("p2", "0"); ("root", "0") ]
+    [ ocaml_base_expected; ("p1", "2"); ("p2", "0"); ("root", "0") ]
 
 let suite =
   ( "solve",
