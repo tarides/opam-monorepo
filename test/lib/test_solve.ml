@@ -56,9 +56,9 @@ let url ~src ?checksum () =
   src: %S
 }|} src
 
-let depends pkgs =
-  let pp_depends = Fmt.list ~sep:Fmt.sp Fmt.Dump.string in
-  Format.asprintf "depends: [%a]" pp_depends pkgs
+let pp_list = Fmt.list ~sep:Fmt.sp Fmt.Dump.string
+let depends pkgs = Format.asprintf "depends: [%a]" pp_list pkgs
+let conflict_class cls = Format.asprintf "conflict-class: [%a]" pp_list cls
 
 let ocaml_base_compiler, ocaml_base_expected =
   let n = "ocaml-base-compiler" in
@@ -74,7 +74,7 @@ let simple () =
       opam_file [ name "p2"; version "1" ];
     ]
   in
-  let root = opam_file [ name "root"; version "0"; {|depends: ["p1" "p2"]|} ] in
+  let root = opam_file [ name "root"; version "0"; depends [ "p1"; "p2" ] ] in
   calculate universe root
     [ ocaml_base_expected; ("p1", "2"); ("p2", "1"); ("root", "0") ]
 
@@ -95,12 +95,12 @@ let conflict_class () =
   let universe =
     [
       ocaml_base_compiler;
-      opam_file [ name "p1"; version "1"; {|conflict-class: ["x"]|} ];
-      opam_file [ name "p1"; version "2"; {|conflict-class: ["y"] |} ];
-      opam_file [ name "p2"; version "1"; {|conflict-class: ["y"] |} ];
+      opam_file [ name "p1"; version "1"; conflict_class [ "x" ] ];
+      opam_file [ name "p1"; version "2"; conflict_class [ "y" ] ];
+      opam_file [ name "p2"; version "1"; conflict_class [ "y" ] ];
     ]
   in
-  let root = opam_file [ name "root"; version "0"; {|depends: ["p1" "p2"]|} ] in
+  let root = opam_file [ name "root"; version "0"; depends [ "p1"; "p2" ] ] in
   calculate universe root
     [ ocaml_base_expected; ("p1", "1"); ("p2", "1"); ("root", "0") ]
 
