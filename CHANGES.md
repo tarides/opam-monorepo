@@ -10,6 +10,10 @@
 - Fix support for pinned packages. In that case, it is not necessary to add
   dev-repo conflicts as `opam-monorepo` will always use the pinned repository.
   (#398, #353, @samoht, @reynir, reported by @emillon)
+- Improve the speed of `opam monorepo pull`. Loading an switch state might take
+  a few seconds -- replace it with a call to `ocamlc --version` to check if the
+  lockfile is compatible with the currently available OCaml compiler
+  (#403, @samoht)
 
 ### Removed
 
