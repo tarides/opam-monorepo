@@ -75,15 +75,14 @@ let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
         D.Lockfile.ocaml_version lockfile
         |> Base.Result.of_option ~error:(`Msg "OCaml compiler not in lockfile")
       in
-      OpamSwitchState.with_ `Lock_none global_state @@ fun switch_state ->
-      let switch_ocaml_version =
-        OpamSwitchState.get_package switch_state D.Config.compiler_package_name
-        |> OpamPackage.version
-      in
       let* pulled =
         D.Pull.duniverse ~global_state ~root ~full
           ~preserve_symlinks:keep_symlinked_dir ~trim_clone:(not keep_git_dir)
           duniverse
+      in
+      let* switch_ocaml_version =
+        let+ version = D.Exec.ocaml_version () in
+        OpamPackage.Version.of_string (Ocaml_version.to_string version)
       in
       (match
          D.Opam.version_is_at_least locked_ocaml_version switch_ocaml_version
