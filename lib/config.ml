@@ -23,7 +23,12 @@ let skip_packages =
   |> List.map ~f:OpamPackage.Name.of_string
   |> OpamPackage.Name.Set.of_list
 
-let compiler_package_name = OpamPackage.Name.of_string "ocaml"
+let compiler_package_name =
+  OpamPackage.Name.of_string "ocaml"
+
+let compiler_package_names =
+  [ compiler_package_name ; OpamPackage.Name.of_string "ocaml-compiler" ]
+  |> OpamPackage.Name.Set.of_list
 
 let duniverse_opam_repo =
   "git+https://github.com/dune-universe/opam-overlays.git"
