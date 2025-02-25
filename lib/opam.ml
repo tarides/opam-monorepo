@@ -264,7 +264,7 @@ module Package_summary = struct
     | _ -> false
 
   let is_compiler_package { package; _ } =
-    OpamPackage.Name.equal package.name Config.compiler_package_name
+    OpamPackage.Name.Set.mem package.name Config.compiler_package_names
 
   let is_skippable_package { package; _ } =
     OpamPackage.Name.Set.mem package.name Config.skip_packages
