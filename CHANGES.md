@@ -14,6 +14,8 @@
   a few seconds -- replace it with a call to `ocamlc --version` to check if the
   lockfile is compatible with the currently available OCaml compiler
   (#403, @samoht)
+- Treat "ocaml-compiler" as a package to be ignored by the check whether it uses
+  dune for building (#407, @hannesm, review by @shym)
 
 ### Removed
 
