@@ -25,8 +25,8 @@ code required to build a project using the dune build tool.")
   fmt
   logs
   (opam-file-format (>= 2.1.0))
-  (opam-format (>= 2.1.0~rc2))
-  (opam-state (and (>= 2.1.0~rc2) (< 2.2.0)))
+  (opam-format (>= 2.3.0))
+  (opam-state (>= 2.3.0))
   opam-0install
   ocaml-version
   sexplib

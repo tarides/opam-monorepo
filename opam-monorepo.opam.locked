@@ -24,6 +24,7 @@ depends: [
   "dune-configurator" {= "3.6.1" & ?vendor}
   "fmt" {= "0.9.0+dune" & ?vendor}
   "fpath" {= "0.7.3+dune" & ?vendor}
+  "jsonm" {= "1.0.1+dune" & ?vendor}
   "logs" {= "0.7.0+dune2" & ?vendor}
   "lwt" {= "5.6.1" & ?vendor}
   "num" {= "1.4+dune2" & ?vendor}
@@ -36,11 +37,11 @@ depends: [
   "ocamlgraph" {= "2.0.0" & ?vendor}
   "ocplib-endian" {= "1.2" & ?vendor}
   "opam-0install" {= "0.4.3" & ?vendor}
-  "opam-core" {= "2.1.4" & ?vendor}
+  "opam-core" {= "2.3.0" & ?vendor}
   "opam-file-format" {= "2.1.5" & ?vendor}
-  "opam-format" {= "2.1.4" & ?vendor}
-  "opam-repository" {= "2.1.4" & ?vendor}
-  "opam-state" {= "2.1.4" & ?vendor}
+  "opam-format" {= "2.3.0" & ?vendor}
+  "opam-repository" {= "2.3.0" & ?vendor}
+  "opam-state" {= "2.3.0" & ?vendor}
   "parsexp" {= "v0.15.0" & ?vendor}
   "re" {= "1.10.4" & ?vendor}
   "result" {= "1.5" & ?vendor}
@@ -48,8 +49,11 @@ depends: [
   "seq" {= "base+dune" & ?vendor}
   "sexplib" {= "v0.15.1" & ?vendor}
   "sexplib0" {= "v0.15.1" & ?vendor}
+  "sha" {= "1.15.4" & ?vendor}
+  "spdx_licenses" {= "1.3.0" & ?vendor}
   "stdlib-shims" {= "0.3.0" & ?vendor}
   "stringext" {= "1.6.0" & ?vendor}
+  "swhid_core" {= "0.1" & ?vendor}
   "uri" {= "4.2.0" & ?vendor}
   "uutf" {= "1.0.3+dune" & ?vendor}
 ]
@@ -135,6 +139,10 @@ pin-depends: [
     "https://github.com/dune-universe/fpath/archive/v0.7.3+dune.tar.gz"
   ]
   [
+    "jsonm.1.0.1+dune"
+    "https://github.com/dune-universe/jsonm/archive/v1.0.1+dune.tar.gz"
+  ]
+  [
     "logs.0.7.0+dune2"
     "https://github.com/dune-universe/logs/releases/download/v0.7.0%2Bdune2/logs-0.7.0.dune2.tbz"
   ]
@@ -164,24 +172,24 @@ pin-depends: [
     "https://github.com/ocaml-opam/opam-0install-solver/releases/download/v0.4.3/opam-0install-cudf-0.4.3.tbz"
   ]
   [
-    "opam-core.2.1.4"
-    "https://github.com/ocaml/opam/archive/refs/tags/2.1.4.tar.gz"
+    "opam-core.2.3.0"
+    "https://github.com/ocaml/opam/archive/refs/tags/2.3.0.tar.gz"
   ]
   [
     "opam-file-format.2.1.5"
     "https://github.com/ocaml/opam-file-format/archive/refs/tags/2.1.5.tar.gz"
   ]
   [
-    "opam-format.2.1.4"
-    "https://github.com/ocaml/opam/archive/refs/tags/2.1.4.tar.gz"
+    "opam-format.2.3.0"
+    "https://github.com/ocaml/opam/archive/refs/tags/2.3.0.tar.gz"
   ]
   [
-    "opam-repository.2.1.4"
-    "https://github.com/ocaml/opam/archive/refs/tags/2.1.4.tar.gz"
+    "opam-repository.2.3.0"
+    "https://github.com/ocaml/opam/archive/refs/tags/2.3.0.tar.gz"
   ]
   [
-    "opam-state.2.1.4"
-    "https://github.com/ocaml/opam/archive/refs/tags/2.1.4.tar.gz"
+    "opam-state.2.3.0"
+    "https://github.com/ocaml/opam/archive/refs/tags/2.3.0.tar.gz"
   ]
   [
     "parsexp.v0.15.0"
@@ -209,12 +217,24 @@ pin-depends: [
     "https://github.com/janestreet/sexplib0/archive/refs/tags/v0.15.1.tar.gz"
   ]
   [
+    "sha.1.15.4"
+    "https://github.com/djs55/ocaml-sha/releases/download/v1.15.4/sha-1.15.4.tbz"
+  ]
+  [
+    "spdx_licenses.1.3.0"
+    "https://github.com/kit-ty-kate/spdx_licenses/releases/download/v1.3.0/spdx_licenses-1.3.0.tar.gz"
+  ]
+  [
     "stdlib-shims.0.3.0"
     "https://github.com/ocaml/stdlib-shims/releases/download/0.3.0/stdlib-shims-0.3.0.tbz"
   ]
   [
     "stringext.1.6.0"
     "https://github.com/rgrinberg/stringext/releases/download/1.6.0/stringext-1.6.0.tbz"
+  ]
+  [
+    "swhid_core.0.1"
+    "https://github.com/OCamlPro/swhid_core/archive/refs/tags/0.1.tar.gz"
   ]
   [
     "uri.4.2.0"
@@ -251,6 +271,14 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
+    "https://github.com/OCamlPro/swhid_core/archive/refs/tags/0.1.tar.gz"
+    "swhid_core"
+    [
+      "sha256=8718b4eb97c9f0acd6d9162a9efa2f6af82474a0bd186f622fda3294f773bccf"
+      "sha512=ec72cc946c662dc8230f4ef8c85bb41df56c3f46bc49276feca434199cd482f11901be902fc5c243244866d4a167474f18245f83ad0b0cf46eb35406ad1f1b5c"
+    ]
+  ]
+  [
     "https://github.com/backtracking/ocamlgraph/releases/download/2.0.0/ocamlgraph-2.0.0.tbz"
     "ocamlgraph"
     [
@@ -264,6 +292,14 @@ x-opam-monorepo-duniverse-dirs: [
     [
       "md5=9033e02283aa3bde9f97f24e632902e3"
       "sha512=cab0eb4cb6d9788b7cbd7acbefefc15689d706c97ff7f75dd97faf3c21e466af4d0ff110541a24729db587e7172b1a30a3c2967e17ec2e49cbd923360052c07c"
+    ]
+  ]
+  [
+    "https://github.com/djs55/ocaml-sha/releases/download/v1.15.4/sha-1.15.4.tbz"
+    "ocaml-sha"
+    [
+      "sha256=6de5b12139b1999ce9df4cc78a5a31886c2a547c9d448bf2853f8b53bcf1f1b1"
+      "sha512=dbb31b523ba0bace023bc1b0558a8f572a0ec20fb3f19f783935be755cd161e09aba352eda2bcf7c4e5ab838c7f874cfbfaed9debf0813df25d9dbe7b9314fdf"
     ]
   ]
   [
@@ -294,6 +330,13 @@ x-opam-monorepo-duniverse-dirs: [
     "fpath"
     [
       "sha256=792ecf88d2a311596106e30775864629558ed0c2d0501590fda55f363dbb6ebc"
+    ]
+  ]
+  [
+    "https://github.com/dune-universe/jsonm/archive/v1.0.1+dune.tar.gz"
+    "jsonm"
+    [
+      "sha256=cb82b2742662636029644db0354a8ff028b9e7495d4fe5278ddef72656b88d1b"
     ]
   ]
   [
@@ -382,6 +425,14 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
+    "https://github.com/kit-ty-kate/spdx_licenses/releases/download/v1.3.0/spdx_licenses-1.3.0.tar.gz"
+    "spdx_licenses"
+    [
+      "md5=7e9a0c48d477c900ccb5a0ec9a402118"
+      "sha512=6786734d8aaf1c56ecdb19403e13c426f9b41785e775b213db6fc429f4a6a06575954a9ae23d56ea518e944cd55df546d9b8b403c2541872fe73a27b536bbb74"
+    ]
+  ]
+  [
     "https://github.com/mirage/alcotest/releases/download/1.6.0/alcotest-1.6.0.tbz"
     "alcotest"
     [
@@ -454,11 +505,11 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/ocaml/opam/archive/refs/tags/2.1.4.tar.gz"
+    "https://github.com/ocaml/opam/archive/refs/tags/2.3.0.tar.gz"
     "opam"
     [
-      "md5=f8123b6840e93000fcf228aa9cb23891"
-      "sha512=276fdbe4e114a0d23b9d4b7938d87bf39c06b4716fae601588da7d5d2d5d9b5c584855d96edfed2eb5ac8a36ee9431c4ea7d281c52acdab28b9a3bdcbf10ce57"
+      "md5=3a99d6d8c0394185f168fa0f085f6bb9"
+      "sha512=596d7b28f0cf9613dc7637aaeac45cc45f411a13286fea1cc81aeb0630c4f8a6dc2095d50db73229a255a3da3d9a08fe0993355a7fc64d3b16fd712789ff5f6e"
     ]
   ]
   [
