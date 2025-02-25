@@ -55,8 +55,10 @@ depends: [
 ]
 depexts: [
   ["devel/pkgconf"] {os = "openbsd"}
+  ["pkg-config"] {os-distribution = "nixos"}
   ["pkg-config"] {os-family = "debian"}
   ["pkg-config"] {os = "macos" & os-distribution = "homebrew"}
+  ["pkgconf"] {os = "cygwin"}
   ["pkgconf"] {os = "freebsd"}
   ["pkgconf"] {os-distribution = "alpine"}
   ["pkgconf"] {os-distribution = "arch"}
@@ -65,7 +67,6 @@ depexts: [
   ["pkgconf-pkg-config"] {os-distribution = "centos" & os-version >= "8"}
   ["pkgconf-pkg-config"] {os-distribution = "ol" & os-version >= "8"}
   ["pkgconf-pkg-config"] {os-distribution = "rhel" & os-version >= "8"}
-  ["pkgconfig"] {os-distribution = "nixos"}
   ["pkgconfig"] {os = "macos" & os-distribution = "macports"}
   ["pkgconfig"] {os-distribution = "centos" & os-version <= "7"}
   ["pkgconfig"] {os-distribution = "ol" & os-version <= "7"}
@@ -224,6 +225,7 @@ pin-depends: [
     "https://github.com/dune-universe/uutf/releases/download/v1.0.3%2Bdune/uutf-1.0.3.dune.tbz"
   ]
 ]
+x-opam-monorepo-cli-args: ["--minimal-update"]
 x-opam-monorepo-duniverse-dirs: [
   [
     "https://erratique.ch/software/cmdliner/releases/cmdliner-1.1.1.tbz"
@@ -329,12 +331,18 @@ x-opam-monorepo-duniverse-dirs: [
   [
     "https://github.com/inhabitedtype/angstrom/archive/0.15.0.tar.gz"
     "angstrom"
-    ["md5=5104768c404ea92fd0a53a5b0f75cd50"]
+    [
+      "sha256=f119ac08d2dfa6687af426b31c047265a2aa7a3418f8b48b1055cb8da8929205"
+      "md5=5104768c404ea92fd0a53a5b0f75cd50"
+    ]
   ]
   [
     "https://github.com/inhabitedtype/bigstringaf/archive/0.9.0.tar.gz"
     "bigstringaf"
-    ["md5=0d8ceddeb7db821fd4e5235a75ae9752"]
+    [
+      "sha256=543386c79aa6542e9c92cb19e45987bc05b9fb1f84707ec4320b24037202106c"
+      "md5=0d8ceddeb7db821fd4e5235a75ae9752"
+    ]
   ]
   [
     "https://github.com/janestreet/base/archive/refs/tags/v0.15.1.tar.gz"
@@ -346,7 +354,10 @@ x-opam-monorepo-duniverse-dirs: [
   [
     "https://github.com/janestreet/result/releases/download/1.5/result-1.5.tbz"
     "result"
-    ["md5=1b82dec78849680b49ae9a8a365b831b"]
+    [
+      "sha256=7c3a5e238558f4c1a4f5acca816bc705a0e12f68dc0005c61ddbf2e6cab8ee32"
+      "md5=1b82dec78849680b49ae9a8a365b831b"
+    ]
   ]
   [
     "https://github.com/janestreet/sexplib/archive/refs/tags/v0.15.1.tar.gz"
@@ -358,7 +369,10 @@ x-opam-monorepo-duniverse-dirs: [
   [
     "https://github.com/janestreet/sexplib0/archive/refs/tags/v0.15.1.tar.gz"
     "sexplib0"
-    ["md5=ab8fd6273f35a792cad48cbb3024a7f9"]
+    [
+      "sha256=e8cd817eb3bc3f84a2065fa0255ab2b986a24baf1cc329d05627c516464267b3"
+      "md5=ab8fd6273f35a792cad48cbb3024a7f9"
+    ]
   ]
   [
     "https://github.com/kit-ty-kate/bytes/archive/v0.1.0.tar.gz"
