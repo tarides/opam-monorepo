@@ -27,7 +27,7 @@ code required to build a project using the dune build tool.")
   (opam-file-format (>= 2.1.0))
   (opam-format (>= 2.3.0))
   (opam-state (>= 2.3.0))
-  opam-0install
+  (opam-0install (>= 0.5))
   ocaml-version
   sexplib
   uri
