@@ -1,14 +1,16 @@
 We have a simple project with a single package defined at the root.
 It has a `x-opam-monorepo-opam-repositories` field set to use a local
-opam-repository for locking
+opam-repository for locking and a pinned package.
 
-  $ cat simple-lock.opam
+  $ cat pin-depends.opam
   opam-version: "2.0"
   depends: [
     "dune"
     "b"
     "c"
   ]
+  pin-depends: ["b.dev" "./duniverse/b"]
+  x-opam-monorepo-opam-provided: ["b"]
   x-opam-monorepo-opam-repositories: [
     "file://$OPAM_MONOREPO_CWD/minimal-repo"
     "file://$OPAM_MONOREPO_CWD/repo"
@@ -22,17 +24,17 @@ We provided a minimal opam-repository but locking should be successful.
   ==> Found 10 opam dependencies for the target package.
   ==> Querying opam database for their metadata and Dune compatibility.
   ==> Calculating exact pins for each of them.
-  ==> Wrote lockfile with 2 entries to $TESTCASE_ROOT/simple-lock.opam.locked. You can now run opam monorepo pull to fetch their sources.
+  ==> Wrote lockfile with 1 entries to $TESTCASE_ROOT/pin-depends.opam.locked. You can now run opam monorepo pull to fetch their sources.
 
 The lockfile should contain the base packages, dune and our 2 dependencies
 `b` and `c` which should be pulled in the duniverse
 
-  $ cat simple-lock.opam.locked
+  $ cat pin-depends.opam.locked | sed 's|file://.*/pin-depends.t/|file://$LOCAL_PATH/|'
   opam-version: "2.0"
   synopsis: "opam-monorepo generated lockfile"
   maintainer: "opam-monorepo"
   depends: [
-    "b" {= "1" & ?vendor}
+    "b" {= "dev"}
     "base-bigarray" {= "base"}
     "base-threads" {= "base"}
     "base-unix" {= "base"}
@@ -43,14 +45,11 @@ The lockfile should contain the base packages, dune and our 2 dependencies
     "ocaml-config" {= "2"}
     "ocaml-options-vanilla" {= "1"}
   ]
+  pin-depends: [
+    "b.dev"
+    "file://$LOCAL_PATH/duniverse/b"
+  ]
   x-opam-monorepo-duniverse-dirs: [
-    [
-      "https://b.com/b.tbz"
-      "b"
-      [
-        "sha256=0000000000000000000000000000000000000000000000000000000000000000"
-      ]
-    ]
     [
       "https://c.com/c.tbz"
       "c"
@@ -59,8 +58,9 @@ The lockfile should contain the base packages, dune and our 2 dependencies
       ]
     ]
   ]
+  x-opam-monorepo-opam-provided: ["b"]
   x-opam-monorepo-opam-repositories: [
     "file://$OPAM_MONOREPO_CWD/minimal-repo" "file://$OPAM_MONOREPO_CWD/repo"
   ]
-  x-opam-monorepo-root-packages: ["simple-lock"]
+  x-opam-monorepo-root-packages: ["pin-depends"]
   x-opam-monorepo-version: "0.3"
