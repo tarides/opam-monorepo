@@ -1,5 +1,0 @@
-(library
- (name app)
- (public_name pkg.app)
- (libraries lib)
- (modes melange))
