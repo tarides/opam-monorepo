@@ -1,4 +1,4 @@
-## unreleased
+## 0.4.1
 
 ### Added
 
