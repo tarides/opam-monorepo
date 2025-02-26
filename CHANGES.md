@@ -16,6 +16,8 @@
   (#403, @samoht)
 - Treat "ocaml-compiler" as a package to be ignored by the check whether it uses
   dune for building (#407, @hannesm, review by @shym)
+- Bump opam dependencies to 2.3.0, allowing newer variables like with-dev-setup
+    (#408, @palainp, @Firobe, #380, @kit-ty-kate)
 
 ### Removed
 

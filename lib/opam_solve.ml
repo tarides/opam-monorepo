@@ -809,7 +809,7 @@ struct
     f
     |> OpamFilter.partial_filter_formula (env t pkg)
     |> OpamFilter.filter_deps ~build:true ~post:true ~test ~doc:false ~dev:false
-         ~default:false
+         ~dev_setup:false ~default:false
 
   let compare_version x y =
     OpamPackage.Version.compare (OpamFile.OPAM.version y)

@@ -25,11 +25,10 @@ let skip_packages =
 
 (* The "ocaml" package is used in various other places so it is kept apart
    in the list of package names *)
-let compiler_package_name =
-  OpamPackage.Name.of_string "ocaml"
+let compiler_package_name = OpamPackage.Name.of_string "ocaml"
 
 let compiler_package_names =
-  [ compiler_package_name ; OpamPackage.Name.of_string "ocaml-compiler" ]
+  [ compiler_package_name; OpamPackage.Name.of_string "ocaml-compiler" ]
   |> OpamPackage.Name.Set.of_list
 
 let duniverse_opam_repo =
