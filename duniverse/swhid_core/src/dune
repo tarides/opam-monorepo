@@ -1,0 +1,3 @@
+(library
+ (public_name swhid_core)
+ (modules compute object))

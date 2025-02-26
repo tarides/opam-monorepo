@@ -1,0 +1,297 @@
+N0REP0
+### : untracked option :
+### <pkg:things.1>
+opam-version: "2.0"
+build : [ "touch" "first" "second" ]
+install: [
+  [ "test" "!" "-f" "%{bin}%/first" ]
+  [ "cp" "first" "%{bin}%/first" ]
+  [ "test" "!" "-f" "%{lib}%/things/second" ]
+  [ "mkdir" "%{lib}%/things/" ]
+  [ "cp" "second" "%{lib}%/things/second" ]
+]
+### OPAMPRECISETRACKING=1 OPAMYES=1
+### opam switch create clean --empty
+### opam install things
+The following actions will be performed:
+=== install 1 package
+  - install things 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed things.1
+Done.
+### opam show --list-files things
+${BASEDIR}/OPAM/clean/bin/first
+${BASEDIR}/OPAM/clean/lib/things
+${BASEDIR}/OPAM/clean/lib/things/second
+
+### opam remove things
+The following actions will be performed:
+=== remove 1 package
+  - remove things 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   things.1
+Done.
+### opam install things
+The following actions will be performed:
+=== install 1 package
+  - install things 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed things.1
+Done.
+### opam remove things --fake
+The following actions will be faked:
+=== remove 1 package
+  - remove things 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+Done.
+### opam install things
+The following actions will be performed:
+=== install 1 package
+  - install things 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[ERROR] The installation of things failed at "test ! -f ${BASEDIR}/OPAM/clean/bin/first".
+
+
+
+
+<><> Error report <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
++- The following actions failed
+| - install things 1
++- 
+- No changes have been performed
+# Return code 31 #
+### opam clean --untracked --dry-run
+Cleaning up switch clean
+rm -rf ${BASEDIR}/OPAM/clean/lib/things/second
+rm -rf ${BASEDIR}/OPAM/clean/lib/things
+rm -rf ${BASEDIR}/OPAM/clean/bin/first
+rm -rf "${BASEDIR}/OPAM/clean/.opam-switch/backup"/*
+rm -rf "${BASEDIR}/OPAM/clean/.opam-switch/build"/*
+rm -rf "${BASEDIR}/OPAM/clean/.opam-switch/remove"/*
+rm -rf "${BASEDIR}/OPAM/clean/.opam-switch/extra-files-cache"/*
+### opam clean --untracked
+Cleaning up switch clean
+Remaining directories and files:
+  - ${BASEDIR}/OPAM/clean/bin/first
+  - ${BASEDIR}/OPAM/clean/lib/things/second
+  - ${BASEDIR}/OPAM/clean/lib/things
+
+Remove them? [y/n] y
+### opam install things
+The following actions will be performed:
+=== install 1 package
+  - install things 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed things.1
+Done.
+### <OPAM/clean/bin/first>
+another content
+### opam remove things --no | '\\' -> '/'
+The following actions will be performed:
+=== remove 1 package
+  - remove things 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+While removing things.1: these files have been modified since installation:
+  - bin/first
+Remove them anyway? [y/n] n
+-> removed   things.1
+Done.
+### opam clean --untracked
+Cleaning up switch clean
+Remaining files:
+  - ${BASEDIR}/OPAM/clean/bin/first
+
+Remove them? [y/n] y
+### : Clean of sources directory :
+### <waste/file>
+yes, i'm a file
+### <pin:waste/waste.opam>
+opam-version: "2.0"
+### tar czf waste.tgz waste/file
+### <pkg:waste.1>
+opam-version: "2.0"
+### <mkurl.sh>
+n=waste
+v=1
+arch=waste.tgz
+file="REPO/packages/$n/$n.$v/opam"
+echo "url {" >> "$file"
+echo "src: \"$arch\"" >> "$file"
+MD5=$(openssl md5 "$arch" | cut -d' ' -f2)
+echo "checksum: \"md5=$MD5\"" >> "$file"
+echo "}" >> "$file"
+basedir=`echo "$BASEDIR" | sed "s/\\\\\\\\/\\\\\\\\\\\\\\\\/g"`
+echo "dev-repo: \"file://${basedir}/$n\"" >> "$file"
+### sh mkurl.sh
+### <pkg:waste-local.1>
+opam-version: "2.0"
+### <mkurl.sh>
+n=waste-local
+v=1
+file="REPO/packages/$n/$n.$v/opam"
+basedir=`echo "$BASEDIR" | sed "s/\\\\\\\\/\\\\\\\\\\\\\\\\/g"`
+echo "url { local: \"file://${basedir}/waste\" }" >> "$file"
+### sh mkurl.sh
+### opam update
+
+<><> Updating package repositories ><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file://${BASEDIR}/REPO
+Now run 'opam upgrade' to apply any package updates.
+### : at install
+### opam install waste
+The following actions will be performed:
+=== install 1 package
+  - install waste 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved waste.1  (file://${BASEDIR}/waste.tgz)
+-> installed waste.1
+Done.
+### ls OPAM/clean/.opam-switch/sources/
+waste.1
+### : at removal
+### opam remove waste
+The following actions will be performed:
+=== remove 1 package
+  - remove waste 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   waste.1
+Done.
+### ls OPAM/clean/.opam-switch/sources
+### : at reinstall
+### opam install waste
+The following actions will be performed:
+=== install 1 package
+  - install waste 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved waste.1  (cached)
+-> installed waste.1
+Done.
+### ls OPAM/clean/.opam-switch/sources
+waste.1
+### opam reinstall waste
+The following actions will be performed:
+=== recompile 1 package
+  - recompile waste 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved waste.1  (cached)
+-> removed   waste.1
+-> installed waste.1
+Done.
+### ls OPAM/clean/.opam-switch/sources
+### : at atomic reinstall
+### opam remove waste
+The following actions will be performed:
+=== remove 1 package
+  - remove waste 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   waste.1
+Done.
+### ls OPAM/clean/.opam-switch/sources
+### opam install ./waste
+waste is now pinned to file://${BASEDIR}/waste (version 1)
+The following actions will be performed:
+=== install 1 package
+  - install waste 1 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved waste.1  (file://${BASEDIR}/waste)
+-> installed waste.1
+Done.
+### ls OPAM/clean/.opam-switch/sources
+waste
+### : at atomic repin with reinstall: --dev pin
+### opam unpin waste
+Ok, waste is no longer pinned to file://${BASEDIR}/waste (version 1)
+The following actions will be performed:
+=== recompile 1 package
+  - recompile waste 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved waste.1  (cached)
+-> removed   waste.1
+-> installed waste.1
+Done.
+### ls OPAM/clean/.opam-switch/sources
+### opam remove waste
+The following actions will be performed:
+=== remove 1 package
+  - remove waste 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   waste.1
+Done.
+### ls OPAM/clean/.opam-switch/sources
+### opam pin waste --dev
+[waste.1] synchronised (file://${BASEDIR}/waste)
+waste is now pinned to file://${BASEDIR}/waste (version 1)
+
+The following actions will be performed:
+=== install 1 package
+  - install waste 1 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved waste.1  (file://${BASEDIR}/waste)
+-> installed waste.1
+Done.
+### ls OPAM/clean/.opam-switch/sources
+waste
+### : at atomic repin with reinstall: version pin
+### opam unpin waste
+Ok, waste is no longer pinned to file://${BASEDIR}/waste (version 1)
+The following actions will be performed:
+=== recompile 1 package
+  - recompile waste 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved waste.1  (cached)
+-> removed   waste.1
+-> installed waste.1
+Done.
+### ls OPAM/clean/.opam-switch/sources
+### opam remove waste
+The following actions will be performed:
+=== remove 1 package
+  - remove waste 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   waste.1
+Done.
+### ls OPAM/clean/.opam-switch/sources
+### opam pin waste 1
+waste is now pinned to version 1
+
+The following actions will be performed:
+=== install 1 package
+  - install waste 1 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved waste.1  (cached)
+-> installed waste.1
+Done.
+### ls OPAM/clean/.opam-switch/sources
+waste
+### : at install, with an url not poiting to an archive
+### opam install waste-local
+The following actions will be performed:
+=== install 1 package
+  - install waste-local 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved waste-local.1  (file://${BASEDIR}/waste)
+-> installed waste-local.1
+Done.
+### ls OPAM/clean/.opam-switch/sources
+waste
+waste-local.1

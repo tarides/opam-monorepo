@@ -1,0 +1,227 @@
+N0REP0
+### <pkg:foo.1>
+opam-version: "2.0"
+### <pkg:foo.2>
+opam-version: "2.0"
+depends: "truc"
+### <pkg:bar.1>
+opam-version: "2.0"
+depends: "foo" {= "1"}
+### <pkg:baz.1>
+opam-version: "2.0"
+depends: "bar"
+### <pkg:baz.1>
+opam-version: "2.0"
+depends: "bar"
+### <pkg:truc.1>
+opam-version: "2.0"
+depopts: "foo" { < "2" }
+### OPAMYES=1
+### opam switch create x --empty
+### OPAMSHOW=1
+### opam install --deps-only foo
+The following actions would be performed:
+=== install 1 package
+  - install truc 1 [required by foo]
+### opam install --deps-only bar
+The following actions would be performed:
+=== install 1 package
+  - install foo 1 [required by bar]
+### opam install --deps-only baz
+The following actions would be performed:
+=== install 2 packages
+  - install bar 1 [required by baz]
+  - install foo 1 [required by bar]
+### opam install --deps-only foo bar
+Nothing to do.
+### opam install --deps-only foo baz
+The following actions would be performed:
+=== install 2 packages
+  - install bar 1 [required by baz]
+  - install foo 1 [required by bar]
+### opam install --deps-only bar baz
+The following actions would be performed:
+=== install 1 package
+  - install foo 1 [required by bar]
+### opam install --deps-only foo bar baz
+Nothing to do.
+### opam install --deps-only truc
+Nothing to do.
+### opam install --deps-only truc baz
+The following actions would be performed:
+=== install 2 packages
+  - install bar 1 [required by baz]
+  - install foo 1 [required by bar]
+### ::::::::::::::::::: Test for #4911 ::::::::::::::::
+### OPAMSHOW=0
+### <pkg:buz.1>
+opam-version: "2.0"
+depopts: "bar"
+### opam install foo.1 buz
+The following actions will be performed:
+=== install 2 packages
+  - install buz 1
+  - install foo 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed buz.1
+-> installed foo.1
+Done.
+### opam list --roots -s
+buz
+foo
+### opam install --deps-only --show bar
+Nothing to do.
+### ::: check ability to install unavailable package :::
+### <pkg:a.1>
+opam-version: "2.0"
+available: false
+### <pkg:b.1>
+opam-version: "2.0"
+depends: "a"
+### <pkg:c.1>
+opam-version: "2.0"
+depends: "b"
+### opam install a c --deps-only
+[ERROR] Package conflict!
+  * Missing dependency:
+    - deps-of-c -> b -> a
+    unmet availability conditions: 'false'
+
+No solution found, exiting
+# Return code 20 #
+### opam install c --deps-only
+[ERROR] Package conflict!
+  * Missing dependency:
+    - deps-of-c -> b -> a
+    unmet availability conditions: 'false'
+
+No solution found, exiting
+# Return code 20 #
+### : conflicts :
+### <pkg:d.1>
+opam-version: "2.0"
+depends: "foo"
+conflicts: "bar"
+### opam install d --deps-only
+Nothing to do.
+### :::: check if deps-only installed packages are set root ::::
+### <pkg:roots1.1>
+opam-version: "2.0"
+### <pkg:roots2.1>
+opam-version: "2.0"
+depends: "roots1"
+### <pkg:roots3.1>
+opam-version: "2.0"
+depends: "roots2"
+### <pkg:stoor1.1>
+opam-version: "2.0"
+### <pkg:stoor2.1>
+opam-version: "2.0"
+depends: "stoor1"
+### opam switch create roots --empty
+### : deps of a package
+### opam install roots3 --deps-only
+The following actions will be performed:
+=== install 2 packages
+  - install roots1 1 [required by roots2]
+  - install roots2 1 [required by roots3]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed roots1.1
+-> installed roots2.1
+Done.
+### opam list --roots -s
+roots2
+### opam remove roots1
+The following actions will be performed:
+=== remove 2 packages
+  - remove roots1 1
+  - remove roots2 1 [uses roots1]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   roots2.1
+-> removed   roots1.1
+Done.
+### : deps for 2 package that depend on each other
+### opam install roots3 roots2 --deps-only
+The following actions will be performed:
+=== install 1 package
+  - install roots1 1 [required by roots2]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed roots1.1
+Done.
+### opam list --roots -s
+roots1
+### opam remove roots1
+The following actions will be performed:
+=== remove 1 package
+  - remove roots1 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   roots1.1
+Done.
+### : deps for 2 package that depend on each other
+### opam install roots3 stoor2 --deps-only | unordered
+The following actions will be performed:
+=== install 3 packages
+  - install roots1 1 [required by roots2]
+  - install roots2 1 [required by roots3]
+  - install stoor1 1 [required by stoor2]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed roots1.1
+-> installed roots2.1
+-> installed stoor1.1
+Done.
+### opam list --roots -s
+roots2
+stoor1
+### opam remove roots1 stoor1 | unordered
+The following actions will be performed:
+=== remove 3 packages
+  - remove roots1 1
+  - remove roots2 1 [uses roots1]
+  - remove stoor1 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   roots2.1
+-> removed   roots1.1
+-> removed   stoor1.1
+Done.
+### : deps with explicite set-root
+### opam install roots3 --deps-only --set-root
+The following actions will be performed:
+=== install 2 packages
+  - install roots1 1 [required by roots2]
+  - install roots2 1 [required by roots3]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed roots1.1
+-> installed roots2.1
+Done.
+### opam list --roots -s
+roots2
+### opam remove roots1
+The following actions will be performed:
+=== remove 2 packages
+  - remove roots1 1
+  - remove roots2 1 [uses roots1]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   roots2.1
+-> removed   roots1.1
+Done.
+### : deps with explicit unset-root
+### opam install roots3 --deps-only --unset-root
+The following actions will be performed:
+=== install 2 packages
+  - install roots1 1 [required by roots2]
+  - install roots2 1 [required by roots3]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed roots1.1
+-> installed roots2.1
+Done.
+### opam list --roots -s
