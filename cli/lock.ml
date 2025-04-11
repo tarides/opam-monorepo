@@ -57,7 +57,11 @@ let check_target_packages packages =
       Ok ()
 
 let opam_to_git_remote remote =
-  match Base.String.lsplit2 ~on:'+' remote with
+  match Option.map
+          (fun idx ->
+             (String.sub remote ~pos:0 ~len:idx,
+              String.sub remote ~pos:(succ idx) ~len:(String.length remote - idx - 1)))
+          (String.index_opt remote '+') with
   | Some ("git", remote) -> remote
   | _ -> remote
 
@@ -156,7 +160,7 @@ let lockfile_path ~explicit_lockfile ~target_packages repo =
       D.Project.lockfile
         ~target_packages:(OpamPackage.Name.Set.elements target_packages)
         repo
-      |> Base.Result.map_error ~f:(function `Msg msg ->
+      |> Result.map_error (function `Msg msg ->
              Rresult.R.msgf
                "Could not infer the target lockfile name: %s\n\
                 Try setting it explicitly using --lockfile or add a project \
@@ -172,7 +176,7 @@ let root_pin_depends local_opam_files =
 
 let pull_pin_depends ~global_state pin_depends =
   let open Result.O in
-  if Base.List.is_empty pin_depends then Ok OpamPackage.Name.Map.empty
+  if pin_depends = [] then Ok OpamPackage.Name.Map.empty
   else
     let* pins_tmp_dir = Bos.OS.Dir.tmp "opam-monorepo-pins-%s" in
     Logs.debug (fun l ->
@@ -199,7 +203,15 @@ let pull_pin_depends ~global_state pin_depends =
       Result.List.map ~f:(elm_from_pkg ~dir ~url) pkgs
     in
     let jobs = !OpamStateConfig.r.dl_jobs in
-    let+ elms = OpamParallel.map ~jobs ~command by_urls |> Base.Result.all in
+    let+ elms =
+      OpamParallel.map ~jobs ~command by_urls
+      |> List.fold_left
+        ~f:(fun acc r ->
+            match acc, r with
+            | Error _ as e, _ | Ok _, (Error _ as e) -> e
+            | Ok acc, Ok r -> Ok (r :: acc))
+        ~init:(Ok [])
+    in
     OpamPackage.Name.Map.of_list (List.concat elms)
 
 let get_pin_depends ~global_state local_opam_files =
@@ -318,7 +330,14 @@ let make_repository_locally_available url =
 let make_repositories_locally_available repositories =
   repositories
   |> OpamProcess.Job.seq_map make_repository_locally_available
-  |> OpamProcess.Job.run |> Base.Result.all
+  |> OpamProcess.Job.run
+  |> List.fold_left
+    ~f:(fun acc r ->
+        match acc, r with
+        | Error _ as e, _ | Ok _, (Error _ as e) -> e
+        | Ok acc, Ok r -> Ok (r :: acc))
+    ~init:(Ok [])
+
 
 let opam_env_from_global_state global_state =
   let vars = global_state.OpamStateTypes.global_variables in
@@ -354,7 +373,7 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
                 repositories);
           let* local_repos = make_repositories_locally_available repositories in
           let local_repo_dirs, source_config =
-            let local_repo_dirs, repo_urls = Base.List.unzip local_repos in
+            let local_repo_dirs, repo_urls = List.split local_repos in
             let repositories =
               repo_urls |> OpamUrl.Set.of_list |> Option.some
             in
@@ -368,8 +387,8 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
               ~require_cross_compile ~preferred_versions ~local_opam_files
               ~target_packages ~opam_provided ~pin_depends ?ocaml_version solver
               (opam_env, local_repo_dirs)
-            |> Base.Result.map_error
-                 ~f:(interpret_solver_error ~repositories solver)
+            |> Result.map_error
+                 (interpret_solver_error ~repositories solver)
           in
           let* dependency_entries = dependency_entries in
           Ok (dependency_entries, source_config)
@@ -386,7 +405,7 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
                   ~require_cross_compile ~preferred_versions ~local_opam_files
                   ~target_packages ~opam_provided ~pin_depends ?ocaml_version
                   solver switch_state
-                |> Base.Result.map_error ~f:(fun err ->
+                |> Result.map_error (fun err ->
                        let repositories = current_repos ~switch_state in
                        interpret_solver_error ~repositories solver err)
               in
@@ -403,7 +422,7 @@ let select_explicitly_specified ~local_packages ~explicitly_specified =
       | true, Error errors -> Error errors
       | true, Ok selected -> Ok (OpamPackage.Name.Set.add key selected))
     ~init:(Ok OpamPackage.Name.Set.empty) explicitly_specified
-  |> Base.Result.map_error ~f:(fun missing_packages ->
+  |> Result.map_error (fun missing_packages ->
          let msg =
            Fmt.str "Package%a %a specified but not found in repository"
              D.Pp.plural missing_packages
@@ -541,7 +560,7 @@ let extract_source_config ~adjustment ~opam_monorepo_cwd ~opam_files
 
 let raw_cli_args () =
   match Array.to_list Sys.argv with
-  | _bin :: prefix :: args when Base.String.is_prefix ~prefix "lock" -> args
+  | _bin :: prefix :: args when String.starts_with ~prefix "lock" -> args
   | _ -> assert false
 
 let run (`Root root) (`Recurse_opam recurse) (`Build_only build_only)

@@ -54,7 +54,7 @@ module Lang = struct
       Printf.sprintf "%s.%s" (Re.Group.get group 1) (Re.Group.get group 2)
     in
     let stanza = Re.Group.get group 0 in
-    Base.String.substr_replace_first ~pattern:old_ver ~with_:new_ver stanza
+    Re.replace_string (Re.compile (Re.str old_ver)) ~by:new_ver stanza
 
   let update ~version content =
     Re.replace ~all:false stanza_regexp ~f:(update_stanza ~version) content

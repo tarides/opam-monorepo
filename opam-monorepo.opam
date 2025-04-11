@@ -17,7 +17,6 @@ depends: [
   "dune" {>= "3.5"}
   "ocaml" {>= "4.10.0"}
   "dune-build-info"
-  "base"
   "bos"
   "cmdliner" {>= "1.1.0"}
   "fmt"

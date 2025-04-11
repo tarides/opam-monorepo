@@ -7,10 +7,18 @@ module Normalized = struct
     match Uri.host uri with
     | Some "github.com" -> (
         let path = Uri.path uri in
-        match Base.String.lsplit2 path ~on:'/' with
+        match Option.map
+                (fun idx ->
+                   (String.sub path ~pos:0 ~len:idx,
+                    String.sub path ~pos:(succ idx) ~len:(String.length path - idx - 1)))
+                (String.index_opt path '/') with
         | None -> Other uri
         | Some (user, gitrepo) -> (
-            match Base.String.rsplit2 gitrepo ~on:'.' with
+            match Option.map
+                    (fun idx ->
+                       (String.sub gitrepo ~pos:0 ~len:idx,
+                        String.sub gitrepo ~pos:(succ idx) ~len:(String.length gitrepo - idx - 1)))
+                    (String.rindex_opt gitrepo '.') with
             | None -> Github { user; repo = gitrepo }
             | Some (repo, "git") -> Github { user; repo }
             | Some _ -> Other uri))

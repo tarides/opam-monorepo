@@ -15,10 +15,10 @@ let pad s max_len = Printf.sprintf "%-*s" max_len s
 let guess_pin ~version ~loc =
   let version = OpamPackage.Version.to_string version in
   (* opam-overlays *)
-  Base.String.is_suffix ~suffix:"+dune" version
-  || Base.String.is_prefix ~prefix:"https://github.com/dune-universe" loc
+  String.ends_with ~suffix:"+dune" version
+  || String.starts_with ~prefix:"https://github.com/dune-universe" loc
   (* mirage-overlays *)
-  || Base.String.is_suffix ~suffix:"+mirage" version
+  || String.ends_with ~suffix:"+mirage" version
 
 let pp_name = Fmt.(styled `Bold string)
 let pp_version = Fmt.(styled `Magenta string)
