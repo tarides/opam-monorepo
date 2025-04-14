@@ -13,7 +13,7 @@ let repo_name_regexp =
     (seq [
         opt (char '/');
         rep (char '.');
-        group (rep (compl [ char '.'; char '/' ]));
+        group (rep1 (compl [ char '.'; char '/' ]));
         opt (seq [
             char '.';
             rep (compl [ char '/' ])]);
