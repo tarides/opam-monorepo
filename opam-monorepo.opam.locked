@@ -6,7 +6,6 @@ depends: [
   "alcotest" {= "1.6.0" & ?vendor}
   "angstrom" {= "0.15.0" & ?vendor}
   "astring" {= "0.8.5+dune" & ?vendor}
-  "base" {= "v0.15.1" & ?vendor}
   "base-bigarray" {= "base"}
   "base-bytes" {= "base+dune" & ?vendor}
   "base-domains" {= "base"}
@@ -42,13 +41,13 @@ depends: [
   "opam-format" {= "2.3.0" & ?vendor}
   "opam-repository" {= "2.3.0" & ?vendor}
   "opam-state" {= "2.3.0" & ?vendor}
-  "parsexp" {= "v0.15.0" & ?vendor}
+  "parsexp" {= "v0.16.0" & ?vendor}
   "re" {= "1.10.4" & ?vendor}
   "result" {= "1.5" & ?vendor}
   "rresult" {= "0.7.0+dune" & ?vendor}
   "seq" {= "base+dune" & ?vendor}
-  "sexplib" {= "v0.15.1" & ?vendor}
-  "sexplib0" {= "v0.15.1" & ?vendor}
+  "sexplib" {= "v0.16.0" & ?vendor}
+  "sexplib0" {= "v0.16.0" & ?vendor}
   "sha" {= "1.15.4" & ?vendor}
   "spdx_licenses" {= "1.3.0" & ?vendor}
   "stdlib-shims" {= "0.3.0" & ?vendor}
@@ -93,10 +92,6 @@ pin-depends: [
   [
     "astring.0.8.5+dune"
     "https://github.com/dune-universe/astring/archive/v0.8.5+dune.tar.gz"
-  ]
-  [
-    "base.v0.15.1"
-    "https://github.com/janestreet/base/archive/refs/tags/v0.15.1.tar.gz"
   ]
   [
     "base-bytes.base+dune"
@@ -192,8 +187,8 @@ pin-depends: [
     "https://github.com/ocaml/opam/archive/refs/tags/2.3.0.tar.gz"
   ]
   [
-    "parsexp.v0.15.0"
-    "https://ocaml.janestreet.com/ocaml-core/v0.15/files/parsexp-v0.15.0.tar.gz"
+    "parsexp.v0.16.0"
+    "https://ocaml.janestreet.com/ocaml-core/v0.16/files/parsexp-v0.16.0.tar.gz"
   ]
   [
     "re.1.10.4"
@@ -209,12 +204,12 @@ pin-depends: [
   ]
   ["seq.base+dune" "https://github.com/c-cube/seq/archive/0.2.2.tar.gz"]
   [
-    "sexplib.v0.15.1"
-    "https://github.com/janestreet/sexplib/archive/refs/tags/v0.15.1.tar.gz"
+    "sexplib.v0.16.0"
+    "https://ocaml.janestreet.com/ocaml-core/v0.16/files/sexplib-v0.16.0.tar.gz"
   ]
   [
-    "sexplib0.v0.15.1"
-    "https://github.com/janestreet/sexplib0/archive/refs/tags/v0.15.1.tar.gz"
+    "sexplib0.v0.16.0"
+    "https://ocaml.janestreet.com/ocaml-core/v0.16/files/sexplib0-v0.16.0.tar.gz"
   ]
   [
     "sha.1.15.4"
@@ -388,33 +383,11 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/janestreet/base/archive/refs/tags/v0.15.1.tar.gz"
-    "base"
-    [
-      "sha256=755e303171ea267e3ba5af7aa8ea27537f3394d97c77d340b10f806d6ef61a14"
-    ]
-  ]
-  [
     "https://github.com/janestreet/result/releases/download/1.5/result-1.5.tbz"
     "result"
     [
       "sha256=7c3a5e238558f4c1a4f5acca816bc705a0e12f68dc0005c61ddbf2e6cab8ee32"
       "md5=1b82dec78849680b49ae9a8a365b831b"
-    ]
-  ]
-  [
-    "https://github.com/janestreet/sexplib/archive/refs/tags/v0.15.1.tar.gz"
-    "sexplib"
-    [
-      "sha256=75da7d290d92d758c01f441f9589ccce031e11301563efde1c19149d39edbcbc"
-    ]
-  ]
-  [
-    "https://github.com/janestreet/sexplib0/archive/refs/tags/v0.15.1.tar.gz"
-    "sexplib0"
-    [
-      "sha256=e8cd817eb3bc3f84a2065fa0255ab2b986a24baf1cc329d05627c516464267b3"
-      "md5=ab8fd6273f35a792cad48cbb3024a7f9"
     ]
   ]
   [
@@ -545,10 +518,24 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://ocaml.janestreet.com/ocaml-core/v0.15/files/parsexp-v0.15.0.tar.gz"
+    "https://ocaml.janestreet.com/ocaml-core/v0.16/files/parsexp-v0.16.0.tar.gz"
     "parsexp"
     [
-      "sha256=d1ee902b12ac7c0c888863025990d06845530fb75328454814e5ce5b6d43d193"
+      "sha256=b6e2572c8e6191a85cb8f9c3276ed87fe00522c81ba7a268179fb08185e55e12"
+    ]
+  ]
+  [
+    "https://ocaml.janestreet.com/ocaml-core/v0.16/files/sexplib-v0.16.0.tar.gz"
+    "sexplib"
+    [
+      "sha256=e564d5d1ca157314ba5fd64b4e89fa12c6cba8efee3becf6d09d7d9dda21ac5b"
+    ]
+  ]
+  [
+    "https://ocaml.janestreet.com/ocaml-core/v0.16/files/sexplib0-v0.16.0.tar.gz"
+    "sexplib0"
+    [
+      "sha256=86dba26468194512f789f2fb709063515a9cb4e5c4461c021c239a369590701d"
     ]
   ]
 ]
