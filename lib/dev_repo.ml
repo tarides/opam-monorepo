@@ -25,7 +25,7 @@ let repo_name t =
   let path = Uri.of_string t |> Uri.path in
   match Re.exec_opt repo_name_regexp path with
   | Some group ->
-    Ok (Re.Group.get group 0)
+    Ok (Re.Group.get group 1)
   | None ->
     Rresult.R.error_msgf
       "unexpected empty string while computing name for dev_repo: \"%s\"" t
