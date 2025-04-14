@@ -1,5 +1,0 @@
-(melange.emit
- (target mli)
- (entries x)
- (libraries lib)
- (module_system commonjs))
