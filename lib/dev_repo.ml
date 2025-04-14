@@ -11,11 +11,12 @@ let repo_name_regexp =
   let open Re in
   compile
     (seq [
-        char '/';
+        opt (char '/');
         rep (char '.');
         group (rep (compl [ char '.'; char '/' ]));
-        char '.';
-        rep (compl [ char '/' ]);
+        opt (seq [
+            char '.';
+            rep (compl [ char '/' ])]);
         rep (char '/');
         stop
       ])
