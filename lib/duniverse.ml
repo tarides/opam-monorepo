@@ -16,13 +16,13 @@ module Repo = struct
 
     let compare compare_ref t t' =
       match (t, t') with
-      | Git _, Other _ -> Base.Ordering.to_int Base.Ordering.Less
-      | Other _, Git _ -> Base.Ordering.to_int Base.Ordering.Greater
+      | Git _, Other _ -> -1
+      | Other _, Git _ -> 1
       | Git { repo; ref }, Git { repo = repo'; ref = ref' } -> (
           let c1 = String.compare repo repo' in
-          match Base.Ordering.of_int c1 with
-          | Base.Ordering.Less | Greater -> c1
-          | Equal -> compare_ref ref ref')
+          if c1 = 0 then
+            compare_ref ref ref'
+          else c1)
       | Other s, Other s' -> String.compare s s'
 
     let pp pp_ref fmt t =
@@ -135,7 +135,7 @@ module Repo = struct
 
   let dir_name_from_dev_repo dev_repo =
     Dev_repo.repo_name dev_repo
-    |> Base.Result.map ~f:(function "dune" -> "dune_" | name -> name)
+    |> Result.map (function "dune" -> "dune_" | name -> name)
 
   let log_url_selection ~dev_repo ~packages pinned_packages =
     let url_to_string : unresolved Url.t -> string = function
@@ -201,8 +201,8 @@ module Repo = struct
     in
     String.equal dir dir'
     && Url.equal equal_ref url url'
-    && Base.List.equal Opam.Hash.equal hashes hashes'
-    && Base.List.equal OpamPackage.equal provided_packages provided_packages'
+    && List.equal ~eq:Opam.Hash.equal hashes hashes'
+    && List.equal ~eq:OpamPackage.equal provided_packages provided_packages'
 
   let pp pp_ref fmt { dir; url; hashes; provided_packages } =
     let open Pp_combinators.Ocaml in
@@ -224,7 +224,7 @@ end
 
 type t = resolved Repo.t list
 
-let equal t t' = Base.List.equal (Repo.equal Git.Ref.equal_resolved) t t'
+let equal t t' = List.equal ~eq:(Repo.equal Git.Ref.equal_resolved) t t'
 
 let pp fmt t =
   let open Pp_combinators.Ocaml in
@@ -251,7 +251,14 @@ let dev_repo_package_map_to_repos dev_repo_package_map =
     Dev_repo.Map.bindings dev_repo_to_repo_result_map
     |> List.map ~f:(fun (dev_repo, repo_result) ->
            Result.map (fun repo -> (dev_repo, repo)) repo_result)
-    |> Base.Result.all
+    |> List.fold_left
+      ~f:(fun acc r ->
+          match acc, r with
+          | Error _ as e, _ | Ok _, (Error _ as e) -> e
+          | Ok acc, Ok r -> Ok (r :: acc))
+      ~init:(Ok [])
+    |> Result.map List.rev
+
   in
   (* Detect the case where multiple different dev-repos are associated with the
      same duniverse directory. *)
@@ -298,10 +305,26 @@ let from_dependency_entries ~get_default_branch dependencies =
       ~f:(Repo.Package.from_package_summary ~get_default_branch)
       summaries
   in
-  let* pkg_opts = Base.Result.all results in
-  let pkgs = Base.List.filter_opt pkg_opts in
+  let* pkg_opts =
+    List.fold_left
+      ~f:(fun acc r ->
+          match acc, r with
+          | Error _ as e, _ | Ok _, (Error _ as e) -> e
+          | Ok acc, Ok r -> Ok (r :: acc))
+      ~init:(Ok [])
+      results
+    |> Result.map List.rev
+  in
+  let pkgs = List.filter_map ~f:Fun.id pkg_opts in
   let dev_repo_map = dev_repo_map_from_packages pkgs in
   dev_repo_package_map_to_repos dev_repo_map
 
 let resolve ~resolve_ref t =
-  Parallel.map ~f:(Repo.resolve ~resolve_ref) t |> Base.Result.all
+  Parallel.map ~f:(Repo.resolve ~resolve_ref) t
+  |> List.fold_left
+    ~f:(fun acc r ->
+        match acc, r with
+        | Error _ as e, _ | Ok _, (Error _ as e) -> e
+        | Ok acc, Ok r -> Ok (r :: acc))
+    ~init:(Ok [])
+  |> Result.map List.rev

@@ -8,6 +8,9 @@
 
 ### Fixed
 
+- Drop `base` as a dependency to fix build on macos-arm (#411, @reynir, reported
+  by @gm0stache)
+
 ### Removed
 
 ### Security

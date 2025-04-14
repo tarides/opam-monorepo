@@ -43,7 +43,13 @@ let pull_source_dependencies ?trim_clone ~global_state ~duniverse_dir src_deps =
     OpamParallel.map ~jobs
       ~command:(pull ?trim_clone ~global_state ~duniverse_dir)
       src_deps
-    |> Base.Result.all
+    |> List.fold_left
+      ~f:(fun acc r ->
+         match acc, r with
+         | Error _ as e, _ | Ok _, (Error _ as e) -> e
+         | Ok acc, Ok r -> Ok (r :: acc))
+      ~init:(Ok [])
+    |> Result.map List.rev
   in
   let total = List.length src_deps in
   let pp_count = Pp.Styled.good Fmt.int in
@@ -132,7 +138,7 @@ let filter_preserved ~preserved duniverse =
 
 let duniverse ~full ~preserve_symlinks ~root ~global_state ~trim_clone duniverse
     =
-  if Base.List.is_empty duniverse then Ok ()
+  if duniverse = [] then Ok ()
   else
     let open Result.O in
     let duniverse_dir = Fpath.(root // Config.vendor_dir) in

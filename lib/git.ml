@@ -76,14 +76,17 @@ module Ls_remote = struct
     | _ -> None
 
   let extract_branch branch_ref =
-    Base.String.chop_prefix branch_ref ~prefix:"refs/heads/"
-    |> Option.to_result
-         ~none:
-           (`Msg
-             (Printf.sprintf
-                "Invalid `git ls-remote --symref` output. Failed to extract \
-                 branch from ref `%s`."
-                branch_ref))
+    let refs_heads = "refs/heads/" in
+    if String.starts_with ~prefix:refs_heads branch_ref then
+      let pos = String.length refs_heads in
+      let len = String.length branch_ref - pos in
+      Ok (String.sub branch_ref ~pos ~len)
+    else Error
+        (`Msg
+           (Printf.sprintf
+              "Invalid `git ls-remote --symref` output. Failed to extract \
+               branch from ref `%s`."
+              branch_ref))
 
   let branch_of_symref ~symref output_lines =
     match List.filter_map ~f:(parse_ref_output_line ~symref) output_lines with

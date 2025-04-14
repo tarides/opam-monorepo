@@ -218,7 +218,11 @@ module Opam_repositories_url_rewriter = struct
     match url.OpamUrl.transport with
     | "file" -> (
         let path_remainder =
-          Base.String.chop_prefix ~prefix:opam_monorepo_cwd url.OpamUrl.path
+          if String.starts_with ~prefix:opam_monorepo_cwd url.OpamUrl.path then
+            let pos = String.length opam_monorepo_cwd in
+            let len = String.length url.OpamUrl.path - pos in
+            Some (String.sub url.OpamUrl.path ~pos ~len)
+          else None
         in
         match path_remainder with
         | Some r ->
@@ -268,7 +272,7 @@ let get ~opam_monorepo_cwd opam_file =
   Ok { global_vars; repositories; opam_provided }
 
 let set_field set var opam_file =
-  Base.Option.value_map ~default:opam_file var ~f:(fun v -> set v opam_file)
+  Option.value ~default:opam_file (Option.map (fun v -> set v opam_file) var)
 
 let set ~opam_monorepo_cwd { global_vars; repositories; opam_provided }
     opam_file =

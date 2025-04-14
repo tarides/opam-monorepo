@@ -1,7 +1,6 @@
 (library
  (name duniverse_lib)
  (libraries
-  base
   bos
   cmdliner
   fmt

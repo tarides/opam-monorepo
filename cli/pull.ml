@@ -38,12 +38,11 @@ let check_dune_lang_version ~yes ~root =
         Logs.warn (fun l -> l "%s" msg);
         Ok ()
     | Ok version -> (
-        let compared =
+        match
           D.Dune_file.Lang.(compare_version version duniverse_minimum_version)
-        in
-        match Base.Ordering.of_int compared with
-        | Base.Ordering.Equal | Greater -> Ok ()
-        | Less ->
+        with
+        | n when n >= 0 -> Ok ()
+        | _ ->
             suggest_updating_version ~yes ~version ~dune_project_path ~content)
   else (
     Logs.debug (fun l -> l "No dune-project found");
@@ -73,7 +72,7 @@ let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
       OpamGlobalState.with_ `Lock_none @@ fun global_state ->
       let* locked_ocaml_version =
         D.Lockfile.ocaml_version lockfile
-        |> Base.Result.of_option ~error:(`Msg "OCaml compiler not in lockfile")
+        |> Option.to_result ~none:(`Msg "OCaml compiler not in lockfile")
       in
       let* pulled =
         D.Pull.duniverse ~global_state ~root ~full

@@ -105,7 +105,11 @@ module Url = struct
     match url.OpamUrl.backend with
     | `git -> (
         let str_url = OpamUrl.to_string url in
-        match Base.String.lsplit2 ~on:'#' str_url with
+        match Option.map
+                (fun idx ->
+                   (String.sub str_url ~pos:0 ~len:idx,
+                    String.sub str_url ~pos:(succ idx) ~len:(String.length str_url - idx - 1)))
+                (String.index_opt str_url '#') with
         | Some (repo, ref) -> Git { repo; ref = Some ref }
         | None -> Git { repo = str_url; ref = None })
     | _ -> Other (OpamUrl.to_string url)
@@ -228,12 +232,12 @@ module Package_summary = struct
 
   let from_opam package ~pinned opam_file =
     let url_field = OpamFile.OPAM.url opam_file in
-    let url_src = Base.Option.map ~f:Url.from_opam_field url_field in
+    let url_src = Option.map Url.from_opam_field url_field in
     let hashes =
-      Base.Option.value_map ~default:[] ~f:OpamFile.URL.checksum url_field
+      Option.map OpamFile.URL.checksum url_field |> Option.value ~default:[]
     in
     let dev_repo =
-      Base.Option.map ~f:OpamUrl.to_string (OpamFile.OPAM.dev_repo opam_file)
+      Option.map OpamUrl.to_string (OpamFile.OPAM.dev_repo opam_file)
     in
     let depexts = OpamFile.OPAM.depexts opam_file in
     let flags = OpamFile.OPAM.flags opam_file in

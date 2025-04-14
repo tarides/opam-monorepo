@@ -129,10 +129,10 @@ let filter_duniverse ~to_consider (duniverse : D.Duniverse.t) =
         String.Map.of_list_map_exn duniverse ~f:(fun src -> (src.dir, src))
       in
       let unmatched, found =
-        Base.List.partition_map to_consider ~f:(fun asked ->
+        List.partition_map to_consider ~f:(fun asked ->
             match String.Map.find repos_map asked with
-            | None -> Base.Either.First asked
-            | Some found -> Base.Either.Second found)
+            | None -> Either.Left asked
+            | Some found -> Either.Right found)
       in
       match unmatched with
       | [] -> Ok found

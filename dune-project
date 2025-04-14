@@ -19,7 +19,6 @@ code required to build a project using the dune build tool.")
  (depends
   (ocaml (>= 4.10.0))
   dune-build-info
-  base
   bos
   (cmdliner (>= 1.1.0))
   fmt
