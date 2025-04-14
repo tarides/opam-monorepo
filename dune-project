@@ -1,4 +1,4 @@
-(lang dune 3.5)
+(lang dune 3.6)
 (generate_opam_files true)
 (name opam-monorepo)
 
@@ -17,7 +17,7 @@
 opam package manager with having a local copy of all the source
 code required to build a project using the dune build tool.")
  (depends
-  (ocaml (>= 4.10.0))
+  (ocaml (>= 4.13.0))
   dune-build-info
   bos
   (cmdliner (>= 1.1.0))

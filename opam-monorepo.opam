@@ -14,8 +14,8 @@ homepage: "https://github.com/tarides/opam-monorepo"
 doc: "https://tarides.github.io/opam-monorepo"
 bug-reports: "https://github.com/tarides/opam-monorepo/issues"
 depends: [
-  "dune" {>= "3.5"}
-  "ocaml" {>= "4.10.0"}
+  "dune" {>= "3.6"}
+  "ocaml" {>= "4.13.0"}
   "dune-build-info"
   "bos"
   "cmdliner" {>= "1.1.0"}
