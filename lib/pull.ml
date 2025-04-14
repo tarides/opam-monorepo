@@ -49,7 +49,7 @@ let pull_source_dependencies ?trim_clone ~global_state ~duniverse_dir src_deps =
          | Error _ as e, _ | Ok _, (Error _ as e) -> e
          | Ok acc, Ok r -> Ok (r :: acc))
       ~init:(Ok [])
-    |> List.rev
+    |> Result.map List.rev
   in
   let total = List.length src_deps in
   let pp_count = Pp.Styled.good Fmt.int in

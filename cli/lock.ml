@@ -211,7 +211,7 @@ let pull_pin_depends ~global_state pin_depends =
             | Error _ as e, _ | Ok _, (Error _ as e) -> e
             | Ok acc, Ok r -> Ok (r :: acc))
         ~init:(Ok [])
-      |> List.rev
+      |> Result.map List.rev
     in
     OpamPackage.Name.Map.of_list (List.concat elms)
 
@@ -338,7 +338,7 @@ let make_repositories_locally_available repositories =
         | Error _ as e, _ | Ok _, (Error _ as e) -> e
         | Ok acc, Ok r -> Ok (r :: acc))
     ~init:(Ok [])
-  |> List.rev
+  |> Result.map List.rev
 
 
 let opam_env_from_global_state global_state =

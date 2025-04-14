@@ -257,7 +257,7 @@ let dev_repo_package_map_to_repos dev_repo_package_map =
           | Error _ as e, _ | Ok _, (Error _ as e) -> e
           | Ok acc, Ok r -> Ok (r :: acc))
       ~init:(Ok [])
-    |> List.rev
+    |> Result.map List.rev
 
   in
   (* Detect the case where multiple different dev-repos are associated with the
@@ -313,7 +313,7 @@ let from_dependency_entries ~get_default_branch dependencies =
           | Ok acc, Ok r -> Ok (r :: acc))
       ~init:(Ok [])
       results
-    |> List.rev
+    |> Result.map List.rev
   in
   let pkgs = List.filter_map ~f:Fun.id pkg_opts in
   let dev_repo_map = dev_repo_map_from_packages pkgs in
@@ -327,4 +327,4 @@ let resolve ~resolve_ref t =
         | Error _ as e, _ | Ok _, (Error _ as e) -> e
         | Ok acc, Ok r -> Ok (r :: acc))
     ~init:(Ok [])
-  |> List.rev
+  |> Result.map List.rev
