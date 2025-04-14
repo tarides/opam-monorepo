@@ -14,21 +14,8 @@ homepage: "https://github.com/tarides/opam-monorepo"
 doc: "https://tarides.github.io/opam-monorepo"
 bug-reports: "https://github.com/tarides/opam-monorepo/issues"
 depends: [
-  "dune" {>= "3.5"}
+  "dune" {>= "3.6"}
   "ocaml" {>= "4.10.0"}
-  "dune-build-info"
-  "bos"
-  "cmdliner" {>= "1.1.0"}
-  "fmt"
-  "logs"
-  "opam-file-format" {>= "2.1.0"}
-  "opam-format" {>= "2.2.1"}
-  "opam-state" {>= "2.2.1"}
-  "opam-0install" {>= "0.5"}
-  "ocaml-version"
-  "sexplib"
-  "uri"
-  "alcotest" {with-test}
   "odoc" {with-doc}
 ]
 conflicts: [
@@ -36,5 +23,5 @@ conflicts: [
   "dune-configurator" {= "2.7.0" | = "2.7.1"}
 ]
 dev-repo: "git+https://github.com/tarides/opam-monorepo.git"
-build: [ "dune" "build" "-p" name "-j" jobs "@install" "@runtest" {with-test} ]
+build: [ "dune" "build" "-p" name "-j" jobs "@install" "@test/lib/runtest" {with-test} ]
 flags: [ plugin ]

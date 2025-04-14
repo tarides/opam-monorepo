@@ -1,0 +1,58 @@
+URL_cppo = https://github.com/ocaml-community/cppo/archive/refs/tags/v1.7.0.tar.gz
+MD5_cppo = 90f66810f73b115cc55e581a34bf7db9
+
+URL_extlib = https://github.com/ygrek/ocaml-extlib/releases/download/1.8.0/extlib-1.8.0.tar.gz
+MD5_extlib = 43fb3bf2989671af1769147b1171d080
+
+URL_base64 = https://github.com/mirage/ocaml-base64/releases/download/v3.5.1/base64-3.5.1.tbz
+MD5_base64 = bfdd16aa8c136412878109df8791fc01
+
+URL_re = https://github.com/ocaml/ocaml-re/releases/download/1.11.0/re-1.11.0.tbz
+MD5_re = e0199e32947fd33fcc1b8e69de2308a1
+
+URL_cmdliner = https://erratique.ch/software/cmdliner/releases/cmdliner-1.3.0.tbz
+MD5_cmdliner = 662936095a1613d7254815238e11793f
+
+URL_ocamlgraph = https://github.com/backtracking/ocamlgraph/releases/download/2.1.0/ocamlgraph-2.1.0.tbz
+MD5_ocamlgraph = 4200d8f223aa7a32b4024e4553821c7c
+
+URL_cudf = https://gitlab.com/irill/cudf/-/archive/v0.10/cudf-v0.10.tar.gz
+MD5_cudf = ed8fea314d0c6dc0d8811ccf860c53dd
+
+URL_dose3 = https://gitlab.com/irill/dose3/-/archive/7.0.0/dose3-7.0.0.tar.gz
+MD5_dose3 = bc99cbcea8fca29dca3ebbee54be45e1
+
+URL_mccs = https://github.com/ocaml-opam/ocaml-mccs/releases/download/1.1+18/mccs-1.1+18.tar.gz
+MD5_mccs = 3fd6f609a02f3357f57570750fcacde0
+
+URL_opam-0install-cudf = https://github.com/ocaml-opam/opam-0install-cudf/releases/download/v0.5.0/opam-0install-cudf-0.5.0.tar.gz
+MD5_opam-0install-cudf = 75419722aa839f518a25cae1b3c6efd4
+
+URL_0install-solver = https://github.com/0install/0install/releases/download/v2.18/0install-2.18.tbz
+MD5_0install-solver = 030edc9b1d3676c06d51397ffb5a737d
+
+URL_opam-file-format = https://github.com/ocaml/opam-file-format/archive/refs/tags/2.1.6.tar.gz
+MD5_opam-file-format = 706ce5fc3e77db746a4c8b11d79cefef
+
+include Makefile.dune
+
+URL_seq = https://github.com/c-cube/seq/archive/v0.3.1.tar.gz
+MD5_seq = de05d9dedd492fa4e3c0c87bc2792475
+
+URL_stdlib-shims = https://github.com/ocaml/stdlib-shims/releases/download/0.3.0/stdlib-shims-0.3.0.tbz
+MD5_stdlib-shims = 09db7af8b4a3a96048a61cb6ae2496ef
+
+URL_spdx_licenses = https://github.com/kit-ty-kate/spdx_licenses/releases/download/v1.2.0/spdx_licenses-1.2.0.tar.gz
+MD5_spdx_licenses = b581124aeebd7facb856d8b942cb58a5
+
+URL_uutf = https://erratique.ch/software/uutf/releases/uutf-1.0.3.tbz
+MD5_uutf = a308285514259d20b48abc92f00a3708
+
+URL_jsonm = https://erratique.ch/software/jsonm/releases/jsonm-1.0.2.tbz
+MD5_jsonm = bb21574ddd58543120430ff306b462e6
+
+URL_sha = https://github.com/djs55/ocaml-sha/releases/download/v1.15.4/sha-1.15.4.tbz
+MD5_sha = 08bc953d9a26380bc220b05d680791fb
+
+URL_swhid_core = https://github.com/OCamlPro/swhid_core/archive/refs/tags/0.1.tar.gz
+MD5_swhid_core = 77d88d4b1d96261c866f140c64d89af8

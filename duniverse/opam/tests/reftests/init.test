@@ -1,0 +1,299 @@
+N0REP0
+### OPAMYES=1
+### opam option opam-root-version --global | '"' -> '' >$ OPAMROOTVERSION
+### : Init with invariant :
+### :---:
+### <pkg:ocaml.4.02.3>
+opam-version: "2.0"
+depends: [ "ocaml-system" {= "4.02.3"} | "ocaml-base-compiler" {= "4.02.3"} ]
+flags: conf
+### <pkg:ocaml-system.4.02.3>
+opam-version: "2.0"
+depends: [ "ocaml" {post} ]
+available: sys-ocaml-version = "4.02.3"
+flags: compiler
+conflict-class: "ocaml-core-compiler"
+### <pkg:ocaml-base-compiler.4.02.3>
+opam-version: "2.0"
+depends: [ "ocaml" {= "4.02.3" & post} ]
+flags: compiler
+conflict-class: "ocaml-core-compiler"
+### :---:
+### <pkg:ocaml.4.05.0>
+opam-version: "2.0"
+depends: [ "ocaml-system" {= "4.05.0"} | "ocaml-base-compiler" {= "4.05.0"} ]
+flags: conf
+### <pkg:ocaml-system.4.05.0>
+opam-version: "2.0"
+depends: [ "ocaml" {post} ]
+available: sys-ocaml-version = "4.05.0"
+flags: compiler
+conflict-class: "ocaml-core-compiler"
+### <pkg:ocaml-base-compiler.4.05.0>
+opam-version: "2.0"
+depends: [ "ocaml" {= "4.05.0" & post} ]
+flags: compiler
+conflict-class: "ocaml-core-compiler"
+### :---:
+### <pkg:ocaml.4.07.0>
+opam-version: "2.0"
+depends: [ "ocaml-system" {= "4.07.0"} | "ocaml-base-compiler" {= "4.07.0"} ]
+flags: conf
+### <pkg:ocaml-system.4.07.0>
+opam-version: "2.0"
+depends: [ "ocaml" {post} ]
+available: sys-ocaml-version = "4.07.0"
+flags: compiler
+conflict-class: "ocaml-core-compiler"
+### <pkg:ocaml-base-compiler.4.07.0>
+opam-version: "2.0"
+depends: [ "ocaml" {= "4.07.0" & post} ]
+flags: compiler
+conflict-class: "ocaml-core-compiler"
+### :---:
+### <pkg:ocaml.4.10.0>
+opam-version: "2.0"
+depends: [ "ocaml-system" {= "4.10.0"} | "ocaml-base-compiler" {= "4.10.0"} ]
+flags: conf
+### <pkg:ocaml-system.4.10.0>
+depends: [ "ocaml" {post} ]
+opam-version: "2.0"
+available: sys-ocaml-version = "4.10.0"
+flags: compiler
+conflict-class: "ocaml-core-compiler"
+### <pkg:ocaml-base-compiler.4.10.0>
+opam-version: "2.0"
+depends: [ "ocaml" {= "4.10.0" & post} ]
+flags: compiler
+conflict-class: "ocaml-core-compiler"
+### :---:
+### rm -rf ${OPAMROOT}
+### <opamrc>
+eval-variables: [ sys-ocaml-version ["false"] "no system compiler" ]
+### opam init --no-setup --bypass-checks default REPO/ --config opamrc | grep -v Cygwin
+Configuring from ${BASEDIR}/opamrc and then from built-in defaults.
+
+<><> Fetching repository information ><><><><><><><><><><><><><><><><><><><><><>
+[default] Initialised
+
+<><> Creating initial switch 'default' (invariant ["ocaml" {>= "4.05.0"}] - initially with ocaml-base-compiler)
+
+<><> Installing new switch packages <><><><><><><><><><><><><><><><><><><><><><>
+Switch invariant: ["ocaml" {>= "4.05.0"}]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed ocaml-base-compiler.4.10.0
+-> installed ocaml.4.10.0
+Done.
+### opam switch invariant
+["ocaml" {>= "4.05.0"}]
+### rm -rf ${OPAMROOT}
+### <opamrc>
+eval-variables: [ sys-ocaml-version ["echo" "4.02.3"] "old system compiler" ]
+### opam init --no-setup --bypass-checks default REPO/ --config opamrc | grep -v Cygwin
+Configuring from ${BASEDIR}/opamrc and then from built-in defaults.
+
+<><> Fetching repository information ><><><><><><><><><><><><><><><><><><><><><>
+[default] Initialised
+
+<><> Creating initial switch 'default' (invariant ["ocaml" {>= "4.05.0"}] - initially with ocaml-base-compiler)
+
+<><> Installing new switch packages <><><><><><><><><><><><><><><><><><><><><><>
+Switch invariant: ["ocaml" {>= "4.05.0"}]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed ocaml-base-compiler.4.10.0
+-> installed ocaml.4.10.0
+Done.
+### opam switch invariant
+["ocaml" {>= "4.05.0"}]
+### rm -rf ${OPAMROOT}
+### <opamrc>
+eval-variables: [ sys-ocaml-version ["echo" "4.07.0"] "new system compiler" ]
+### opam init --no-setup --bypass-checks default REPO/ --config opamrc | grep -v Cygwin
+Configuring from ${BASEDIR}/opamrc and then from built-in defaults.
+
+<><> Fetching repository information ><><><><><><><><><><><><><><><><><><><><><>
+[default] Initialised
+
+<><> Creating initial switch 'default' (invariant ["ocaml" {>= "4.05.0"}] - initially with ocaml-system)
+
+<><> Installing new switch packages <><><><><><><><><><><><><><><><><><><><><><>
+Switch invariant: ["ocaml" {>= "4.05.0"}]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed ocaml-system.4.07.0
+-> installed ocaml.4.07.0
+Done.
+### opam switch invariant
+["ocaml" {>= "4.05.0"}]
+### opam upgrade
+Everything as up-to-date as possible (run with --verbose to show unavailable upgrades).
+However, you may "opam upgrade" these packages explicitly, which will ask permission to downgrade or uninstall the conflicting packages.
+Nothing to do.
+### opam upgrade ocaml
+The following actions will be performed:
+=== remove 1 package
+  - remove  ocaml-system        4.07.0           [conflicts with ocaml-base-compiler]
+=== upgrade 1 package
+  - upgrade ocaml               4.07.0 to 4.10.0
+=== install 1 package
+  - install ocaml-base-compiler 4.10.0           [required by ocaml]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   ocaml.4.07.0
+-> removed   ocaml-system.4.07.0
+-> installed ocaml-base-compiler.4.10.0
+-> installed ocaml.4.10.0
+Done.
+### : Init with config file :
+### :: default setup ::
+### rm -rf $OPAMROOT
+### opam init --bypass-checks --bare --no-setup default REPO/ | grep -v Cygwin
+No configuration file found, using built-in defaults.
+
+<><> Fetching repository information ><><><><><><><><><><><><><><><><><><><><><>
+[default] Initialised
+### opam-cat $OPAMROOT/config | 'opam-root-version: "${OPAMROOTVERSION}"' -> 'opam-root-version: current' | grep -v sys-pkg-manager-cmd | grep -v global-variables | grep -v eval-variables:
+default-compiler: ["ocaml-system" "ocaml-base-compiler"]
+default-invariant: ["ocaml" {>= "4.05.0"}]
+depext: true
+depext-cannot-install: false
+depext-run-installs: true
+download-jobs: 3
+opam-root-version: current
+opam-version: "2.0"
+repositories: "default"
+swh-fallback: false
+wrap-build-commands: ["%{hooks}%/sandbox.sh" "build"] {os = "linux" | os = "macos"}
+wrap-install-commands: ["%{hooks}%/sandbox.sh" "install"] {os = "linux" | os = "macos"}
+wrap-remove-commands: ["%{hooks}%/sandbox.sh" "remove"] {os = "linux" | os = "macos"}
+### :: full configured opamrc ::
+### rm -rf $OPAMROOT
+### <opamrc>
+opam-version: "2.0"
+repositories: "norepo" {"REPO/"}
+default-compiler: "ocaml"
+default-invariant: "ocaml" { = "4.10.0"}
+jobs: 9
+download-command: "dl-tool"
+download-jobs: 8
+archive-mirrors: "REPO/cache"
+solver-criteria: "solver-criteri"
+solver-upgrade-criteria: "upgrade-criteri"
+solver-fixup-criteria: "fixup-criteri"
+solver: "a-solver"
+global-variables: [ GLOB "glob" "Set throught opamrc" ]
+eval-variables: [ var-to-eval ["true"] "tautology" ]
+recommended-tools: [ "recommended" ]
+required-tools: [ "required" { "tautology" } ]
+init-scripts:
+[ "a-script.sh"
+  """\
+#!/usr/bin/env bash
+echo "script $1 launched STOP i repeat STOP script $1 launched"
+""" ]
+pre-build-commands: ["%{hooks}%/a-script.sh" "pre-build" ]
+pre-install-commands: ["%{hooks}%/a-script.sh" "pre-install" ]
+pre-remove-commands: ["%{hooks}%/a-script.sh" "pre-remove" ]
+pre-session-commands: ["%{hooks}%/a-script.sh" "pre-session" ]
+wrap-build-commands: ["%{hooks}%/a-script.sh" "wrap-build" ]
+wrap-install-commands: ["%{hooks}%/a-script.sh" "wrap-install" ]
+wrap-remove-commands: ["%{hooks}%/a-script.sh" "wrap-remove" ]
+post-build-commands: ["%{hooks}%/a-script.sh" "post-build" ]
+post-install-commands: ["%{hooks}%/a-script.sh" "post-install" ]
+post-remove-commands: ["%{hooks}%/a-script.sh" "post-remove" ]
+post-session-commands: ["%{hooks}%/a-script.sh" "post-session" ]
+### opam init --bypass-checks --bare --no-setup --config opamrc | grep -v Cygwin
+Configuring from ${BASEDIR}/opamrc and then from built-in defaults.
+
+<><> Fetching repository information ><><><><><><><><><><><><><><><><><><><><><>
+[norepo] Initialised
+### opam-cat $OPAMROOT/config | 'opam-root-version: "${OPAMROOTVERSION}"' -> 'opam-root-version: current' | grep -v sys-pkg-manager-cmd | '\[\[os-distribution "cygwin" "Set by opam init"] ' -> '' | ']]' -> ']'
+archive-mirrors: "file://${BASEDIR}/REPO/cache"
+default-compiler: ["ocaml"]
+default-invariant: ["ocaml" {= "4.10.0"}]
+depext: true
+depext-cannot-install: false
+depext-run-installs: true
+download-command: "dl-tool"
+download-jobs: 8
+eval-variables: [var-to-eval ["true"] "tautology"]
+global-variables: [GLOB "glob" "Set throught opamrc"]
+jobs: 9
+opam-root-version: current
+opam-version: "2.0"
+post-build-commands: ["%{hooks}%/a-script.sh" "post-build"]
+post-install-commands: ["%{hooks}%/a-script.sh" "post-install"]
+post-remove-commands: ["%{hooks}%/a-script.sh" "post-remove"]
+post-session-commands: ["%{hooks}%/a-script.sh" "post-session"]
+pre-build-commands: ["%{hooks}%/a-script.sh" "pre-build"]
+pre-install-commands: ["%{hooks}%/a-script.sh" "pre-install"]
+pre-remove-commands: ["%{hooks}%/a-script.sh" "pre-remove"]
+pre-session-commands: ["%{hooks}%/a-script.sh" "pre-session"]
+repositories: "norepo"
+solver: "a-solver"
+solver-criteria: "solver-criteri"
+solver-fixup-criteria: "fixup-criteri"
+solver-upgrade-criteria: "upgrade-criteri"
+swh-fallback: false
+wrap-build-commands: ["%{hooks}%/a-script.sh" "wrap-build"]
+wrap-install-commands: ["%{hooks}%/a-script.sh" "wrap-install"]
+wrap-remove-commands: ["%{hooks}%/a-script.sh" "wrap-remove"]
+### opam-cat $OPAMROOT/repo/repos-config
+opam-version: "2.0"
+repositories: "norepo" {"file://${BASEDIR}/REPO"}
+### sh $OPAMROOT/opam-init/hooks/a-script.sh test
+script test launched STOP i repeat STOP script test launched
+### :: partially configured opamrc ::
+### rm -rf $OPAMROOT
+### <opamrc>
+opam-version: "2.0"
+repositories: "norepo" {"REPO/"}
+default-compiler: "ocaml"
+download-jobs: 8
+archive-mirrors: "REPO/cache"
+eval-variables: [ var-to-eval ["true"] "tautology" ]
+required-tools: [ "required" { "tautology" } ]
+# As fields are overriden, it is needed to recreate sandbox script
+init-scripts: [
+[ "a-script.sh"
+  """\
+#!/usr/bin/env bash
+echo "script $1 launched STOP i repeat STOP script $1 launched"
+""" ]
+[ "sandbox.sh"
+  """\
+#!/usr/bin/env bash
+echo "SUCCESS"
+""" ]
+]
+pre-build-commands: ["%{hooks}%/a-script.sh" "pre-build" ]
+wrap-install-commands: ["%{hooks}%/a-script.sh" "wrap-install" ]
+post-session-commands: ["%{hooks}%/a-script.sh" "post-session" ]
+### opam init --bypass-checks --bare --no-setup --config opamrc | grep -v Cygwin
+Configuring from ${BASEDIR}/opamrc and then from built-in defaults.
+
+<><> Fetching repository information ><><><><><><><><><><><><><><><><><><><><><>
+[norepo] Initialised
+### opam-cat $OPAMROOT/config | 'opam-root-version: "${OPAMROOTVERSION}"' -> 'opam-root-version: current' | grep -v sys-pkg-manager-cmd | grep -v global-variables
+archive-mirrors: "file://${BASEDIR}/REPO/cache"
+default-compiler: ["ocaml"]
+default-invariant: ["ocaml" {>= "4.05.0"}]
+depext: true
+depext-cannot-install: false
+depext-run-installs: true
+download-jobs: 8
+eval-variables: [var-to-eval ["true"] "tautology"]
+opam-root-version: current
+opam-version: "2.0"
+post-session-commands: ["%{hooks}%/a-script.sh" "post-session"]
+pre-build-commands: ["%{hooks}%/a-script.sh" "pre-build"]
+repositories: "norepo"
+swh-fallback: false
+wrap-build-commands: ["%{hooks}%/sandbox.sh" "build"] {os = "linux" | os = "macos"}
+wrap-install-commands: ["%{hooks}%/a-script.sh" "wrap-install"]
+wrap-remove-commands: ["%{hooks}%/sandbox.sh" "remove"] {os = "linux" | os = "macos"}
+### opam-cat $OPAMROOT/repo/repos-config
+opam-version: "2.0"
+repositories: "norepo" {"file://${BASEDIR}/REPO"}
