@@ -241,10 +241,29 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
           Hashtbl.add memo (name, version) r;
           r
 
+  (** [is_virtual] is the translation of [Opam.Package_summary.is_virtual]
+      (which is not exposed anyway) to work directly on a [OpamFile.OPAM.t] and
+      keeping the most expensive case to compute for the end *)
+  let is_virtual pkg =
+    let is_none = function None -> true | _ -> false
+    and has_no_command = function [] -> true | _ -> false in
+    is_none (OpamFile.OPAM.url pkg)
+    || has_no_command (OpamFile.OPAM.build pkg)
+    || has_no_command (OpamFile.OPAM.install pkg)
+    || (List.mem OpamTypes.Pkgflag_Conf ~set:(OpamFile.OPAM.flags pkg)
+       &&
+       match OpamFile.OPAM.dev_repo pkg with
+       | None -> true
+       | Some u when OpamUrl.to_string u = "" -> true
+       | _ -> false)
+    (* ^ case: conf package with an empty dev_repo *)
+
   let with_conflict t pkg =
-    if is_pinned t (OpamFile.OPAM.name pkg) then
+    if is_pinned t (OpamFile.OPAM.name pkg) || is_virtual pkg then
       (* skip conflicts if a package is in pin-depends, listed on the
-         CLI or pinned in the local switch. *)
+         CLI or pinned in the local switch; or if the package is virtual, as
+         conflicts between virtual packages and other packages cannot be due to
+         sharing the same dev-repo. *)
       pkg
     else
       let name = OpamFile.OPAM.name pkg in
