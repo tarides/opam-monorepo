@@ -43,6 +43,7 @@ let quoted = Printf.sprintf "%s: %S"
 let name = quoted "name"
 let version = quoted "version"
 let dev_repo = quoted "dev-repo"
+let build = quoted "build"
 
 let url ~src ?checksum () =
   match checksum with
@@ -104,58 +105,78 @@ let conflict_class () =
   calculate universe root
     [ ocaml_base_expected; ("p1", "1"); ("p2", "1"); ("root", "0") ]
 
-let universe_with_url =
+let universe_with_url ~virtual_packages =
+  let extra =
+    if virtual_packages then [] else [ build "[ [] ]"; depends [ "dune" ] ]
+  in
   [
     ocaml_base_compiler;
     opam_file
-      [
-        name "p1";
-        version "1";
-        dev_repo "x";
-        url ~src:"https://p.com/p.tbz" ~checksum:1 ();
-      ];
+      ([
+         name "p1";
+         version "1";
+         dev_repo "x";
+         url ~src:"https://p.com/p.tbz" ~checksum:1 ();
+       ]
+      @ extra);
     opam_file
-      [
-        name "p1";
-        version "2";
-        dev_repo "x";
-        url ~src:"https://p.com/p.tbz" ~checksum:2 ();
-      ];
+      ([
+         name "p1";
+         version "2";
+         dev_repo "x";
+         url ~src:"https://p.com/p.tbz" ~checksum:2 ();
+       ]
+      @ extra);
     opam_file
-      [
-        name "p2";
-        version "1";
-        dev_repo "x";
-        url ~src:"https://p.com/p.tbz" ~checksum:1 ();
-      ];
+      ([
+         name "p2";
+         version "1";
+         dev_repo "x";
+         url ~src:"https://p.com/p.tbz" ~checksum:1 ();
+       ]
+      @ extra);
     opam_file
-      [
-        name "p2";
-        version "2";
-        dev_repo "x";
-        url ~src:"https://p.com/p.tbz" ~checksum:2 ();
-      ];
+      ([
+         name "p2";
+         version "2";
+         dev_repo "x";
+         url ~src:"https://p.com/p.tbz" ~checksum:2 ();
+       ]
+      @ extra);
+    opam_file [ name "dune"; version "0" ];
   ]
 
 let conflict_url () =
-  let universe = universe_with_url in
+  let universe = universe_with_url ~virtual_packages:false in
   let root =
     opam_file [ name "root"; version "0"; {|depends: ["p1" {= "1"} "p2"] |} ]
   in
   calculate universe root
-    [ ocaml_base_expected; ("p1", "1"); ("p2", "1"); ("root", "0") ]
+    [
+      ocaml_base_expected; ("dune", "0"); ("p1", "1"); ("p2", "1"); ("root", "0");
+    ]
+
+let no_conflict_when_virtual () =
+  let universe = universe_with_url ~virtual_packages:true in
+  let root =
+    opam_file [ name "root"; version "0"; {|depends: ["p1" {= "1"} "p2"] |} ]
+  in
+  calculate universe root
+    [ ocaml_base_expected; ("p1", "1"); ("p2", "2"); ("root", "0") ]
 
 let no_conflict_with_pin () =
   let p2_dev =
     opam_file
       [ name "p2"; version "0"; dev_repo "x"; url ~src:"git+https://x#hash" () ]
   in
-  let universe = p2_dev :: universe_with_url in
+  let universe = p2_dev :: universe_with_url ~virtual_packages:false in
   let root = opam_file [ name "root"; version "0"; depends [ "p1"; "p2" ] ] in
   calculate
     ~pins:[ OpamPackage.of_string "p2.0" ]
     universe root
-    [ ocaml_base_expected; ("p1", "2"); ("p2", "0"); ("root", "0") ]
+    [
+      ocaml_base_expected; ("dune", "0"); ("p1", "2"); ("p2", "0"); ("root", "0");
+    ]
 
 let suite =
   ( "solve",
@@ -164,5 +185,7 @@ let suite =
       Alcotest.test_case "conflicts" `Quick conflicts;
       Alcotest.test_case "conflict_class" `Quick conflict_class;
       Alcotest.test_case "conflict_url" `Quick conflict_url;
+      Alcotest.test_case "no_conflict_when_virtual" `Quick
+        no_conflict_when_virtual;
       Alcotest.test_case "no_conflict_with_pin" `Quick no_conflict_with_pin;
     ] )
