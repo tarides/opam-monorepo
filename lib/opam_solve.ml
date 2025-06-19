@@ -249,14 +249,14 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
     and has_no_command = function [] -> true | _ -> false in
     is_none (OpamFile.OPAM.url pkg)
     || has_no_command (OpamFile.OPAM.build pkg)
-    || has_no_command (OpamFile.OPAM.install pkg)
-    || (List.mem OpamTypes.Pkgflag_Conf ~set:(OpamFile.OPAM.flags pkg)
+       && has_no_command (OpamFile.OPAM.install pkg)
+    || List.mem OpamTypes.Pkgflag_Conf ~set:(OpamFile.OPAM.flags pkg)
        &&
        match OpamFile.OPAM.dev_repo pkg with
        | None -> true
        | Some u when OpamUrl.to_string u = "" -> true
-       | _ -> false)
-    (* ^ case: conf package with an empty dev_repo *)
+       | _ -> false
+  (* ^ case: conf package with an empty dev_repo *)
 
   let with_conflict t pkg =
     if is_pinned t (OpamFile.OPAM.name pkg) || is_virtual pkg then
