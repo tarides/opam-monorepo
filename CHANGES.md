@@ -8,6 +8,10 @@
  
 ### Fixed
 
+- Avoid generating conflicts with virtual packages: virtual and non-virtual
+  packages in the same repository are not considered incompatible anymore
+  (#415, @shym)
+
 ### Removed
 
 ### Security
