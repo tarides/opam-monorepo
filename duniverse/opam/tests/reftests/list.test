@@ -1,0 +1,178 @@
+N0REP0
+### : Dependencies on disjunction :
+### <pkg:top.1>
+opam-version: "2.0"
+depends: [
+  "unrelated"
+  ( "choice" | "other-choice" { >= "2" & <= "4" } )
+]
+### <pkg:unrelated.1>
+opam-version: "2.0"
+### <pkg:choice.1>
+opam-version: "2.0"
+### <pkg:other-choice.1>
+opam-version: "2.0"
+depends: "shouldnt"
+### <pkg:shouldnt.1>
+opam-version: "2.0"
+### <pkg:other-choice.2>
+opam-version: "2.0"
+### <pkg:other-choice.3>
+opam-version: "2.0"
+### <pkg:other-choice.4>
+opam-version: "2.0"
+### opam switch create deps --empty
+### opam list --required-by top --recursive --all-versions --short
+choice.1
+other-choice.2
+other-choice.3
+other-choice.4
+top.1
+unrelated.1
+### <pkg:top.1>
+opam-version: "2.0"
+depends: [
+  "unrelated"
+  ( "choice" | "other-choice" { >= "2" & <= "4" } | "other-choice" )
+]
+### <pkg:other-choice.1>
+opam-version: "2.0"
+depends: "should"
+### <pkg:should.1>
+opam-version: "2.0"
+### opam list --required-by top --recursive --all-versions --short
+choice.1
+other-choice.1
+other-choice.2
+other-choice.3
+other-choice.4
+should.1
+top.1
+unrelated.1
+### ::: Check the behaviour of --latests-only
+### OPAMVAR_arch=x86_64
+### <pkg:package.1>
+opam-version: "2.0"
+### <pkg:package.2>
+opam-version: "2.0"
+available: arch = "arm64"
+### opam list --latests-only --all-versions --short
+choice.1
+other-choice.4
+package.2
+should.1
+shouldnt.1
+top.1
+unrelated.1
+### opam list --available --latests-only --all-versions --short
+choice.1
+other-choice.4
+package.1
+should.1
+shouldnt.1
+top.1
+unrelated.1
+### opam list --latests-only --available --all-versions --short
+choice.1
+other-choice.4
+should.1
+shouldnt.1
+top.1
+unrelated.1
+### ::: Test --latests-only together with --depends-on / required-by
+### <pkg:dolor.1>
+opam-version: "2.0"
+### <pkg:dolor.2>
+opam-version: "2.0"
+### <pkg:sit.1>
+opam-version: "2.0"
+### <pkg:sit.2>
+opam-version: "2.0"
+### <pkg:amet.1>
+opam-version: "2.0"
+depends: "dolor"
+### <pkg:amet.2>
+opam-version: "2.0"
+depends: "sit" { = "1" }
+### <pkg:consectetur.1>
+opam-version: "2.0"
+### <pkg:consectetur.2>
+opam-version: "2.0"
+### <pkg:adipiscing.1>
+opam-version: "2.0"
+depends: "amet" { = "1" }
+### <pkg:adipiscing.2>
+opam-version: "2.0"
+depends: "amet" { = "2" }
+### <pkg:elit.1>
+opam-version: "2.0"
+depends: "consectetur"
+### <pkg:elit.2>
+opam-version: "2.0"
+depends: "adipiscing"
+### opam list --depends-on sit --recursive --short --all-versions
+adipiscing.2
+amet.2
+elit.2
+sit.1
+sit.2
+### opam list --latests-only --depends-on sit --recursive --short --all-versions
+adipiscing.2
+amet.2
+elit.2
+sit.2
+### opam list --depends-on sit.1 --recursive --short --all-versions
+adipiscing.2
+amet.2
+elit.2
+sit.1
+### opam list --latests-only --depends-on sit.1 --recursive --short --all-versions
+adipiscing.2
+amet.2
+elit.2
+sit.1
+### opam list --depends-on sit.2 --recursive --short --all-versions
+sit.2
+### opam list --latests-only --depends-on sit.2 --recursive --short --all-versions
+sit.2
+### opam list --required-by elit --recursive --short --all-versions
+adipiscing.1
+adipiscing.2
+amet.1
+amet.2
+consectetur.1
+consectetur.2
+dolor.1
+dolor.2
+elit.1
+elit.2
+sit.1
+### opam list --latests-only --required-by elit --recursive --short --all-versions
+adipiscing.2
+amet.2
+consectetur.2
+dolor.2
+elit.2
+sit.1
+### opam list --required-by elit.1 --recursive --short --all-versions
+consectetur.1
+consectetur.2
+elit.1
+### opam list --latests-only --required-by elit.1 --recursive --short --all-versions
+consectetur.2
+elit.1
+### opam list --required-by elit.2 --recursive --short --all-versions
+adipiscing.1
+adipiscing.2
+amet.1
+amet.2
+dolor.1
+dolor.2
+elit.2
+sit.1
+### opam list --latests-only --required-by elit.2 --recursive --short --all-versions
+adipiscing.2
+amet.2
+dolor.2
+elit.2
+sit.1

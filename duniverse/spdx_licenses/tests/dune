@@ -1,0 +1,3 @@
+(test
+ (name tests)
+ (libraries spdx_licenses alcotest))
