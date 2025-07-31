@@ -22,6 +22,10 @@
 
 ### Changed
 
+- Trim the list of packages in the `pin-depends` field of the lock file to
+  only keep the ones that needs to be installed in the switch
+  (#400, mirage/mirage#1476, @samoht reported by @dinosaure)
+
 ### Deprecated
 
 ### Fixed

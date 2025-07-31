@@ -178,12 +178,6 @@ end
 module Pin_depends = struct
   type t = (OpamPackage.t * OpamUrl.t) list
 
-  let from_duniverse l =
-    let open Duniverse.Repo in
-    List.concat_map l ~f:(fun { provided_packages; url; _ } ->
-        let url = Url.to_opam_url url in
-        List.map provided_packages ~f:(fun p -> (p, url)))
-
   let sort t =
     List.sort ~cmp:(fun (pkg, _) (pkg', _) -> OpamPackage.compare pkg pkg') t
 end
@@ -298,11 +292,10 @@ type t = {
 
 let depexts t = t.depexts
 
-let create ~source_config ~root_packages ~dependency_entries ~root_depexts
-    ~duniverse () =
+let create ~source_config ~root_packages ~pin_depends ~dependency_entries
+    ~root_depexts ~duniverse () =
   let version = Version.current in
   let depends = Depends.from_dependency_entries dependency_entries in
-  let pin_depends = Pin_depends.from_duniverse duniverse in
   let duniverse_dirs = Duniverse_dirs.from_duniverse duniverse in
   let depexts = Depexts.all ~root_depexts ~dependency_entries in
   {
