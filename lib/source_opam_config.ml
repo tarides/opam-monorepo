@@ -6,6 +6,7 @@ module type FIELD_SHAPE = sig
   val name : string
   val shape : t Serial_shape.t
   val merge : t list -> (t, Rresult.R.msg) result
+  val example : string
 end
 
 module type FIELD = sig
@@ -52,8 +53,9 @@ module Make_field (X : FIELD_SHAPE) : FIELD with type t = X.t = struct
     let doc =
       Printf.sprintf
         "CLI equivalent of the %s opam field. Use this to complement the \
-         corresponding fields in your local opam files."
-        (Opam.Extra_field.name field)
+         corresponding fields in your local opam files.
+         Example value: %s"
+        (Opam.Extra_field.name field) X.example
     in
     Cmdliner.Arg.(opt (some cmdliner_conv) None (info ~doc ~docv [ long_name ]))
 
@@ -63,8 +65,9 @@ module Make_field (X : FIELD_SHAPE) : FIELD with type t = X.t = struct
     let doc =
       Printf.sprintf
         "CLI equivalent of the %s opam field. Use this to replace the \
-         corresponding fields in your local opam files."
-        (Opam.Extra_field.name field)
+         corresponding fields in your local opam files.
+         Example value: %s"
+        (Opam.Extra_field.name field) X.example
     in
     Cmdliner.Arg.(opt (some cmdliner_conv) None (info ~doc ~docv [ long_name ]))
 end
@@ -73,6 +76,9 @@ module Opam_repositories_shape = struct
   type t = OpamUrl.Set.t
 
   let name = "opam-repositories"
+
+  let example =
+      "'[git+https://me.com/my-repo,git+https://me.com/my-repo-2]'"
 
   let from_repr l =
     let urls = List.map ~f:OpamUrl.of_string l in
@@ -95,6 +101,8 @@ module Opam_global_vars_shape = struct
   type t = OpamVariable.variable_contents String.Map.t
 
   let name = "global-opam-vars"
+
+  let example = "'[[arch,x86_64],[os-family,debian]]'"
 
   let var_content_from_repr choice =
     match choice with
@@ -160,6 +168,8 @@ module Opam_provided_shape = struct
   type t = OpamPackage.Name.Set.t
 
   let name = "opam-provided"
+
+  let example = "'[ocamlformat,patdiff]'"
 
   let from_repr repr =
     let l = match repr with `C1 l -> l | `C2 s -> [ s ] in
