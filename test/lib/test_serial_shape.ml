@@ -137,7 +137,7 @@ let test_cmdliner_parse =
     make_test ~name:"list without delim"
       ~shape:Serial_shape.(list bool)
       ~expected:
-        (Rresult.R.error_msg "list or pairs must be delimited by '[' and ']'")
+        (Rresult.R.error_msg "a list is expected. Lists must be of the form '[x,y,z]' (i.e. delimited by '[' and ']')")
       ~value:"true,false,true";
     make_test ~name:"choice c1"
       ~shape:Serial_shape.(choice3 bool (list bool) string)
