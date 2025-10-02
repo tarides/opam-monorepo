@@ -4,6 +4,9 @@
 
 ### Changed
 
+- Improve CLI doc and error message for opam fields (#417, @Firobe, reported by
+    @reynir in #416)
+
 ### Deprecated
 
 ### Fixed
