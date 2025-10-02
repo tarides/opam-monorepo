@@ -1,9 +1,0 @@
-{0 swhid_core}
-
-{{:https://github.com/OCamlPro/swhid_core} swhid_core} is an {{:https://ocaml.org} OCaml} library to work with Software Heritage persistent identifiers (swhids).
-
-{1:api API}
-
-{!modules:
-Swhid_core
-}
