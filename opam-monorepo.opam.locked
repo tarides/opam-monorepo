@@ -3,7 +3,7 @@ synopsis: "opam-monorepo generated lockfile"
 maintainer: "opam-monorepo"
 depends: [
   "0install-solver" {= "2.18" & ?vendor}
-  "alcotest" {= "1.6.0" & ?vendor}
+  "alcotest" {= "1.7.0" & ?vendor}
   "angstrom" {= "0.15.0" & ?vendor}
   "astring" {= "0.8.5+dune" & ?vendor}
   "base-bigarray" {= "base"}
@@ -18,17 +18,17 @@ depends: [
   "conf-pkg-config" {= "2"}
   "cppo" {= "1.6.9" & ?vendor}
   "csexp" {= "1.5.1" & ?vendor}
-  "dune" {= "3.6.1"}
-  "dune-build-info" {= "3.6.1" & ?vendor}
-  "dune-configurator" {= "3.6.1" & ?vendor}
+  "dune" {= "3.20.2"}
+  "dune-build-info" {= "3.20.2" & ?vendor}
+  "dune-configurator" {= "3.20.2" & ?vendor}
   "fmt" {= "0.9.0+dune" & ?vendor}
   "fpath" {= "0.7.3+dune" & ?vendor}
   "jsonm" {= "1.0.1+dune" & ?vendor}
   "logs" {= "0.7.0+dune2" & ?vendor}
-  "lwt" {= "5.6.1" & ?vendor}
+  "lwt" {= "5.9.2" & ?vendor}
   "num" {= "1.4+dune2" & ?vendor}
-  "ocaml" {= "5.0.0"}
-  "ocaml-base-compiler" {= "5.0.0"}
+  "ocaml" {= "5.2.0"}
+  "ocaml-base-compiler" {= "5.2.0"}
   "ocaml-config" {= "3"}
   "ocaml-options-vanilla" {= "1"}
   "ocaml-syntax-shims" {= "1.0.0" & ?vendor}
@@ -65,8 +65,8 @@ depexts: [
   ["pkgconf"] {os = "freebsd"}
   ["pkgconf"] {os-distribution = "alpine"}
   ["pkgconf"] {os-distribution = "arch"}
-  ["pkgconf-pkg-config"] {os-distribution = "fedora"}
   ["pkgconf-pkg-config"] {os-distribution = "mageia"}
+  ["pkgconf-pkg-config"] {os-family = "fedora"}
   ["pkgconf-pkg-config"] {os-distribution = "centos" & os-version >= "8"}
   ["pkgconf-pkg-config"] {os-distribution = "ol" & os-version >= "8"}
   ["pkgconf-pkg-config"] {os-distribution = "rhel" & os-version >= "8"}
@@ -82,8 +82,8 @@ pin-depends: [
     "https://github.com/0install/0install/releases/download/v2.18/0install-2.18.tbz"
   ]
   [
-    "alcotest.1.6.0"
-    "https://github.com/mirage/alcotest/releases/download/1.6.0/alcotest-1.6.0.tbz"
+    "alcotest.1.7.0"
+    "https://github.com/mirage/alcotest/releases/download/1.7.0/alcotest-1.7.0.tbz"
   ]
   [
     "angstrom.0.15.0"
@@ -118,12 +118,12 @@ pin-depends: [
     "https://github.com/ocaml-dune/csexp/releases/download/1.5.1/csexp-1.5.1.tbz"
   ]
   [
-    "dune-build-info.3.6.1"
-    "https://github.com/ocaml/dune/releases/download/3.6.1/dune-3.6.1.tbz"
+    "dune-build-info.3.20.2"
+    "https://github.com/ocaml/dune/releases/download/3.20.2/dune-3.20.2.tbz"
   ]
   [
-    "dune-configurator.3.6.1"
-    "https://github.com/ocaml/dune/releases/download/3.6.1/dune-3.6.1.tbz"
+    "dune-configurator.3.20.2"
+    "https://github.com/ocaml/dune/releases/download/3.20.2/dune-3.20.2.tbz"
   ]
   [
     "fmt.0.9.0+dune"
@@ -141,7 +141,10 @@ pin-depends: [
     "logs.0.7.0+dune2"
     "https://github.com/dune-universe/logs/releases/download/v0.7.0%2Bdune2/logs-0.7.0.dune2.tbz"
   ]
-  ["lwt.5.6.1" "https://github.com/ocsigen/lwt/archive/5.6.1.tar.gz"]
+  [
+    "lwt.5.9.2"
+    "https://github.com/ocsigen/lwt/archive/refs/tags/5.9.2.tar.gz"
+  ]
   [
     "num.1.4+dune2"
     "https://github.com/dune-universe/num/releases/download/v1.4%2Bdune2/num-v1.4.dune2.tbz"
@@ -240,7 +243,7 @@ pin-depends: [
     "https://github.com/dune-universe/uutf/releases/download/v1.0.3%2Bdune/uutf-1.0.3.dune.tbz"
   ]
 ]
-x-opam-monorepo-cli-args: ["--minimal-update"]
+x-opam-monorepo-cli-args: ["--minimal-update" "--ocaml-version" "5.2.0"]
 x-opam-monorepo-duniverse-dirs: [
   [
     "https://erratique.ch/software/cmdliner/releases/cmdliner-1.1.1.tbz"
@@ -406,11 +409,11 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/mirage/alcotest/releases/download/1.6.0/alcotest-1.6.0.tbz"
+    "https://github.com/mirage/alcotest/releases/download/1.7.0/alcotest-1.7.0.tbz"
     "alcotest"
     [
-      "sha256=fd00f9668395874ff3b1d7ef566d14efc02fa7dd34123eb25d59355be94b2329"
-      "sha512=69a7ef300ba10a9ccb1e25b1cfdb0a0abf9ca976864a52a22f0e1fae1e5d1cbeb99498c086230b839ee9da4d0fd71e63686e126ca42221537f3fdb6f6c5aae95"
+      "sha256=812bacdb34b45e88995e07d7306bdab2f72479ef1996637f1d5d1f41667902df"
+      "sha512=4ae1ba318949ec9db8b87bc8072632a02f0e4003a95ab21e474f5c34c3b5bde867b0194a2d0ea7d9fc4580c70a30ca39287d33a8c134acc7611902f79c7b7ce8"
     ]
   ]
   [
@@ -454,11 +457,11 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/ocaml/dune/releases/download/3.6.1/dune-3.6.1.tbz"
+    "https://github.com/ocaml/dune/releases/download/3.20.2/dune-3.20.2.tbz"
     "dune_"
     [
-      "sha256=f1d5ac04b7a027f3d549e25cf885ebf7acc135e0291c18e6b43123a799c143ce"
-      "sha512=64714ab6155cd04bc33d693fc7a6d9d61aa7a278357eeff159df324e083914fcd556459a3945acacf1bbc3775f2232ab0c78006ab8a434dc58dcf95ffdffac52"
+      "sha256=b1a86b2d60bdb4a8b9bb6861bdf2f9f28a6e7cb5d833ce81afecceb9ef9ca549"
+      "sha512=ed14df9163e487d4ae7d0a2427eaab7823ef1f0ef2d93f0b783e6f163bbd5b44ba73f055d60b84e76f476fe11d38e794013628a1da776d9ec13cca9666e7b7ff"
     ]
   ]
   [
@@ -494,11 +497,11 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/ocsigen/lwt/archive/5.6.1.tar.gz"
+    "https://github.com/ocsigen/lwt/archive/refs/tags/5.9.2.tar.gz"
     "lwt"
     [
-      "md5=279024789a0ec84a9d97d98bad847f97"
-      "sha512=698875bd3bfcd5baa47eb48e412f442d289f9972421321541860ebe110b9af1949c3fbc253768495726ec547fe4ba25483cd97ff39bc668496fba95b2ed9edd8"
+      "md5=9687c14532a90af1098b646bde219a70"
+      "sha512=44ad793741a3ba52dfc07a190790d6e3207f146c42a4e1e11adc76f9d7fc9bee93d7fe18376882bb27e7e7e286be5807498884367b172a4ebc067028fa0c824c"
     ]
   ]
   [
