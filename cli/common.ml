@@ -85,10 +85,14 @@ module Arg = struct
       Logs.set_reporter (thread_safe_reporter (Logs_fmt.reporter ()))
     in
     let global_option_section = "COMMON OPTIONS" in
+    let env =
+      Cmdliner.Cmd.Env.info ~doc:"See option --verbosity."
+        "OPAM_MONOREPO_VERBOSITY"
+    in
     let open Cmdliner.Term in
     const setup_log
     $ Fmt_cli.style_renderer ~docs:global_option_section ()
-    $ Logs_cli.level ~docs:global_option_section ()
+    $ Logs_cli.level ~env ~docs:global_option_section ()
 
   let version =
     match Build_info.V1.version () with
