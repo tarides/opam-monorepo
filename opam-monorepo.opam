@@ -15,15 +15,15 @@ doc: "https://tarides.github.io/opam-monorepo"
 bug-reports: "https://github.com/tarides/opam-monorepo/issues"
 depends: [
   "dune" {>= "3.6"}
-  "ocaml" {>= "4.13.0"}
+  "ocaml" {>= "5.4.1"}
   "dune-build-info"
   "bos"
   "cmdliner" {>= "1.1.0"}
   "fmt"
   "logs"
-  "opam-file-format" {>= "2.1.0"}
-  "opam-format" {>= "2.2.1"}
-  "opam-state" {>= "2.2.1"}
+  "opam-file-format" {>= "2.2.0"}
+  "opam-format" {>= "2.6.0"}
+  "opam-state" {>= "2.6.0"}
   "opam-0install" {>= "0.5"}
   "ocaml-version"
   "sexplib"

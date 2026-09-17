@@ -17,15 +17,15 @@
 opam package manager with having a local copy of all the source
 code required to build a project using the dune build tool.")
  (depends
-  (ocaml (>= 4.13.0))
+  (ocaml (>= 5.4.1))
   dune-build-info
   bos
   (cmdliner (>= 1.1.0))
   fmt
   logs
-  (opam-file-format (>= 2.1.0))
-  (opam-format (>= 2.2.1))
-  (opam-state (>= 2.2.1))
+  (opam-file-format (>= 2.2.0))
+  (opam-format (>= 2.6.0))
+  (opam-state (>= 2.6.0))
   (opam-0install (>= 0.5))
   ocaml-version
   sexplib
