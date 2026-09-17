@@ -11,6 +11,8 @@
 
 ### Fixed
 
+- Made opam-monorepo compatible with opam 2.6.0 (@Firobe, reporter by @reynir in #423)
+
 ### Removed
 
 ### Security
