@@ -18,11 +18,9 @@ module Repo = struct
       match (t, t') with
       | Git _, Other _ -> -1
       | Other _, Git _ -> 1
-      | Git { repo; ref }, Git { repo = repo'; ref = ref' } -> (
+      | Git { repo; ref }, Git { repo = repo'; ref = ref' } ->
           let c1 = String.compare repo repo' in
-          if c1 = 0 then
-            compare_ref ref ref'
-          else c1)
+          if c1 = 0 then compare_ref ref ref' else c1
       | Other s, Other s' -> String.compare s s'
 
     let pp pp_ref fmt t =
@@ -250,15 +248,14 @@ let dev_repo_package_map_to_repos dev_repo_package_map =
   let* repo_by_dev_repo =
     Dev_repo.Map.bindings dev_repo_to_repo_result_map
     |> List.map ~f:(fun (dev_repo, repo_result) ->
-           Result.map (fun repo -> (dev_repo, repo)) repo_result)
+        Result.map (fun repo -> (dev_repo, repo)) repo_result)
     |> List.fold_left
-      ~f:(fun acc r ->
-          match acc, r with
-          | Error _ as e, _ | Ok _, (Error _ as e) -> e
-          | Ok acc, Ok r -> Ok (r :: acc))
-      ~init:(Ok [])
+         ~f:(fun acc r ->
+           match (acc, r) with
+           | (Error _ as e), _ | Ok _, (Error _ as e) -> e
+           | Ok acc, Ok r -> Ok (r :: acc))
+         ~init:(Ok [])
     |> Result.map List.rev
-
   in
   (* Detect the case where multiple different dev-repos are associated with the
      same duniverse directory. *)
@@ -308,11 +305,10 @@ let from_dependency_entries ~get_default_branch dependencies =
   let* pkg_opts =
     List.fold_left
       ~f:(fun acc r ->
-          match acc, r with
-          | Error _ as e, _ | Ok _, (Error _ as e) -> e
-          | Ok acc, Ok r -> Ok (r :: acc))
-      ~init:(Ok [])
-      results
+        match (acc, r) with
+        | (Error _ as e), _ | Ok _, (Error _ as e) -> e
+        | Ok acc, Ok r -> Ok (r :: acc))
+      ~init:(Ok []) results
     |> Result.map List.rev
   in
   let pkgs = List.filter_map ~f:Fun.id pkg_opts in
@@ -322,9 +318,9 @@ let from_dependency_entries ~get_default_branch dependencies =
 let resolve ~resolve_ref t =
   Parallel.map ~f:(Repo.resolve ~resolve_ref) t
   |> List.fold_left
-    ~f:(fun acc r ->
-        match acc, r with
-        | Error _ as e, _ | Ok _, (Error _ as e) -> e
-        | Ok acc, Ok r -> Ok (r :: acc))
-    ~init:(Ok [])
+       ~f:(fun acc r ->
+         match (acc, r) with
+         | (Error _ as e), _ | Ok _, (Error _ as e) -> e
+         | Ok acc, Ok r -> Ok (r :: acc))
+       ~init:(Ok [])
   |> Result.map List.rev

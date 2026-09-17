@@ -1,5 +1,5 @@
-(** One way normalization of URIs.
-    Not meant to expose the normalized value of the URI again *)
+(** One way normalization of URIs. Not meant to expose the normalized value of
+    the URI again *)
 module Normalized : sig
   type t
   (** Abstracts away the actual value which is not to be used directly *)

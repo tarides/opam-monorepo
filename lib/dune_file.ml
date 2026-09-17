@@ -73,13 +73,13 @@ module Raw = struct
     | Sexplib.Sexp.Parse_error pe ->
         Error
           (`Msg
-            (Format.asprintf "Failed to parse dune file %a: %s" Fpath.pp path
-               pe.err_msg))
+             (Format.asprintf "Failed to parse dune file %a: %s" Fpath.pp path
+                pe.err_msg))
     | Failure _ ->
         Error
           (`Msg
-            (Format.asprintf "Failed to parse dune file %a: Invalid sexp"
-               Fpath.pp path))
+             (Format.asprintf "Failed to parse dune file %a: Invalid sexp"
+                Fpath.pp path))
 
   let comment s = Printf.sprintf "; %s" s
   let vendored_dirs glob = Printf.sprintf "(vendored_dirs %s)" glob

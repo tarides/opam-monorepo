@@ -12,8 +12,8 @@ module Lang = struct
     let invalid_dune_project =
       Error
         (`Msg
-          "Invalid dune-project file: It does not start with a valid lang \
-           stanza")
+           "Invalid dune-project file: It does not start with a valid lang \
+            stanza")
     in
     [
       make_test ~name:"Empty dune-project" ~content:""
@@ -31,8 +31,8 @@ module Lang = struct
         ~expected:
           (Error
              (`Msg
-               "Invalid dune-project file: invalid lang version \
-                1.999999999999999999999999999"))
+                "Invalid dune-project file: invalid lang version \
+                 1.999999999999999999999999999"))
         ~content:"(lang dune 1.999999999999999999999999999)" ();
       make_test ~name:"Invalid lang stanza" ~expected:invalid_dune_project
         ~content:"(lang dune ver)\n(name my-project)\n" ();

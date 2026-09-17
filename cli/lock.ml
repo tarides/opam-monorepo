@@ -57,11 +57,14 @@ let check_target_packages packages =
       Ok ()
 
 let opam_to_git_remote remote =
-  match Option.map
-          (fun idx ->
-             (String.sub remote ~pos:0 ~len:idx,
-              String.sub remote ~pos:(succ idx) ~len:(String.length remote - idx - 1)))
-          (String.index_opt remote '+') with
+  match
+    Option.map
+      (fun idx ->
+        ( String.sub remote ~pos:0 ~len:idx,
+          String.sub remote ~pos:(succ idx) ~len:(String.length remote - idx - 1)
+        ))
+      (String.index_opt remote '+')
+  with
   | Some ("git", remote) -> remote
   | _ -> remote
 
@@ -115,8 +118,8 @@ let error_message_when_dependencies_don't_build_with_dune ~repositories
          appear to be set up on this switch. Adding it to this switch may fix \
          this issue. Add the dune-universe opam repository to this switch by \
          running the command:\n\n\
-         opam repository add dune-universe %s" D.Config.duniverse_opam_repo
-        D.Config.duniverse_opam_repo
+         opam repository add dune-universe %s"
+        D.Config.duniverse_opam_repo D.Config.duniverse_opam_repo
   in
   Fmt.str
     "Some dependencies cannot be built with dune!\n\n\
@@ -161,11 +164,11 @@ let lockfile_path ~explicit_lockfile ~target_packages repo =
         ~target_packages:(OpamPackage.Name.Set.elements target_packages)
         repo
       |> Result.map_error (function `Msg msg ->
-             Rresult.R.msgf
-               "Could not infer the target lockfile name: %s\n\
-                Try setting it explicitly using --lockfile or add a project \
-                name in a root dune-project file."
-               msg)
+          Rresult.R.msgf
+            "Could not infer the target lockfile name: %s\n\
+             Try setting it explicitly using --lockfile or add a project name \
+             in a root dune-project file."
+            msg)
 
 let root_pin_depends local_opam_files =
   OpamPackage.Name.Map.fold
@@ -206,11 +209,11 @@ let pull_pin_depends ~global_state pin_depends =
     let+ elms =
       OpamParallel.map ~jobs ~command by_urls
       |> List.fold_left
-        ~f:(fun acc r ->
-            match acc, r with
-            | Error _ as e, _ | Ok _, (Error _ as e) -> e
-            | Ok acc, Ok r -> Ok (r :: acc))
-        ~init:(Ok [])
+           ~f:(fun acc r ->
+             match (acc, r) with
+             | (Error _ as e), _ | Ok _, (Error _ as e) -> e
+             | Ok acc, Ok r -> Ok (r :: acc))
+           ~init:(Ok [])
       |> Result.map List.rev
     in
     OpamPackage.Name.Map.of_list (List.concat elms)
@@ -334,13 +337,12 @@ let make_repositories_locally_available repositories =
   |> OpamProcess.Job.seq_map make_repository_locally_available
   |> OpamProcess.Job.run
   |> List.fold_left
-    ~f:(fun acc r ->
-        match acc, r with
-        | Error _ as e, _ | Ok _, (Error _ as e) -> e
-        | Ok acc, Ok r -> Ok (r :: acc))
-    ~init:(Ok [])
+       ~f:(fun acc r ->
+         match (acc, r) with
+         | (Error _ as e), _ | Ok _, (Error _ as e) -> e
+         | Ok acc, Ok r -> Ok (r :: acc))
+       ~init:(Ok [])
   |> Result.map List.rev
-
 
 let opam_env_from_global_state global_state =
   let vars = global_state.OpamStateTypes.global_variables in
@@ -390,8 +392,7 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
               ~require_cross_compile ~preferred_versions ~local_opam_files
               ~target_packages ~opam_provided ~pin_depends ?ocaml_version solver
               (opam_env, local_repo_dirs)
-            |> Result.map_error
-                 (interpret_solver_error ~repositories solver)
+            |> Result.map_error (interpret_solver_error ~repositories solver)
           in
           let* dependency_entries = dependency_entries in
           Ok (dependency_entries, source_config)
@@ -409,8 +410,8 @@ let calculate_opam ~source_config ~build_only ~allow_jbuilder
                   ~target_packages ~opam_provided ~pin_depends ?ocaml_version
                   solver switch_state
                 |> Result.map_error (fun err ->
-                       let repositories = current_repos ~switch_state in
-                       interpret_solver_error ~repositories solver err)
+                    let repositories = current_repos ~switch_state in
+                    interpret_solver_error ~repositories solver err)
               in
               let* dependency_entries = dependency_entries in
               Ok (dependency_entries, source_config)))
@@ -426,13 +427,13 @@ let select_explicitly_specified ~local_packages ~explicitly_specified =
       | true, Ok selected -> Ok (OpamPackage.Name.Set.add key selected))
     ~init:(Ok OpamPackage.Name.Set.empty) explicitly_specified
   |> Result.map_error (fun missing_packages ->
-         let msg =
-           Fmt.str "Package%a %a specified but not found in repository"
-             D.Pp.plural missing_packages
-             Fmt.(list ~sep:comma Package_argument.pp_styled)
-             missing_packages
-         in
-         `Msg msg)
+      let msg =
+        Fmt.str "Package%a %a specified but not found in repository" D.Pp.plural
+          missing_packages
+          Fmt.(list ~sep:comma Package_argument.pp_styled)
+          missing_packages
+      in
+      `Msg msg)
 
 let filter_root_packages root packages =
   OpamPackage.Name.Map.filter
@@ -453,8 +454,8 @@ let warn_duplicate_paths ~packages duplicates =
     Fmt.pf fmt
       "Package %a is defined multiple times in the repository:\n\
        %a\n\
-       We kept %a and discarded the others" D.Opam.Pp.package_name name pp_paths
-      duplicate_paths Fpath.pp taken
+       We kept %a and discarded the others"
+      D.Opam.Pp.package_name name pp_paths duplicate_paths Fpath.pp taken
   in
   OpamPackage.Name.Map.iter
     (fun name duplicate_paths ->

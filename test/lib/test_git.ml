@@ -49,8 +49,8 @@ module Ls_remote = struct
         ~expected:
           (Error
              (`Msg
-               "Invalid git ls-remote output line: \"12ab  refs/tags/v1 \
-                something\""))
+                "Invalid git ls-remote output line: \"12ab  refs/tags/v1 \
+                 something\""))
         ();
     ]
 
@@ -174,8 +174,8 @@ module Ls_remote = struct
         ~expected:
           (Error
              (`Msg
-               "Invalid `git ls-remote --symref` output. Too many lines \
-                starting by `ref:`."))
+                "Invalid `git ls-remote --symref` output. Too many lines \
+                 starting by `ref:`."))
         ();
       make_test ~name:"Error when symref doesn't point to a branch"
         ~symref:"symref"
@@ -183,8 +183,8 @@ module Ls_remote = struct
         ~expected:
           (Error
              (`Msg
-               "Invalid `git ls-remote --symref` output. Failed to extract \
-                branch from ref `refs/tags/v0.1`."))
+                "Invalid `git ls-remote --symref` output. Failed to extract \
+                 branch from ref `refs/tags/v0.1`."))
         ();
     ]
 end

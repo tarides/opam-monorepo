@@ -37,9 +37,8 @@ module type OPAM_MONOREPO_CONTEXT = sig
     t
 
   val opam_file : t -> OpamPackage.t -> (OpamFile.OPAM.t, Rresult.R.msg) result
-  (** Convenience function to return the opam file associated to a pkg
-    in the given context.
-    Takes into account local packages an pin-depends. *)
+  (** Convenience function to return the opam file associated to a pkg in the
+      given context. Takes into account local packages an pin-depends. *)
 end
 
 module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
@@ -167,14 +166,13 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
     | false ->
         versions
         |> List.map ~f:(fun (version, result) ->
-               match result with
-               | Error _ as e -> (version, e)
-               | Ok opam_file ->
-                   let opam_file =
-                     remove_opam_provided_from_dependencies opam_provided
-                       opam_file
-                   in
-                   (version, Ok opam_file))
+            match result with
+            | Error _ as e -> (version, e)
+            | Ok opam_file ->
+                let opam_file =
+                  remove_opam_provided_from_dependencies opam_provided opam_file
+                in
+                (version, Ok opam_file))
 
   let demote_candidates_to_avoid versions =
     let regular, avoid, broken =
@@ -233,7 +231,8 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
                 let conflict (n, _, hs) =
                   (* remove self conflicts *)
                   n <> name
-                  && (* remove packages with the same dev-repo and the same hash *)
+                  &&
+                  (* remove packages with the same dev-repo and the same hash *)
                   not (List.exists ~f:same_hash hs)
                 in
                 List.filter ~f:conflict pkgs
@@ -289,12 +288,12 @@ module Opam_monorepo_context (Base_context : BASE_CONTEXT) :
           let conflicts =
             in_conflicts
             |> List.map ~f:(fun (name, version, _) ->
-                   let version =
-                     let open OpamTypes in
-                     let v = OpamPackage.Version.to_string version in
-                     OpamFormula.Atom (Constraint (`Eq, FString v))
-                   in
-                   OpamFormula.Atom (name, version))
+                let version =
+                  let open OpamTypes in
+                  let v = OpamPackage.Version.to_string version in
+                  OpamFormula.Atom (Constraint (`Eq, FString v))
+                in
+                OpamFormula.Atom (name, version))
             |> OpamFormula.ors
           in
           OpamFile.OPAM.with_conflicts conflicts pkg
@@ -490,39 +489,35 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
         in
         selections |> Solver.packages_of_result
         |> List.filter_map ~f:(fun package ->
-               let name = OpamPackage.name package in
-               let in_local_packages =
-                 OpamPackage.Name.Map.mem name local_packages
-               in
-               let in_vendored_packages =
-                 OpamPackage.Name.Set.mem name vendored_package_names
-               in
-               let in_opam_provided =
-                 OpamPackage.Name.Set.mem name opam_provided
-               in
-               Logs.debug (fun l ->
-                   l "Package %a: local %b, vendored %b, opam-provided %b"
-                     Opam.Pp.package_name name in_local_packages
-                     in_vendored_packages in_opam_provided);
-               match in_local_packages with
-               | true -> None
-               | false ->
-                   let vendored =
-                     (not in_opam_provided) && in_vendored_packages
-                   in
-                   Some { package; vendored })
+            let name = OpamPackage.name package in
+            let in_local_packages =
+              OpamPackage.Name.Map.mem name local_packages
+            in
+            let in_vendored_packages =
+              OpamPackage.Name.Set.mem name vendored_package_names
+            in
+            let in_opam_provided =
+              OpamPackage.Name.Set.mem name opam_provided
+            in
+            Logs.debug (fun l ->
+                l "Package %a: local %b, vendored %b, opam-provided %b"
+                  Opam.Pp.package_name name in_local_packages
+                  in_vendored_packages in_opam_provided);
+            match in_local_packages with
+            | true -> None
+            | false ->
+                let vendored = (not in_opam_provided) && in_vendored_packages in
+                Some { package; vendored })
         |> Result.ok
 
   let calculate_raw_without_opam_provided ~local_packages packages =
     packages |> OpamPackage.Set.elements
     |> List.filter_map ~f:(fun package ->
-           let name = OpamPackage.name package in
-           let in_local_packages =
-             OpamPackage.Name.Map.mem name local_packages
-           in
-           match in_local_packages with
-           | true -> None
-           | false -> Some { package; vendored = true })
+        let name = OpamPackage.name package in
+        let in_local_packages = OpamPackage.Name.Map.mem name local_packages in
+        match in_local_packages with
+        | true -> None
+        | false -> Some { package; vendored = true })
     |> Result.ok
 
   let calculate_raw ~local_packages ~target_packages context =
@@ -569,10 +564,9 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
     let restrictions =
       component |> Solver.Diagnostics.Component.notes
       |> List.map ~f:(function
-           | Solver.Diagnostics.Note.UserRequested restriction ->
-               [ restriction ]
-           | Restricts (_other_role, _impl, restrictions) -> restrictions
-           | _ -> [])
+        | Solver.Diagnostics.Note.UserRequested restriction -> [ restriction ]
+        | Restricts (_other_role, _impl, restrictions) -> restrictions
+        | _ -> [])
       |> List.flatten
     in
     let* version_restrictions =
@@ -581,8 +575,8 @@ module Make_solver (Context : OPAM_MONOREPO_CONTEXT) :
       | restrictions ->
           restrictions
           |> List.map ~f:(fun restriction ->
-                 let _, version_restriction = Solver.formula restriction in
-                 version_restriction)
+              let _, version_restriction = Solver.formula restriction in
+              version_restriction)
           |> Option.some
     in
     match version_restrictions with
@@ -731,9 +725,9 @@ module Multi_dir_context :
   let is_pinned _ _ = false
 
   (** Create a Dir_context with multiple repos. The list is ordered by priority.
-      First repo in the list as higher priority. If two repos provide the same version
-      of a package, the one from the highest priority repo will be used, the other
-      discared by [candidates]. *)
+      First repo in the list as higher priority. If two repos provide the same
+      version of a package, the one from the highest priority repo will be used,
+      the other discared by [candidates]. *)
   let create ?test ~constraints (env, paths) =
     let env varname = String.Map.find_opt varname env in
     match paths with
@@ -846,14 +840,14 @@ struct
     | versions ->
         List.sort ~cmp:compare_version versions
         |> List.map ~f:(fun pkg ->
-               let v = OpamFile.OPAM.version pkg in
-               match user_constraints with
-               | Some test
-                 when not
-                        (OpamFormula.check_version_formula
-                           (OpamFormula.Atom test) v) ->
-                   (v, Error (UserConstraint (name, Some test)))
-               | _ -> (v, Ok pkg))
+            let v = OpamFile.OPAM.version pkg in
+            match user_constraints with
+            | Some test
+              when not
+                     (OpamFormula.check_version_formula (OpamFormula.Atom test)
+                        v) ->
+                (v, Error (UserConstraint (name, Some test)))
+            | _ -> (v, Ok pkg))
 
   type input = opam_env * OpamFile.OPAM.t list * OpamPackage.t list
 
@@ -911,8 +905,7 @@ let explicit_repos_solver :
 
 let mock_solver : _ t = (module Mock_solver)
 
-let calculate :
-    type context diagnostics.
+let calculate : type context diagnostics.
     build_only:bool ->
     allow_jbuilder:bool ->
     require_cross_compile:bool ->
@@ -940,8 +933,7 @@ let calculate :
     ~preferred_versions ~local_opam_files ~target_packages ~opam_provided
     ~pin_depends ?ocaml_version input
 
-let diagnostics_message :
-    type context diagnostics.
+let diagnostics_message : type context diagnostics.
     verbose:bool ->
     (context, diagnostics) t ->
     diagnostics ->
@@ -954,8 +946,7 @@ let diagnostics_message :
   in
   Solver.diagnostics_message ~verbose diagnostics
 
-let not_buildable_with_dune :
-    type context diagnostics.
+let not_buildable_with_dune : type context diagnostics.
     (context, diagnostics) t -> diagnostics -> OpamPackage.Name.t list =
  fun t diagnostics ->
   let (module Solver : OPAM_MONOREPO_SOLVER
@@ -965,8 +956,7 @@ let not_buildable_with_dune :
   in
   Solver.not_buildable_with_dune diagnostics
 
-let unavailable_versions_due_to_constraints :
-    type context diagnostics.
+let unavailable_versions_due_to_constraints : type context diagnostics.
     (context, diagnostics) t ->
     diagnostics ->
     (OpamPackage.Name.t * OpamFormula.version_formula) list =

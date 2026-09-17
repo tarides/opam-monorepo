@@ -10,4 +10,5 @@ val save_sexp :
 
 val write_lines_hum :
   Fpath.t -> string list -> (unit, [> Rresult.R.msg ]) result
-(** Same as [Bos.OS.File.write_lines] but adds a newline at the end of the file. *)
+(** Same as [Bos.OS.File.write_lines] but adds a newline at the end of the file.
+*)

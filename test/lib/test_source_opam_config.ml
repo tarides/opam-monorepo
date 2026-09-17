@@ -198,8 +198,8 @@ module Opam_global_vars = struct
         ~expected:
           (Error
              (`Msg
-               "Error in opam file test.opam, [1:0]-[1:28]: Opam global \
-                variable var1 is defined more than once"))
+                "Error in opam file test.opam, [1:0]-[1:28]: Opam global \
+                 variable var1 is defined more than once"))
         ();
     ]
 

@@ -14,8 +14,8 @@ module Extra_field = struct
         let file_suffix = Option.value ~default:"" file_suffix_opt in
         Error
           (`Msg
-            (Printf.sprintf "Missing %s field in opam-monorepo lockfile%s"
-               (name t) file_suffix))
+             (Printf.sprintf "Missing %s field in opam-monorepo lockfile%s"
+                (name t) file_suffix))
 end
 
 module Version = struct
@@ -34,11 +34,13 @@ module Version = struct
     let err () =
       Error (`Msg (Format.sprintf "Invalid lockfile version: %S" s))
     in
-    match Option.map
-            (fun idx ->
-               (String.sub s ~pos:0 ~len:idx,
-                String.sub s ~pos:(succ idx) ~len:(String.length s - idx - 1)))
-            (String.index_opt s '.') with
+    match
+      Option.map
+        (fun idx ->
+          ( String.sub s ~pos:0 ~len:idx,
+            String.sub s ~pos:(succ idx) ~len:(String.length s - idx - 1) ))
+        (String.index_opt s '.')
+    with
     | None -> err ()
     | Some (major, minor) -> (
         match (int_of_string_opt major, int_of_string_opt minor) with
@@ -48,18 +50,18 @@ module Version = struct
   let compatible t =
     match compare current t with
     | 0 -> Ok ()
-    | n  ->
-      if n < 0 then
-        Rresult.R.error_msgf
-          "Incompatible opam-monorepo lockfile version %a. Please upgrade your \
-           opam-monorepo plugin."
-          pp t
-      else
-        Rresult.R.error_msgf
-          "opam-monorepo lockfile version %a is too old. Please regenerate the \
-           lockfile using your current opam-monorepo plugin or install an \
-           older version of the plugin."
-          pp t
+    | n ->
+        if n < 0 then
+          Rresult.R.error_msgf
+            "Incompatible opam-monorepo lockfile version %a. Please upgrade \
+             your opam-monorepo plugin."
+            pp t
+        else
+          Rresult.R.error_msgf
+            "opam-monorepo lockfile version %a is too old. Please regenerate \
+             the lockfile using your current opam-monorepo plugin or install \
+             an older version of the plugin."
+            pp t
 
   let to_opam_value t = Opam.Value.String.to_value (to_string t)
 
@@ -138,8 +140,9 @@ module Depends = struct
       | _ ->
           Error
             (`Msg
-              "Invalid opam-monorepo lockfile: depends should be expressed as \
-               a list equality constraints optionally with a `vendor` variable"))
+               "Invalid opam-monorepo lockfile: depends should be expressed as \
+                a list equality constraints optionally with a `vendor` \
+                variable"))
 
   let one_to_formula { package; vendored } : OpamTypes.filtered_formula =
     let name = package.name in
@@ -272,9 +275,8 @@ module Depexts = struct
 end
 
 module Cli_args = struct
-  (** Field used to store the raw command line arguments passed to [lock].
-      It is set but not read and therefore is not part of the main lock file
-      type. *)
+  (** Field used to store the raw command line arguments passed to [lock]. It is
+      set but not read and therefore is not part of the main lock file type. *)
 
   type _t = string list
 
@@ -327,12 +329,13 @@ let depends t = t.depends
 let url_to_duniverse_url url =
   let url_res = Duniverse.Repo.Url.from_opam_url url in
   Result.map_error
-    (function `Msg msg ->
-       let msg =
-         Printf.sprintf "Invalid-monorepo lockfile pin URL %s: %s"
-           (OpamUrl.to_string url) msg
-       in
-       `Msg msg)
+    (function
+      | `Msg msg ->
+          let msg =
+            Printf.sprintf "Invalid-monorepo lockfile pin URL %s: %s"
+              (OpamUrl.to_string url) msg
+          in
+          `Msg msg)
     url_res
 
 let to_duniverse { duniverse_dirs; pin_depends; _ } =

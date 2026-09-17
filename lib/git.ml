@@ -81,7 +81,8 @@ module Ls_remote = struct
       let pos = String.length refs_heads in
       let len = String.length branch_ref - pos in
       Ok (String.sub branch_ref ~pos ~len)
-    else Error
+    else
+      Error
         (`Msg
            (Printf.sprintf
               "Invalid `git ls-remote --symref` output. Failed to extract \
@@ -95,8 +96,8 @@ module Ls_remote = struct
     | _ ->
         Error
           (`Msg
-            "Invalid `git ls-remote --symref` output. Too many lines starting \
-             by `ref:`.")
+             "Invalid `git ls-remote --symref` output. Too many lines starting \
+              by `ref:`.")
 end
 
 module Ref = struct

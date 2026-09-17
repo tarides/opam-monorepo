@@ -105,11 +105,14 @@ module Url = struct
     match url.OpamUrl.backend with
     | `git -> (
         let str_url = OpamUrl.to_string url in
-        match Option.map
-                (fun idx ->
-                   (String.sub str_url ~pos:0 ~len:idx,
-                    String.sub str_url ~pos:(succ idx) ~len:(String.length str_url - idx - 1)))
-                (String.index_opt str_url '#') with
+        match
+          Option.map
+            (fun idx ->
+              ( String.sub str_url ~pos:0 ~len:idx,
+                String.sub str_url ~pos:(succ idx)
+                  ~len:(String.length str_url - idx - 1) ))
+            (String.index_opt str_url '#')
+        with
         | Some (repo, ref) -> Git { repo; ref = Some ref }
         | None -> Git { repo = str_url; ref = None })
     | _ -> Other (OpamUrl.to_string url)

@@ -13,8 +13,7 @@ let int_as_string_conv =
     ~to_repr:Int.to_string ~equal:Int.equal ~pp:Fmt.int ()
 
 let test_from_opam_val =
-  let make_test :
-      type a.
+  let make_test : type a.
       name:string ->
       shape:a Serial_shape.t ->
       expected:(a, Rresult.R.msg) result ->
@@ -69,8 +68,7 @@ let test_from_opam_val =
   ]
 
 let test_to_opam_val =
-  let make_test :
-      type a.
+  let make_test : type a.
       name:string ->
       shape:a Serial_shape.t ->
       expected:string ->
@@ -102,8 +100,7 @@ let test_to_opam_val =
   ]
 
 let test_cmdliner_parse =
-  let make_test :
-      type a.
+  let make_test : type a.
       name:string ->
       shape:a Serial_shape.t ->
       expected:(a, Rresult.R.msg) result ->
@@ -137,7 +134,9 @@ let test_cmdliner_parse =
     make_test ~name:"list without delim"
       ~shape:Serial_shape.(list bool)
       ~expected:
-        (Rresult.R.error_msg "a list is expected. Lists must be of the form '[x,y,z]' (i.e. delimited by '[' and ']')")
+        (Rresult.R.error_msg
+           "a list is expected. Lists must be of the form '[x,y,z]' (i.e. \
+            delimited by '[' and ']')")
       ~value:"true,false,true";
     make_test ~name:"choice c1"
       ~shape:Serial_shape.(choice3 bool (list bool) string)
@@ -184,8 +183,7 @@ let test_cmdliner_parse =
   ]
 
 let test_cmdliner_print =
-  let make_test :
-      type a.
+  let make_test : type a.
       name:string ->
       shape:a Serial_shape.t ->
       value:a ->

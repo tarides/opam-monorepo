@@ -42,7 +42,9 @@ let run (`Root root) (`Lockfile explicit_lockfile) dry_run (`Yes yes) () =
           else if should_install ~yes pkgs_str then
             try
               OpamCoreConfig.update ~confirm_level:`unsafe_yes ();
-              let to_install = OpamSysPkg.{ti_new = pkgs; ti_required = Set.empty} in
+              let to_install =
+                OpamSysPkg.{ ti_new = pkgs; ti_required = Set.empty }
+              in
               OpamSysInteract.install None global_state.config to_install;
               Ok ()
             with Failure msg -> Error (`Msg msg)

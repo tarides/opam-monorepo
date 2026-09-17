@@ -69,8 +69,8 @@ module Pp : sig
 end
 
 module Extra_field : sig
-  (** Module for parsing and printing of opam file extensions
-      specific to opam-monorepo *)
+  (** Module for parsing and printing of opam file extensions specific to
+      opam-monorepo *)
 
   type 'a t
   (** Type of extra opam field holding values of type ['a]. *)
@@ -81,9 +81,9 @@ module Extra_field : sig
     from_opam_value:
       (OpamParserTypes.FullPos.value -> ('a, [ `Msg of string ]) result) ->
     'a t
-  (** [make ~name ~to_opam_value ~from_opam_value] returns an extra field
-      which is named ["x-opam-monorepo-<name>"] and that is converted to and
-      from generic opam values using the provided functions. *)
+  (** [make ~name ~to_opam_value ~from_opam_value] returns an extra field which
+      is named ["x-opam-monorepo-<name>"] and that is converted to and from
+      generic opam values using the provided functions. *)
 
   val name : _ t -> string
   (** Return the full name of the field *)
@@ -93,11 +93,10 @@ module Extra_field : sig
       previous value. *)
 
   val get : 'a t -> OpamFile.OPAM.t -> ('a option, [ `Msg of string ]) result
-  (** Returns the value of the given extra field in the given opam file if
-      the extra field is set.
-      Returns [Ok None] if the field is missing from the opam file.
-      Returns [Error _] if the field is present but could not be properly
-      parsed *)
+  (** Returns the value of the given extra field in the given opam file if the
+      extra field is set. Returns [Ok None] if the field is missing from the
+      opam file. Returns [Error _] if the field is present but could not be
+      properly parsed *)
 end
 
 module Pos : sig
@@ -144,18 +143,19 @@ module Value : sig
 end
 
 val avoid_version : OpamFile.OPAM.t -> bool
-(** Returns whether this version should be avoided by telling whether it has
-    the avoid-version flag.
-    This flag is set for the compiler beta releases for instance. *)
+(** Returns whether this version should be avoided by telling whether it has the
+    avoid-version flag. This flag is set for the compiler beta releases for
+    instance. *)
 
 val depends_on_dune : allow_jbuilder:bool -> OpamTypes.filtered_formula -> bool
-(** Returns whether the given depends field formula contains a dependency to dune or jbuilder *)
+(** Returns whether the given depends field formula contains a dependency to
+    dune or jbuilder *)
 
 val depends_on_compiler_variants : OpamTypes.filtered_formula -> bool
 (** Returns whether the given depends field formula contains a dependency
-    towards a compiler variant (such as a compiler with flambda or afl enabled for instance).
-    This is detected by looking direct dependencies on ocaml-variants or dependencies on
-    any relevant ocaml-option-* packages. *)
+    towards a compiler variant (such as a compiler with flambda or afl enabled
+    for instance). This is detected by looking direct dependencies on
+    ocaml-variants or dependencies on any relevant ocaml-option-* packages. *)
 
 val version_is_at_least : OpamPackage.Version.t -> OpamPackage.Version.t -> bool
 (** [version_is_at_least minimum to_check] returns [true] if the version
@@ -170,9 +170,9 @@ val pull_tree :
   dir:Fpath.t ->
   OpamStateTypes.unlocked OpamStateTypes.global_state ->
   (unit, [> `Msg of string ]) result OpamProcess.job
-(** Pulls the sources from [url] to [dir] using opam's library. Returns the target directory path
-    if sucessful and an error otherwise.
-    This benefits from opam's global cache.*)
+(** Pulls the sources from [url] to [dir] using opam's library. Returns the
+    target directory path if sucessful and an error otherwise. This benefits
+    from opam's global cache.*)
 
 val pull_tree_with_cache :
   cache_dir:Fpath.t ->
@@ -180,9 +180,9 @@ val pull_tree_with_cache :
   hashes:OpamHash.t list ->
   dir:Fpath.t ->
   (unit, [> `Msg of string ]) result OpamProcess.job
-(** Pulls the sources from [url] to [dir] using opam's library. Returns the target directory path
-    if sucessful and an error otherwise.
-    Uses a dedicated path for caching. *)
+(** Pulls the sources from [url] to [dir] using opam's library. Returns the
+    target directory path if sucessful and an error otherwise. Uses a dedicated
+    path for caching. *)
 
 val local_package_version :
   OpamFile.OPAM.t ->
@@ -191,5 +191,4 @@ val local_package_version :
 (** Determine the version for a local package.
     - if [explicit_version] is passed, use it
     - if the opam file has a version field, use it
-    - otherwise, use a default value (["zdev"])
-    *)
+    - otherwise, use a default value (["zdev"]) *)

@@ -44,11 +44,11 @@ let pull_source_dependencies ?trim_clone ~global_state ~duniverse_dir src_deps =
       ~command:(pull ?trim_clone ~global_state ~duniverse_dir)
       src_deps
     |> List.fold_left
-      ~f:(fun acc r ->
-         match acc, r with
-         | Error _ as e, _ | Ok _, (Error _ as e) -> e
-         | Ok acc, Ok r -> Ok (r :: acc))
-      ~init:(Ok [])
+         ~f:(fun acc r ->
+           match (acc, r) with
+           | (Error _ as e), _ | Ok _, (Error _ as e) -> e
+           | Ok acc, Ok r -> Ok (r :: acc))
+         ~init:(Ok [])
     |> Result.map List.rev
   in
   let total = List.length src_deps in

@@ -95,10 +95,11 @@ let run (`Yes yes) (`Root root) (`Lockfile explicit_lockfile)
                  in switch.\n\
                  You might want to change the compiler version of your switch \
                  accordingly:\n\
-                 opam install %a.%a --update-invariant" D.Opam.Pp.version
-                locked_ocaml_version D.Opam.Pp.version switch_ocaml_version
-                D.Opam.Pp.package_name D.Config.compiler_package_name
-                D.Opam.Pp.version locked_ocaml_version));
+                 opam install %a.%a --update-invariant"
+                D.Opam.Pp.version locked_ocaml_version D.Opam.Pp.version
+                switch_ocaml_version D.Opam.Pp.package_name
+                D.Config.compiler_package_name D.Opam.Pp.version
+                locked_ocaml_version));
       Ok pulled
 
 let info =

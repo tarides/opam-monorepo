@@ -44,8 +44,8 @@ let rec shallow_description : type a. a t -> string = function
       Printf.sprintf "%s, %s or %s" d d' d''
   | Conv (_, s) -> shallow_description s
 
-let rec from_opam_val :
-    type a. a t -> OpamParserTypes.FullPos.value -> (a, Rresult.R.msg) result =
+let rec from_opam_val : type a.
+    a t -> OpamParserTypes.FullPos.value -> (a, Rresult.R.msg) result =
  fun shape value ->
   let open Result.O in
   let parse_error () =
