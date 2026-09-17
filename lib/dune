@@ -9,6 +9,7 @@
   opam-0install
   opam-file-format
   opam-format
+  rresult
   sexplib
   stdext
   threads

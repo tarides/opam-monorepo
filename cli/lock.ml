@@ -324,6 +324,7 @@ let make_repository_locally_available url =
               fetch_git_url ~cache_dir dir url @@| function
               | Error (`Msg msg) -> Rresult.R.error_msg msg
               | Ok version ->
+                  let version = OpamPackage.Version.of_string version in
                   let url = git_permanent_url url version in
                   let packages = Fpath.(dir / "packages" |> to_string) in
                   Ok (packages, url))))

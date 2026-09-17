@@ -261,8 +261,8 @@ authors: [
   in
   write_pkg ~name:"ocaml" ~version:"4.13.1" ~opam packages_dir
 
-let write_repo_file repo_dir =
-  let repo_file = OpamRepositoryPath.repo repo_dir in
+let write_repo_file repo_root =
+  let repo_file = OpamRepositoryRoot.Dir.Path.repo repo_root in
   let repo =
     OpamFile.Repo.create ~opam_version:(OpamVersion.of_string "2.0") ()
   in
@@ -272,9 +272,10 @@ let () =
   let open OpamFilename.Op in
   let cwd = OpamFilename.cwd () in
   let minimal_repo = cwd / "minimal-repo" in
+  let repo_root = OpamRepositoryRoot.Dir.of_dir minimal_repo in
   OpamFilename.mkdir minimal_repo;
-  write_repo_file minimal_repo;
-  let packages_dir = OpamRepositoryPath.packages_dir minimal_repo in
+  write_repo_file repo_root;
+  let packages_dir = OpamRepositoryRoot.Dir.Path.packages_dir repo_root in
   OpamFilename.mkdir packages_dir;
   write_base_bigarray packages_dir;
   write_base_threads packages_dir;

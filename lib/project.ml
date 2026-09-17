@@ -6,8 +6,8 @@ type t = Fpath.t
 let folder_ignore_list =
   [ "_build"; "_opam"; Fpath.to_string Config.vendor_dir ]
 
-let has_repo_file opath =
-  let repo_file = OpamRepositoryPath.repo opath in
+let has_repo_file repo_root =
+  let repo_file = OpamRepositoryRoot.Dir.Path.repo repo_root in
   match OpamFile.Repo.read_opt repo_file with
   | None -> false
   | Some _ -> true
@@ -16,8 +16,8 @@ let has_repo_file opath =
   | (exception OpamPp.Bad_version _) ->
       false
 
-let has_packages_folder opath =
-  let packages = OpamRepositoryPath.packages_dir opath in
+let has_packages_folder repo_root =
+  let packages = OpamRepositoryRoot.Dir.Path.packages_dir repo_root in
   OpamFilename.exists_dir packages
 
 let is_opam_repo dir =
@@ -26,7 +26,8 @@ let is_opam_repo dir =
   if not is_dir then Ok false
   else
     let opath = OpamFilename.Dir.of_string (Fpath.to_string dir) in
-    Ok (has_packages_folder opath && has_repo_file opath)
+    let repo_root = OpamRepositoryRoot.Dir.of_dir opath in
+    Ok (has_packages_folder repo_root && has_repo_file repo_root)
 
 let is_ignore_listed path =
   List.mem ~set:folder_ignore_list (Fpath.to_string (Fpath.base path))

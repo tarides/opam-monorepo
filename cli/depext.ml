@@ -14,7 +14,7 @@ let should_install ~yes pkgs =
 
 let available_packages config pkgs =
   match OpamSysInteract.packages_status config pkgs with
-  | available_pkgs, _not_found_pkgs -> Ok available_pkgs
+  | status -> Ok status.s_available
   | exception Failure msg -> Error (`Msg msg)
 
 let run (`Root root) (`Lockfile explicit_lockfile) dry_run (`Yes yes) () =
@@ -42,7 +42,8 @@ let run (`Root root) (`Lockfile explicit_lockfile) dry_run (`Yes yes) () =
           else if should_install ~yes pkgs_str then
             try
               OpamCoreConfig.update ~confirm_level:`unsafe_yes ();
-              OpamSysInteract.install global_state.config pkgs;
+              let to_install = OpamSysPkg.{ti_new = pkgs; ti_required = Set.empty} in
+              OpamSysInteract.install None global_state.config to_install;
               Ok ()
             with Failure msg -> Error (`Msg msg)
           else Ok ())
