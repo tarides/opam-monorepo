@@ -1,3 +1,0 @@
-(test
- (name artifact_substitution)
- (libraries stdune dune_engine dune_rules fiber re memo))

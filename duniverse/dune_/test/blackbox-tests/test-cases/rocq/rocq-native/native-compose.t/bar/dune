@@ -1,6 +1,0 @@
-(rocq.theory
- (name bar.baz)
- (package base)
- (theories foo)
- (modules :standard)
- (synopsis "Test Coq library"))

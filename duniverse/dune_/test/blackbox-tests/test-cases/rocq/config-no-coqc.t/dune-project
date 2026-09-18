@@ -1,3 +1,0 @@
-(lang dune 3.21)
-(name example)
-(using rocq 0.11) 

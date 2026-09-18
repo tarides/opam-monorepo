@@ -1,7 +1,0 @@
-(rocq.theory
- (name Coq)
- (boot)
- (package coq-boot)
- (plugins coq-boot.boot_plugin))
-
-(include_subdirs qualified)

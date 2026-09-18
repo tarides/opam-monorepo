@@ -1,4 +1,0 @@
-(library
- (name repro)
- (public_name repro)
- (modules foo))

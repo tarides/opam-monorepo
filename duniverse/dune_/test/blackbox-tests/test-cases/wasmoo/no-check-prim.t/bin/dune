@@ -1,6 +1,0 @@
-(executables
- (names technologic)
- (libraries js_of_ocaml x)
- (modes wasm)
- (wasm_of_ocaml
-   (javascript_files runtime.js)))

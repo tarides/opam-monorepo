@@ -1,6 +1,0 @@
-(melange.emit
- (target dist)
- (alias mel)
- (modules entry_module)
- (emit_stdlib false)
- (libraries parent))

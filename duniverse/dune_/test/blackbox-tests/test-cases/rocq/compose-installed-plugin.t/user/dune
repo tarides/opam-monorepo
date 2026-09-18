@@ -1,4 +1,0 @@
-(rocq.theory
- (name Foo)
- (package local)
- (theories Bar))

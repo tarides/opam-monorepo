@@ -1,7 +1,0 @@
-(library
- (name x)
- (libraries js_of_ocaml)
- (public_name x)
- (wasm_of_ocaml
-  (flags (--pretty)) (wasm_files runtime.js runtime.wat))
- (foreign_stubs (language c) (names stubs)))

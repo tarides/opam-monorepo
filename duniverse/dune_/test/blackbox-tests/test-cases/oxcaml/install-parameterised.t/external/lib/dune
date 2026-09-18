@@ -1,6 +1,0 @@
-(library
- (public_name external.lib)
- (name lib)
- (libraries
-  (instantiate paramlib impl :as paramlib1)
-  (instantiate paramlib impl2 :as paramlib2)))

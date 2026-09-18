@@ -1,5 +1,0 @@
-(library
- (public_name external.unwrapped_lib)
- (name unwrapped_lib)
- (wrapped false)
- (parameters param))

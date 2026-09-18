@@ -1,3 +1,0 @@
-(library
- (name lib1)
- (libraries lib2))

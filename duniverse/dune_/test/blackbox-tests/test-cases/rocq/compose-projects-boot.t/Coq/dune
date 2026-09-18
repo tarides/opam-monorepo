@@ -1,6 +1,0 @@
-(rocq.theory
- (name Coq)
- (package Coq)
- (boot))
-
-(include_subdirs qualified)

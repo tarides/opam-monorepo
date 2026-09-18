@@ -1,4 +1,0 @@
-(rocq.theory
- (name B)
- (package Subtheory)
- (theories Foo.A))

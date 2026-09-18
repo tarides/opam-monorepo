@@ -1,4 +1,0 @@
-(executable
- (name main)
- (modes js)
- (libraries foo))

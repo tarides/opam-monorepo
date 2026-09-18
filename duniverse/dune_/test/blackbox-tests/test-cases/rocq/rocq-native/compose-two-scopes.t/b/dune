@@ -1,4 +1,0 @@
-(rocq.theory
- (name b)
- (package cvendor)
- (theories a))

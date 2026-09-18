@@ -1,4 +1,0 @@
-(rocq.theory
- (name foo))
-
-(include_subdirs qualified)

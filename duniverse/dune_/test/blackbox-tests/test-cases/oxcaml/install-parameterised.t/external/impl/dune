@@ -1,4 +1,0 @@
-(library
- (public_name external.impl)
- (name impl)
- (implements param))

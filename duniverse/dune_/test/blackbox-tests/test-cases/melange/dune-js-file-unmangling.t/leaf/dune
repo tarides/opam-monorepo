@@ -1,3 +1,0 @@
-(library
- (modes melange)
- (name leaf))

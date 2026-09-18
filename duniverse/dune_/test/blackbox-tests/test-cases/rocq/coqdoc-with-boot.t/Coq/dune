@@ -1,6 +1,0 @@
-(rocq.theory
- (name Corelib)
- (package Coq)
- (boot))
-
-(include_subdirs qualified)

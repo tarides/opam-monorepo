@@ -1,5 +1,0 @@
-(rocq.theory
- (name A)
- (package A)
- (theories B)
- (boot))

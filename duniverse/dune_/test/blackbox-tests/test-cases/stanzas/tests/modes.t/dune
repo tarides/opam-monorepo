@@ -1,3 +1,0 @@
-(test
- (name modes)
- (modes byte native))

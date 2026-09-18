@@ -1,8 +1,0 @@
-(rocq.extraction
- (mode vo)
- (prelude Extract)
- (extracted_modules Foo CRelationClasses Datatypes)
- (flags :standard -w -extraction-default-directory -w -extraction-opaque-accessed)
- (theories Stdlib Common))
-
-

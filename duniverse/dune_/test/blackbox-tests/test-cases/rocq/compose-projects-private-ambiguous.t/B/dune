@@ -1,4 +1,0 @@
-(rocq.theory
- (name B)
- (package B)
- (theories Stdlib))

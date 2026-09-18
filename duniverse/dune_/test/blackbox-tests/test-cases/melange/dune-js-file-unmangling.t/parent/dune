@@ -1,4 +1,0 @@
-(library
- (modes melange)
- (name parent)
- (libraries leaf))

@@ -1,6 +1,0 @@
-(melange.emit
- (target multilib)
- (modules c)
- (libraries x)
- (emit_stdlib false)
- (alias mel))

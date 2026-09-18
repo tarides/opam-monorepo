@@ -1,3 +1,0 @@
-(test
- (modes wasm)
- (name test))

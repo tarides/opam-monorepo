@@ -1,5 +1,0 @@
-(library
- (name forutop)
- (foreign_stubs
-  (language c)
-  (names forutop_stubs)))

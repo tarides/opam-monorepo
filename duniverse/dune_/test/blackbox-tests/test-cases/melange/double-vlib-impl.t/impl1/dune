@@ -1,4 +1,0 @@
-(library
- (name impl1)
- (modes melange)
- (implements vlib))

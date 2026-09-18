@@ -1,3 +1,0 @@
-(library_parameter
- (public_name external.param)
- (name param))

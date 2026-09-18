@@ -1,4 +1,0 @@
-(env
- (_
-  (rocq
-   (rocqdep_flags (:standard --global-flag1 --global-flag2)))))
