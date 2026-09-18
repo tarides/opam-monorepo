@@ -8,16 +8,12 @@ depends: [
   "astring" {= "0.8.5+dune" & ?vendor}
   "base-bigarray" {= "base"}
   "base-bytes" {= "base+dune" & ?vendor}
-  "base-domains" {= "base"}
-  "base-effects" {= "base"}
-  "base-nnp" {= "base"}
   "base-threads" {= "base"}
   "base-unix" {= "base"}
   "bigstringaf" {= "0.10.0" & ?vendor}
   "bos" {= "0.3.0+dune" & ?vendor}
   "checkseum" {= "0.5.3" & ?vendor}
-  "cmdliner" {= "2.1.1+dune" & ?vendor}
-  "compiler-cloning" {= "enabled"}
+  "cmdliner" {= "1.3.0+dune" & ?vendor}
   "cppo" {= "1.8.0" & ?vendor}
   "csexp" {= "1.5.2" & ?vendor}
   "decompress" {= "1.6.0" & ?vendor}
@@ -35,30 +31,30 @@ depends: [
   "menhirLib" {= "20260209" & ?vendor}
   "menhirSdk" {= "20260209" & ?vendor}
   "num" {= "1.4+dune2" & ?vendor}
-  "ocaml" {= "5.5.1"}
-  "ocaml-base-compiler" {= "5.5.1"}
-  "ocaml-compiler" {= "5.5.1"}
+  "ocaml" {= "4.14.2"}
+  "ocaml-base-compiler" {= "4.14.2"}
+  "ocaml-config" {= "2"}
   "ocaml-options-vanilla" {= "1"}
   "ocaml-syntax-shims" {= "1.0.0" & ?vendor}
   "ocaml-version" {= "4.1.4" & ?vendor}
   "ocamlgraph" {= "2.2.0" & ?vendor}
   "ocplib-endian" {= "1.2" & ?vendor}
-  "opam-0install" {= "0.6.0" & ?vendor}
+  "opam-0install" {= "0.5.1" & ?vendor}
   "opam-core" {= "2.6.0" & ?vendor}
   "opam-file-format" {= "2.2.0" & ?vendor}
   "opam-format" {= "2.6.0" & ?vendor}
   "opam-repository" {= "2.6.0" & ?vendor}
   "opam-state" {= "2.6.0" & ?vendor}
   "optint" {= "0.3.0" & ?vendor}
-  "parsexp" {= "v0.17.0" & ?vendor}
+  "parsexp" {= "v0.16.0" & ?vendor}
   "patch" {= "3.1.2" & ?vendor}
   "re" {= "1.14.0" & ?vendor}
   "result" {= "1.5" & ?vendor}
   "rresult" {= "0.7.0+dune" & ?vendor}
-  "sexplib" {= "v0.17.0" & ?vendor}
-  "sexplib0" {= "v0.17.0" & ?vendor}
+  "sexplib" {= "v0.16.0" & ?vendor}
+  "sexplib0" {= "v0.16.0" & ?vendor}
   "sha" {= "1.15.4" & ?vendor}
-  "spdx_licenses" {= "1.5.0" & ?vendor}
+  "spdx_licenses" {= "1.6.0" & ?vendor}
   "stdlib-shims" {= "0.3.0" & ?vendor}
   "stringext" {= "1.6.0" & ?vendor}
   "swhid_core" {= "0.1" & ?vendor}
@@ -100,8 +96,8 @@ pin-depends: [
     "https://github.com/mirage/checkseum/releases/download/v0.5.3/checkseum-0.5.3.tbz"
   ]
   [
-    "cmdliner.2.1.1+dune"
-    "https://github.com/dune-universe/cmdliner/releases/download/v2.1.1%2Bdune/cmdliner-2.1.1.dune.tbz"
+    "cmdliner.1.3.0+dune"
+    "https://github.com/dune-universe/cmdliner/releases/download/v1.3.0%2Bdune/cmdliner-1.3.0.dune.tbz"
   ]
   [
     "cppo.1.8.0"
@@ -184,8 +180,8 @@ pin-depends: [
     "https://github.com/OCamlPro/ocplib-endian/archive/refs/tags/1.2.tar.gz"
   ]
   [
-    "opam-0install.0.6.0"
-    "https://github.com/ocaml-opam/opam-0install-solver/releases/download/v0.6.0/opam-0install-0.6.0.tbz"
+    "opam-0install.0.5.1"
+    "https://github.com/ocaml-opam/opam-0install-solver/releases/download/v0.5.1/opam-0install-0.5.1.tbz"
   ]
   [
     "opam-core.2.6.0"
@@ -212,8 +208,8 @@ pin-depends: [
     "https://github.com/mirage/optint/releases/download/v0.3.0/optint-0.3.0.tbz"
   ]
   [
-    "parsexp.v0.17.0"
-    "https://github.com/janestreet/parsexp/archive/refs/tags/v0.17.0.tar.gz"
+    "parsexp.v0.16.0"
+    "https://ocaml.janestreet.com/ocaml-core/v0.16/files/parsexp-v0.16.0.tar.gz"
   ]
   [
     "patch.3.1.2"
@@ -232,20 +228,20 @@ pin-depends: [
     "https://github.com/dune-universe/rresult/releases/download/v0.7.0%2Bdune/rresult-0.7.0.dune.tbz"
   ]
   [
-    "sexplib.v0.17.0"
-    "https://github.com/janestreet/sexplib/archive/refs/tags/v0.17.0.tar.gz"
+    "sexplib.v0.16.0"
+    "https://ocaml.janestreet.com/ocaml-core/v0.16/files/sexplib-v0.16.0.tar.gz"
   ]
   [
-    "sexplib0.v0.17.0"
-    "https://github.com/janestreet/sexplib0/archive/refs/tags/v0.17.0.tar.gz"
+    "sexplib0.v0.16.0"
+    "https://ocaml.janestreet.com/ocaml-core/v0.16/files/sexplib0-v0.16.0.tar.gz"
   ]
   [
     "sha.1.15.4"
     "https://github.com/djs55/ocaml-sha/releases/download/v1.15.4/sha-1.15.4.tbz"
   ]
   [
-    "spdx_licenses.1.5.0"
-    "https://github.com/kit-ty-kate/spdx_licenses/releases/download/v1.5.0/spdx_licenses-1.5.0.tar.gz"
+    "spdx_licenses.1.6.0"
+    "https://github.com/kit-ty-kate/spdx_licenses/releases/download/v1.6.0/spdx_licenses-1.6.0.tar.gz"
   ]
   [
     "stdlib-shims.0.3.0"
@@ -272,7 +268,7 @@ pin-depends: [
     "https://github.com/dune-universe/uutf/releases/download/v1.0.3%2Bdune/uutf-1.0.3.dune.tbz"
   ]
 ]
-x-opam-monorepo-cli-args: ["opam-monorepo.opam"]
+x-opam-monorepo-cli-args: ["opam-monorepo.opam" "--ocaml-version=4.14.2"]
 x-opam-monorepo-duniverse-dirs: [
   [
     "https://github.com/0install/0install/releases/download/v2.18/0install-2.18.tbz"
@@ -330,11 +326,11 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/dune-universe/cmdliner/releases/download/v2.1.1%2Bdune/cmdliner-2.1.1.dune.tbz"
+    "https://github.com/dune-universe/cmdliner/releases/download/v1.3.0%2Bdune/cmdliner-1.3.0.dune.tbz"
     "cmdliner"
     [
-      "sha256=ff11b7206e0a8469b73b9f419cf59bb386a3b2cd815366fcc5cbaf3283952fd6"
-      "sha512=4e9534d0d2896cc80ae0e3aaa9a64b09044be16f0c571118d8f4367009b912f6d3ebeeeddab2ac4567ec9339d365f9f97802858acf86753e90e500301d019f77"
+      "sha256=0a27faaefde77c3954b4f0254105831df79cb9b2c930406aacae402b44796e53"
+      "sha512=e11d7341dc708318e04f3e9c69c680c24309a550170392c2105f9eefee2b448014145ace29bb0dc2df6fc31473a679e51fc86fe4f834f7db3e53da665233bfa5"
     ]
   ]
   [
@@ -418,33 +414,11 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/janestreet/parsexp/archive/refs/tags/v0.17.0.tar.gz"
-    "parsexp"
-    [
-      "sha256=a3d10edbc4f98d16357b644d550fd1c06f4d9aa4990ab8ee6da01276c24d55b5"
-    ]
-  ]
-  [
     "https://github.com/janestreet/result/releases/download/1.5/result-1.5.tbz"
     "result"
     [
       "sha256=7c3a5e238558f4c1a4f5acca816bc705a0e12f68dc0005c61ddbf2e6cab8ee32"
       "md5=1b82dec78849680b49ae9a8a365b831b"
-    ]
-  ]
-  [
-    "https://github.com/janestreet/sexplib/archive/refs/tags/v0.17.0.tar.gz"
-    "sexplib"
-    [
-      "sha256=da863b42b81235fdcf45eb32c04fb8bde22ff446a779cfb6f989730a35103160"
-    ]
-  ]
-  [
-    "https://github.com/janestreet/sexplib0/archive/refs/tags/v0.17.0.tar.gz"
-    "sexplib0"
-    [
-      "md5=abafe8fd1d6302e55a315f4d78960d2a"
-      "sha512=ad387e40789fe70a11473db7e85fe017b801592624414e9030730b2e92ea08f98095fb6e9236430f33c801605ebee0a2a6284e0f618a26a7da4599d4fd9d395d"
     ]
   ]
   [
@@ -455,11 +429,11 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/kit-ty-kate/spdx_licenses/releases/download/v1.5.0/spdx_licenses-1.5.0.tar.gz"
+    "https://github.com/kit-ty-kate/spdx_licenses/releases/download/v1.6.0/spdx_licenses-1.6.0.tar.gz"
     "spdx_licenses"
     [
-      "md5=1071f6377ebc872404e3ee0d03838299"
-      "sha512=6d86133c2d668521b8f2ed2984dd2574e00cfe91bff63628dfad3ffacc47c7000a9e7a63d5e250be30568ff75680215ff37fca61b6dbd3890fa382a72615482c"
+      "md5=05972e474a00db6cfc00a7b125663464"
+      "sha512=0ae6a00112fbe985aa3505be338b1ee27a1db448d9d08d3a39e033f65c737d242552ed4933aa544dd042f7db8ef4861119c5af408dfd3409b438411509dedd25"
     ]
   ]
   [
@@ -527,11 +501,11 @@ x-opam-monorepo-duniverse-dirs: [
     ]
   ]
   [
-    "https://github.com/ocaml-opam/opam-0install-solver/releases/download/v0.6.0/opam-0install-0.6.0.tbz"
+    "https://github.com/ocaml-opam/opam-0install-solver/releases/download/v0.5.1/opam-0install-0.5.1.tbz"
     "opam-0install-solver"
     [
-      "sha256=637aa8f87acfe76c8dd2d9f86bee42fac161523aecbfa06f208c45b93c1a5e39"
-      "sha512=7e8331318b3aae4dd229f03f4bfc51c81d56c5e73eef6a7c481e68fd9cf5d28427b031a9d9ec3629d6941837c4f3e59a441d17166031d8146c65616d76538330"
+      "sha256=1cf307f263623cb7884fba22fd6d250a3fd96477a65e3d56e6bfaa015a4cd2e0"
+      "sha512=f0815b86744cd46a7291b0a54942daed9e5756c22366386c5710e6fe158711bd0ab521de92897eae8380ddae2bad4b12f75ea37368f69f5e7314c07f65e7cd5b"
     ]
   ]
   [
@@ -612,6 +586,27 @@ x-opam-monorepo-duniverse-dirs: [
     [
       "md5=e993231085db95ab011ffe0cd606d9dd"
       "sha512=aafad186f328ae8dd4cc69af0f30c1a0b208cf5148a7a94c150099be03838503c5ec12918de26cd7f794b5a72f114bc1bae8d81058bd0ea10372a3b06818687e"
+    ]
+  ]
+  [
+    "https://ocaml.janestreet.com/ocaml-core/v0.16/files/parsexp-v0.16.0.tar.gz"
+    "parsexp"
+    [
+      "sha256=b6e2572c8e6191a85cb8f9c3276ed87fe00522c81ba7a268179fb08185e55e12"
+    ]
+  ]
+  [
+    "https://ocaml.janestreet.com/ocaml-core/v0.16/files/sexplib-v0.16.0.tar.gz"
+    "sexplib"
+    [
+      "sha256=e564d5d1ca157314ba5fd64b4e89fa12c6cba8efee3becf6d09d7d9dda21ac5b"
+    ]
+  ]
+  [
+    "https://ocaml.janestreet.com/ocaml-core/v0.16/files/sexplib0-v0.16.0.tar.gz"
+    "sexplib0"
+    [
+      "sha256=86dba26468194512f789f2fb709063515a9cb4e5c4461c021c239a369590701d"
     ]
   ]
 ]
