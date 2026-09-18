@@ -48,6 +48,7 @@ applying those changes remember to run
 
 ```
 dune build opam-monorepo.opam
+dune promote
 ```
 
 to generate the opam file again.
