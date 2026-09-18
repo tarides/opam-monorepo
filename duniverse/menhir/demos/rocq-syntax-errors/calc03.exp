@@ -1,0 +1,4 @@
+File "calc03.in", line 1, characters 16-17:
+Syntax error at '('.
+I have read an expression.
+I am now expecting either an arithmetic operator or the end of the input.

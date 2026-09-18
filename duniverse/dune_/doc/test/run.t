@@ -1,0 +1,16 @@
+----------------------------------------------------------------------------------
+Reveal all occurrences of non-latest (lang dune ...) version in documentation.
+
+When changing Dune version, you need to update the docs too to make this test pass.
+
+Instead of hard coding the latest version in the docs, use the {{latest}} macro
+to substitute it.
+
+Occasionally we do want to mention an older Dune version in documentation. This
+is fine, but you then need to update the list of such exceptions below.
+
+  $ DUNE_LANG=$(dune internal latest-lang-version)
+  $ grep '(lang dune' ../*.rst | grep -v "$DUNE_LANG" | grep -v -F '{{latest}}'
+  ../foreign-code.rst:When using ``(lang dune 3.23)`` or later, ``dune build @check`` produces a
+  ../hacking.rst:``(lang dune 2.7)`` in their ``dune`` project file to use it.
+  ../tests.rst:   (lang dune 2.7)

@@ -1,0 +1,6 @@
+true : bin_annot, safe_string
+<_b0> : -traverse
+<src> : include
+<src/tty/fmt_tty*> : package(unix)
+<src/cli/fmt_cli*> : package(cmdliner)
+<src/top/fmt_top*> : package(compiler-libs.toplevel)

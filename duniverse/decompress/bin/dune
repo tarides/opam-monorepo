@@ -1,0 +1,13 @@
+(executable
+ (name decompress)
+ (modules decompress)
+ (package decompress)
+ (public_name decompress)
+ (libraries
+  checkseum.c
+  unix
+  decompress.de
+  decompress.zl
+  decompress.gz
+  decompress.lzo
+  cmdliner))

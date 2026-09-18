@@ -1,0 +1,3 @@
+(executable
+ (name check)
+ (libraries dune-configurator))

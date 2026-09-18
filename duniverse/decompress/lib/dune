@@ -1,0 +1,46 @@
+(library
+ (name de)
+ (public_name decompress.de)
+ (modules de)
+ (ocamlopt_flags -O3 -unbox-closures -unbox-closures-factor 20)
+ (libraries optint checkseum))
+
+(library
+ (name lz)
+ (public_name decompress.lz)
+ (modules lz)
+ (ocamlopt_flags -O3 -unbox-closures -unbox-closures-factor 20)
+ (libraries optint checkseum de))
+
+(library
+ (name rfc1951)
+ (public_name rfc1951)
+ (modules rfc1951)
+ (libraries optint checkseum))
+
+(rule
+ (deps de.ml)
+ (targets rfc1951.ml)
+ (action
+  (copy de.ml rfc1951.ml)))
+
+(library
+ (name zl)
+ (public_name decompress.zl)
+ (modules zl)
+ (libraries optint checkseum de))
+
+(library
+ (name gz)
+ (public_name decompress.gz)
+ (modules gz)
+ (libraries optint checkseum de))
+
+(library
+ (name lzo)
+ (public_name decompress.lzo)
+ (modules lzo))
+
+(alias
+ (name default)
+ (package decompress))

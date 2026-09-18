@@ -1,0 +1,4 @@
+(library
+ (name tar_eio)
+ (public_name tar-eio)
+ (libraries tar eio))

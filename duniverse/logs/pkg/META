@@ -1,0 +1,85 @@
+description = "Logging infrastructure for OCaml"
+version = "0.10.0+dune"
+requires = ""
+archive(byte) = "logs.cma"
+archive(native) = "logs.cmxa"
+plugin(byte) = "logs.cma"
+plugin(native) = "logs.cmxs"
+exists_if = "logs.cma logs.cmxa"
+
+package "browser" (
+  directory = "browser"
+  description = "The logs.browser library"
+  version = "0.10.0+dune"
+  requires = "logs js_of_ocaml-compiler.runtime"
+  exports = "logs"
+  archive(byte) = "logs_browser.cma"
+  archive(native) = "logs_browser.cmxa"
+  plugin(byte) = "logs_browser.cma"
+  plugin(native) = "logs_browser.cmxs"
+  exists_if = "logs_browser.cma logs_browser.cmxa"
+)
+
+package "cli" (
+  directory = "cli"
+  description = "The logs.cli library"
+  version = "0.10.0+dune"
+  requires = "logs cmdliner"
+  exports = "logs"
+  archive(byte) = "logs_cli.cma"
+  archive(native) = "logs_cli.cmxa"
+  plugin(byte) = "logs_cli.cma"
+  plugin(native) = "logs_cli.cmxs"
+  exists_if = "logs_cli.cma logs_cli.cmxa"
+)
+
+package "fmt" (
+  directory = "fmt"
+  description = "The logs.fmt library"
+  version = "0.10.0+dune"
+  requires = "logs fmt"
+  exports = "logs"
+  archive(byte) = "logs_fmt.cma"
+  archive(native) = "logs_fmt.cmxa"
+  plugin(byte) = "logs_fmt.cma"
+  plugin(native) = "logs_fmt.cmxs"
+  exists_if = "logs_fmt.cma logs_fmt.cmxa"
+)
+
+package "lwt" (
+  directory = "lwt"
+  description = "The logs.lwt library"
+  version = "0.10.0+dune"
+  requires = "logs lwt"
+  exports = "logs"
+  archive(byte) = "logs_lwt.cma"
+  archive(native) = "logs_lwt.cmxa"
+  plugin(byte) = "logs_lwt.cma"
+  plugin(native) = "logs_lwt.cmxs"
+  exists_if = "logs_lwt.cma logs_lwt.cmxa"
+)
+
+package "threaded" (
+  directory = "threaded"
+  description = "The logs.threaded library"
+  version = "0.10.0+dune"
+  requires = "logs threads.posix"
+  exports = "logs"
+  archive(byte) = "logs_threaded.cma"
+  archive(native) = "logs_threaded.cmxa"
+  plugin(byte) = "logs_threaded.cma"
+  plugin(native) = "logs_threaded.cmxs"
+  exists_if = "logs_threaded.cma logs_threaded.cmxa"
+)
+
+package "top" (
+  directory = "top"
+  description = "The logs.top library"
+  version = "0.10.0+dune"
+  requires = "logs"
+  archive(byte) = "logs_top.cma"
+  archive(native) = "logs_top.cmxa"
+  plugin(byte) = "logs_top.cma"
+  plugin(native) = "logs_top.cmxs"
+  exists_if = "logs_top.cma logs_top.cmxa"
+)

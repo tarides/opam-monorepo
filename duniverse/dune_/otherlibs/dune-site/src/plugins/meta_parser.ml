@@ -1,0 +1,49 @@
+module Meta_parser = Dune_meta_parser.Meta_parser.Make (struct
+    module Loc = struct
+      type t = unit
+
+      let of_lexbuf _ = ()
+    end
+
+    module Lib_name = struct
+      type t = string
+
+      let parse_string_exn (_, n) = n
+    end
+
+    module Pp = struct
+      type 'tag t = string
+
+      let text s = s
+    end
+
+    module User_message = struct
+      module Style = struct
+        type t = unit
+      end
+
+      module Compound = struct
+        type t = unit
+      end
+
+      module Diff_annot = struct
+        type t = unit
+      end
+    end
+
+    module User_error = struct
+      let raise
+            ?has_embedded_location:_
+            ?needs_stack_trace:_
+            ?loc:_
+            ?hints:_
+            ?compound:_
+            ?promotion:_
+            texts
+        =
+        invalid_arg (String.concat " " texts)
+      ;;
+    end
+  end)
+
+include Meta_parser

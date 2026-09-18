@@ -1,0 +1,2 @@
+Error: File "arity_mismatch_indirect.cppo", line 2, characters 26-27
+Error: "F" expects 1 argument but is applied to 0 argument.

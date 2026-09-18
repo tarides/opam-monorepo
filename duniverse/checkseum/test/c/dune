@@ -1,0 +1,17 @@
+(executable
+ (name test)
+ (libraries checkseum.c alcotest))
+
+(rule
+ (copy# ../test.ml test.ml))
+
+(rule
+ (copy# ../bib bib))
+
+(rule
+ (alias runtest)
+ (deps
+  (:test test.exe)
+  bib)
+ (action
+  (run %{test} --color=always)))

@@ -1,0 +1,38 @@
+(executable
+ (name fuzz)
+ (modules fuzz)
+ (libraries fmt bstr camlzip checkseum.c de crowbar))
+
+(executable
+ (name fuzz_ns)
+ (modules fuzz_ns)
+ (libraries fmt bstr camlzip checkseum.c de crowbar))
+
+(executable
+ (name fuzz_lzo)
+ (modules fuzz_lzo)
+ (libraries bstr minilzo lzo crowbar))
+
+(rule
+ (alias runtest)
+ (package decompress)
+ (deps
+  (:fuzz fuzz.exe))
+ (action
+  (run %{fuzz})))
+
+(rule
+ (alias runtest)
+ (package decompress)
+ (deps
+  (:fuzz fuzz_ns.exe))
+ (action
+  (run %{fuzz})))
+
+(rule
+ (alias runtest)
+ (package decompress)
+ (deps
+  (:fuzz fuzz_lzo.exe))
+ (action
+  (run %{fuzz})))

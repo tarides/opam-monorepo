@@ -1,0 +1,3 @@
+(lang dune 2.6)
+(name checkseum)
+(version v0.5.3)

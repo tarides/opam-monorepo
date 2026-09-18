@@ -1,0 +1,1103 @@
+N0REP0
+### ###################
+### :I: opam setup
+### ###################
+### :I:1: opam root
+### test -d OPAM
+### : log/ may exist on Linux where depexts availability is queried during repo load,
+### : but not on macOS/Windows where we return Suppose_available without system calls
+### : so the log/ directory is not created.
+### ls OPAM | grep -v '^log$'
+config
+config.lock
+lock
+opam-init
+repo
+### opam var root
+${BASEDIR}/OPAM
+### :I:1: repo
+### find REPO | sort
+REPO
+REPO/packages
+REPO/repo
+### cat REPO/repo
+opam-version: "2.0"
+### ###################
+### :II: File creation
+### ###################
+### :II:1: simple file
+### <a-file>
+and some content
+### cat a-file
+and some content
+### <some/directory/file>
+and still some content
+### :II:2: package file in repo, and repository update
+### opam switch create reftests --empty
+### opam list --all
+# Packages matching: any
+# No matches found
+### <pkg:foo.1>
+opam-version: "2.0"
+### cat REPO/packages/foo/foo.1/opam
+opam-version: "2.0"
+### opam list --all
+# Packages matching: any
+# Name # Installed # Synopsis
+foo    --
+### :II:3: extrafile file in repo
+### <pkg:foo.1:xfile>
+i'm with package foo
+### cat REPO/packages/foo/foo.1/files/xfile
+i'm with package foo
+### :II:4: opam file for pin
+### <pin:pkg.opam>
+opam-version: "2.0"
+### cat pkg.opam
+opam-version: "2.0"
+synopsis: "A word"
+description: "Two words."
+authors: "the testing team"
+homepage: "egapemoh"
+maintainer: "maint@tain.er"
+license: "MIT"
+dev-repo: "hg+https://pkg@op.am"
+bug-reports: "https://nobug"
+### <pin:pkg/pkg.opam>
+opam-version: "2.0"
+### cat pkg/pkg.opam
+opam-version: "2.0"
+synopsis: "A word"
+description: "Two words."
+authors: "the testing team"
+homepage: "egapemoh"
+maintainer: "maint@tain.er"
+license: "MIT"
+dev-repo: "hg+https://pkg@op.am"
+bug-reports: "https://nobug"
+### :II:5: opam file for pin with content
+### <pin:pkg.opam>
+opam-version: "2.0"
+synopsis: "something"
+build: ["false"]
+### cat pkg.opam
+opam-version: "2.0"
+synopsis: "something"
+description: "Two words."
+authors: "the testing team"
+homepage: "egapemoh"
+maintainer: "maint@tain.er"
+license: "MIT"
+dev-repo: "hg+https://pkg@op.am"
+bug-reports: "https://nobug"
+build: ["false"]
+### :II:6: extra-files management
+### :II:6:a: opamfile then extrafile
+### <pkg:bar.1>
+opam-version: "2.0"
+### cat REPO/packages/bar/bar.1/opam
+opam-version: "2.0"
+### <pkg:bar.1:xf-bar>
+I'm an extra file
+### cat REPO/packages/bar/bar.1/opam
+opam-version: "2.0"
+extra-files: ["xf-bar" "md5=dbaf1ea561686374373dc7d154f3a0ff"]
+### :II:6:b: extrafile then opamfile
+### <pkg:baz.1:xf-baz>
+I'm an another extra file
+### test -f REPO/packages/baz/baz.1/opam
+# Return code 1 #
+### <pkg:baz.1>
+opam-version: "2.0"
+### cat REPO/packages/baz/baz.1/opam
+opam-version: "2.0"
+extra-files: ["xf-baz" "md5=9ac116bceba2bdf45065df19d26a6b64"]
+### :II:6:c: redefinie opamfile
+### <pkg:qux.1>
+opam-version: "2.0"
+### cat REPO/packages/qux/qux.1/opam
+opam-version: "2.0"
+### <pkg:qux.1:xf-qux>
+I'm yet another extra file
+### cat REPO/packages/qux/qux.1/opam
+opam-version: "2.0"
+extra-files: ["xf-qux" "md5=ccacf3e9d1e3f473e093042aa309e9da"]
+### <pkg:qux.1>
+opam-version: "2.0"
+### cat REPO/packages/qux/qux.1/opam
+opam-version: "2.0"
+extra-files: ["xf-qux" "md5=ccacf3e9d1e3f473e093042aa309e9da"]
+### :II:6:d: redefinie extrafile
+### <pkg:corge.1:xf-corge>
+I'm an yet another another extra file
+### <pkg:corge.1>
+opam-version: "2.0"
+### cat REPO/packages/corge/corge.1/opam
+opam-version: "2.0"
+extra-files: ["xf-corge" "md5=d419630b165e4f2a1ad55d26c9b19e40"]
+### <pkg:corge.1:xf-corge>
+I'm the final one
+### cat REPO/packages/corge/corge.1/opam
+opam-version: "2.0"
+extra-files: ["xf-corge" "md5=71e14bfb95ec10cb60f3b6cafd908a08"]
+### :II:6:e: opamfile contains already extrafile defined
+### <pkg:grault.1>
+opam-version: "2.0"
+extra-files: [ "file" "md5=00000000000000000000000000000000" ]
+### cat REPO/packages/grault/grault.1/opam
+opam-version: "2.0"
+extra-files: [ "file" "md5=00000000000000000000000000000000" ]
+### <pkg:grault.1:xf-grault>
+It was not the final in the end
+### cat REPO/packages/grault/grault.1/opam
+opam-version: "2.0"
+extra-files: [
+  ["file" "md5=00000000000000000000000000000000"]
+  ["xf-grault" "md5=9fd8d4d58e5fd899478b03ab24a11d00"]
+]
+### <pkg:grault.1:xf-grault2>
+I'm the real final!
+### cat REPO/packages/grault/grault.1/opam
+opam-version: "2.0"
+extra-files: [
+  ["file" "md5=00000000000000000000000000000000"]
+  ["xf-grault" "md5=9fd8d4d58e5fd899478b03ab24a11d00"]
+  ["xf-grault2" "md5=5c1ff559ac6490338d362978c058f44a"]
+]
+### ###################
+### :III: Environment variables
+### ###################
+### :III:1: definition
+### FOO=foo
+### echo $FOO
+foo
+### BAR=bar echo $BAR
+bar
+### :III:2: set
+### echo baz >$ BAZ
+### echo $BAZ
+baz
+### :III:3: spaces in variable expansion
+### echo "tree   spaces should appear as 3 spaces" >$ SPACES
+### echo $SPACES
+tree   spaces should appear as 3 spaces
+### ###################
+### :IV: rewrites
+### ###################
+### <rewrites>
+lorem ipsum dolor sit amet
+consectetur adipiscing elit
+sed non risus
+suspendisse lectus tortor
+dignissim sit amet
+### :IV:1: grep
+### cat rewrites | grep amet
+lorem ipsum dolor sit amet
+dignissim sit amet
+### :IV:2: grep -v
+### cat rewrites | grep -v amet
+consectetur adipiscing elit
+sed non risus
+suspendisse lectus tortor
+### cat rewrites | "amet" -> '\c'
+lorem ipsum dolor sit \c
+consectetur adipiscing elit
+sed non risus
+suspendisse lectus tortor
+dignissim sit \c
+### :IV:3: regexp
+### cat rewrites | "amet" -> "XXX"
+lorem ipsum dolor sit XXX
+consectetur adipiscing elit
+sed non risus
+suspendisse lectus tortor
+dignissim sit XXX
+### cat rewrites | "Lorem.*" -> "XXX"
+lorem ipsum dolor sit amet
+consectetur adipiscing elit
+sed non risus
+suspendisse lectus tortor
+dignissim sit amet
+### IPSUM=ipsum
+### cat rewrites | "${IPSUM}" -> "XXX"
+lorem XXX dolor sit amet
+consectetur adipiscing elit
+sed non risus
+suspendisse lectus tortor
+dignissim sit amet
+### :IV:4: unordered
+### <random.ml>
+Random.self_init ();
+let fst () = print_endline "first" in
+let snd () = print_endline "second" in
+let rand = Random.int 100 in
+if rand mod 2 = 0 then
+  (fst (); snd ())
+else
+  (snd (); fst ())
+### ocaml random.ml | unordered
+first
+second
+### :IV:5: sort
+### cat rewrites | sort
+consectetur adipiscing elit
+dignissim sit amet
+lorem ipsum dolor sit amet
+sed non risus
+suspendisse lectus tortor
+### :IV:6: sed-cmd
+### <commands.ml>
+let commands =
+  match Sys.argv |> Array.to_list |> List.tl with
+  | [] ->
+    print_endline "needs at least one argument";
+    exit 1
+  | l -> l
+
+let simple_commands cmd = [
+  Printf.sprintf {|/usr/bin/%s|} cmd;
+  Printf.sprintf {|/opt/homebrew/bin/%s|} cmd;
+  Printf.sprintf {|C:\Windows\system32\%s.exe|} cmd;
+  Printf.sprintf {|C:\Windows\system32\%s|} cmd;
+  Printf.sprintf {|C:\Windows\system 32\%s.exe|} cmd;
+  Printf.sprintf {|C:\Windows\system 32\%s|} cmd;
+]
+let quote s = Printf.sprintf "\"%s\"" s
+let simple_commands_quoted cmd = List.map quote (simple_commands cmd)
+let sandbox = [
+  {|/tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh|};
+  {|${BASEDIR}/opam-init/hooks/sandbox.sh|};
+]
+let complete_sandboxed_commands cmd =
+  let actions = [ "build"; "install"; "remove" ] in
+  List.map (fun sdbx ->
+      List.map (fun act -> sdbx ^" "^ (quote act) ^" "^ (quote cmd)) actions)
+    sandbox
+  |> List.flatten
+
+let all_commands cmd =
+  simple_commands cmd
+  @ simple_commands_quoted cmd
+  @ complete_sandboxed_commands cmd
+
+let print commands variant =
+  List.iter (fun cmd -> print_endline (variant cmd)) commands;;
+
+let title t = Printf.printf "\n%!# %s\n" t;;
+
+List.iter (fun command ->
+
+    let print = print (all_commands command) in
+
+    title "raw";
+    print Fun.id;
+
+    title "with an argument and EOL";
+    print (fun cmd -> cmd ^ " piou");
+
+    title "with a verbose prefix";
+    print (fun cmd -> "+ " ^ cmd);
+
+    title "with a verbose prefix and argument";
+    print (fun cmd -> "+ " ^ cmd ^ " piou");
+
+    title "In the middle";
+    print (fun cmd -> "Something " ^ cmd ^ " else");
+
+    ())
+  commands
+### : cmd need to be followed with at least one space
+### ocaml commands.ml echo
+
+# raw
+/usr/bin/echo
+/opt/homebrew/bin/echo
+C:\Windows\system32\echo.exe
+C:\Windows\system32\echo
+C:\Windows\system 32\echo.exe
+C:\Windows\system 32\echo
+"/usr/bin/echo"
+"/opt/homebrew/bin/echo"
+"C:\Windows\system32\echo.exe"
+"C:\Windows\system32\echo"
+"C:\Windows\system 32\echo.exe"
+"C:\Windows\system 32\echo"
+/tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "build" "echo"
+/tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "install" "echo"
+/tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "remove" "echo"
+${BASEDIR}/opam-init/hooks/sandbox.sh "build" "echo"
+${BASEDIR}/opam-init/hooks/sandbox.sh "install" "echo"
+${BASEDIR}/opam-init/hooks/sandbox.sh "remove" "echo"
+
+# with an argument and EOL
+/usr/bin/echo piou
+/opt/homebrew/bin/echo piou
+C:\Windows\system32\echo.exe piou
+C:\Windows\system32\echo piou
+C:\Windows\system 32\echo.exe piou
+C:\Windows\system 32\echo piou
+"/usr/bin/echo" piou
+"/opt/homebrew/bin/echo" piou
+"C:\Windows\system32\echo.exe" piou
+"C:\Windows\system32\echo" piou
+"C:\Windows\system 32\echo.exe" piou
+"C:\Windows\system 32\echo" piou
+/tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "build" "echo" piou
+/tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "install" "echo" piou
+/tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "remove" "echo" piou
+${BASEDIR}/opam-init/hooks/sandbox.sh "build" "echo" piou
+${BASEDIR}/opam-init/hooks/sandbox.sh "install" "echo" piou
+${BASEDIR}/opam-init/hooks/sandbox.sh "remove" "echo" piou
+
+# with a verbose prefix
++ /usr/bin/echo
++ /opt/homebrew/bin/echo
++ C:\Windows\system32\echo.exe
++ C:\Windows\system32\echo
++ C:\Windows\system 32\echo.exe
++ C:\Windows\system 32\echo
++ "/usr/bin/echo"
++ "/opt/homebrew/bin/echo"
++ "C:\Windows\system32\echo.exe"
++ "C:\Windows\system32\echo"
++ "C:\Windows\system 32\echo.exe"
++ "C:\Windows\system 32\echo"
++ /tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "build" "echo"
++ /tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "install" "echo"
++ /tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "remove" "echo"
++ ${BASEDIR}/opam-init/hooks/sandbox.sh "build" "echo"
++ ${BASEDIR}/opam-init/hooks/sandbox.sh "install" "echo"
++ ${BASEDIR}/opam-init/hooks/sandbox.sh "remove" "echo"
+
+# with a verbose prefix and argument
++ /usr/bin/echo piou
++ /opt/homebrew/bin/echo piou
++ C:\Windows\system32\echo.exe piou
++ C:\Windows\system32\echo piou
++ C:\Windows\system 32\echo.exe piou
++ C:\Windows\system 32\echo piou
++ "/usr/bin/echo" piou
++ "/opt/homebrew/bin/echo" piou
++ "C:\Windows\system32\echo.exe" piou
++ "C:\Windows\system32\echo" piou
++ "C:\Windows\system 32\echo.exe" piou
++ "C:\Windows\system 32\echo" piou
++ /tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "build" "echo" piou
++ /tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "install" "echo" piou
++ /tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "remove" "echo" piou
++ ${BASEDIR}/opam-init/hooks/sandbox.sh "build" "echo" piou
++ ${BASEDIR}/opam-init/hooks/sandbox.sh "install" "echo" piou
++ ${BASEDIR}/opam-init/hooks/sandbox.sh "remove" "echo" piou
+
+# In the middle
+Something /usr/bin/echo else
+Something /opt/homebrew/bin/echo else
+Something C:\Windows\system32\echo.exe else
+Something C:\Windows\system32\echo else
+Something C:\Windows\system 32\echo.exe else
+Something C:\Windows\system 32\echo else
+Something "/usr/bin/echo" else
+Something "/opt/homebrew/bin/echo" else
+Something "C:\Windows\system32\echo.exe" else
+Something "C:\Windows\system32\echo" else
+Something "C:\Windows\system 32\echo.exe" else
+Something "C:\Windows\system 32\echo" else
+Something /tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "build" "echo" else
+Something /tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "install" "echo" else
+Something /tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "remove" "echo" else
+Something ${BASEDIR}/opam-init/hooks/sandbox.sh "build" "echo" else
+Something ${BASEDIR}/opam-init/hooks/sandbox.sh "install" "echo" else
+Something ${BASEDIR}/opam-init/hooks/sandbox.sh "remove" "echo" else
+### ocaml commands.ml echo | sed-cmd echo
+
+# raw
+/usr/bin/echo
+/opt/homebrew/bin/echo
+C:\Windows\system32\echo.exe
+C:\Windows\system32\echo
+C:\Windows\system 32\echo.exe
+C:\Windows\system 32\echo
+"/usr/bin/echo"
+"/opt/homebrew/bin/echo"
+"C:\Windows\system32\echo.exe"
+"C:\Windows\system32\echo"
+"C:\Windows\system 32\echo.exe"
+"C:\Windows\system 32\echo"
+/tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "build" "echo"
+/tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "install" "echo"
+/tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "remove" "echo"
+${BASEDIR}/opam-init/hooks/sandbox.sh "build" "echo"
+${BASEDIR}/opam-init/hooks/sandbox.sh "install" "echo"
+${BASEDIR}/opam-init/hooks/sandbox.sh "remove" "echo"
+
+# with an argument and EOL
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+
+# with a verbose prefix
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
+
+# with a verbose prefix and argument
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
+
+# In the middle
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+### ocaml commands.ml echo smtg | sed-cmd echo smtg
+
+# raw
+/usr/bin/echo
+/opt/homebrew/bin/echo
+C:\Windows\system32\echo.exe
+C:\Windows\system32\echo
+C:\Windows\system 32\echo.exe
+C:\Windows\system 32\echo
+"/usr/bin/echo"
+"/opt/homebrew/bin/echo"
+"C:\Windows\system32\echo.exe"
+"C:\Windows\system32\echo"
+"C:\Windows\system 32\echo.exe"
+"C:\Windows\system 32\echo"
+/tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "build" "echo"
+/tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "install" "echo"
+/tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "remove" "echo"
+${BASEDIR}/opam-init/hooks/sandbox.sh "build" "echo"
+${BASEDIR}/opam-init/hooks/sandbox.sh "install" "echo"
+${BASEDIR}/opam-init/hooks/sandbox.sh "remove" "echo"
+
+# with an argument and EOL
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+echo piou
+
+# with a verbose prefix
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
++ echo
+
+# with a verbose prefix and argument
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
++ echo piou
+
+# In the middle
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+Something echo else
+
+# raw
+/usr/bin/smtg
+/opt/homebrew/bin/smtg
+C:\Windows\system32\smtg.exe
+C:\Windows\system32\smtg
+C:\Windows\system 32\smtg.exe
+C:\Windows\system 32\smtg
+"/usr/bin/smtg"
+"/opt/homebrew/bin/smtg"
+"C:\Windows\system32\smtg.exe"
+"C:\Windows\system32\smtg"
+"C:\Windows\system 32\smtg.exe"
+"C:\Windows\system 32\smtg"
+/tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "build" "smtg"
+/tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "install" "smtg"
+/tmp/build_592d92_dune/opam-reftest-2b89f9/OPAM/opam-init/hooks/sandbox.sh "remove" "smtg"
+${BASEDIR}/opam-init/hooks/sandbox.sh "build" "smtg"
+${BASEDIR}/opam-init/hooks/sandbox.sh "install" "smtg"
+${BASEDIR}/opam-init/hooks/sandbox.sh "remove" "smtg"
+
+# with an argument and EOL
+smtg piou
+smtg piou
+smtg piou
+smtg piou
+smtg piou
+smtg piou
+smtg piou
+smtg piou
+smtg piou
+smtg piou
+smtg piou
+smtg piou
+smtg piou
+smtg piou
+smtg piou
+smtg piou
+smtg piou
+smtg piou
+
+# with a verbose prefix
++ smtg
++ smtg
++ smtg
++ smtg
++ smtg
++ smtg
++ smtg
++ smtg
++ smtg
++ smtg
++ smtg
++ smtg
++ smtg
++ smtg
++ smtg
++ smtg
++ smtg
++ smtg
+
+# with a verbose prefix and argument
++ smtg piou
++ smtg piou
++ smtg piou
++ smtg piou
++ smtg piou
++ smtg piou
++ smtg piou
++ smtg piou
++ smtg piou
++ smtg piou
++ smtg piou
++ smtg piou
++ smtg piou
++ smtg piou
++ smtg piou
++ smtg piou
++ smtg piou
++ smtg piou
+
+# In the middle
+Something smtg else
+Something smtg else
+Something smtg else
+Something smtg else
+Something smtg else
+Something smtg else
+Something smtg else
+Something smtg else
+Something smtg else
+Something smtg else
+Something smtg else
+Something smtg else
+Something smtg else
+Something smtg else
+Something smtg else
+Something smtg else
+Something smtg else
+Something smtg else
+### :IV:7: sed-hash
+### <hashes>
+                - archive: md5=f75b8179e4bbe7e2b4a074dcef62de95, in opam file: md5=f75b8179e4bbe7e2b4a074dcef62de95
+                - archive: sha256=3b0a6bcd854adc9a1a590f527751bec278a058b2152ac50b26f4276a1c49e67c, in opam file: sha256=3b0a6bcd854adc9a1a590f527751bec278a058b2152ac50b26f4276a1c49e67c
+                - archive: sha256=3b0a6bcd854adc9a1a590f527751bec278a058b2152ac50b26f4276a1c49e67c, in opam file: sha256=3b0a6bcd854adc9a1a590f527751bec278a058b2152ac50b26f4276a1c49e67c
++ bash "${BASEDIR}/OPAM/opam-init/hooks/printer.sh" "...building..." "opam-version:++current++" "switch:global-wrappers" "jobs:2" "root:${BASEDIR}/OPAM" "make:make" "name:i-am-a-repo-pkg" "version:1" "depends:dep.1" "installed:false" "enable:" "pinned:false" "bin:${BASEDIR}/OPAM/global-wrappers/bin" "sbin:${BASEDIR}/OPAM/global-wrappers/sbin" "lib:${BASEDIR}/OPAM/global-wrappers/lib" "man:${BASEDIR}/OPAM/global-wrappers/man" "doc:${BASEDIR}/OPAM/global-wrappers/doc" "share:${BASEDIR}/OPAM/global-wrappers/share" "etc:${BASEDIR}/OPAM/global-wrappers/etc" "build:${BASEDIR}/OPAM/global-wrappers/.opam-switch/build/i-am-a-repo-pkg.1" "hash:md5=f75b8179e4bbe7e2b4a074dcef62de95" "dev:false" "build-id:+hash+" "opamfile:${OPAMTMP}/opam" "installed-files:" "a-build-command" (CWD=${BASEDIR}/OPAM/global-wrappers/.opam-switch/build/i-am-a-repo-pkg.1)
+"eta.installl" "md5=f75b8179e4bbe7e2b4a074dcef62de95"
+          expected md5=f75b8179e4bbe7e2b4a074dcef62de95
+          expected sha256=3b0a6bcd854adc9a1a590f527751bec278a058b2152ac50b26f4276a1c49e67c
+extra-files: [["bad-md5" "md5=f75b8179e4bbe7e2b4a074dcef62de95"] ["bad-sha" "sha256=3b0a6bcd854adc9a1a590f527751bec278a058b2152ac50b26f4276a1c49e67c"] ["good-md5" "md5=f75b8179e4bbe7e2b4a074dcef62de95"] ["good-sha" "sha256=3b0a6bcd854adc9a1a590f527751bec278a058b2152ac50b26f4276a1c49e67c"] ["missing-hash" "md5=f75b8179e4bbe7e2b4a074dcef62de95"]]
+extra-files: [["bad-md5" "sha256=3b0a6bcd854adc9a1a590f527751bec278a058b2152ac50b26f4276a1c49e67c"] ["bad-sha" "sha256=3b0a6bcd854adc9a1a590f527751bec278a058b2152ac50b26f4276a1c49e67c"] ["good-md5" "sha256=3b0a6bcd854adc9a1a590f527751bec278a058b2152ac50b26f4276a1c49e67c"] ["good-sha" "sha256=3b0a6bcd854adc9a1a590f527751bec278a058b2152ac50b26f4276a1c49e67c"] ["missing-hash" "sha256=3b0a6bcd854adc9a1a590f527751bec278a058b2152ac50b26f4276a1c49e67c"]]
+extra-files: ["missing-hash" "md5=f75b8179e4bbe7e2b4a074dcef62de95"]
+          got      md5=f75b8179e4bbe7e2b4a074dcef62de95
+          got      sha256=3b0a6bcd854adc9a1a590f527751bec278a058b2152ac50b26f4276a1c49e67c
+   hash:md5=f75b8179e4bbe7e2b4a074dcef62de95
+- hash:md5=f75b8179e4bbe7e2b4a074dcef62de95
+          - md5=f75b8179e4bbe7e2b4a074dcef62de95 (match)
+          - md5=11111111111111111111111111111111 (MISMATCH)
+"qux.installl" "md5=f75b8179e4bbe7e2b4a074dcef62de95"
+          - sha256=3b0a6bcd854adc9a1a590f527751bec278a058b2152ac50b26f4276a1c49e67c (MISMATCH)
+          - sha512=a31cffeeaf410435d5b802e87c7f4b17ec8f1ac433f0ed2366989cc7e26f75f1ec76e0f9a031aa8622e2e27e7b1773d2fa63c387191fa3ed6658e652fb15e645 (MISMATCH)
+SYSTEM                          copy ${OPAMTMP}/archive.tgz -> ${BASEDIR}/OPAM/download-cache/md5/f7/f75b8179e4bbe7e2b4a074dcef62de95
+SYSTEM                          mkdir ${BASEDIR}/OPAM/download-cache/md5/f7
++ tar "xfz" "${BASEDIR}/OPAM/download-cache/md5/f7/f75b8179e4bbe7e2b4a074dcef62de95" "-C" "${OPAMTMP}"
+url.checksum: md5=f75b8179e4bbe7e2b4a074dcef62de95
+url.checksum: md5=f75b8179e4bbe7e2b4a074dcef62de95, sha512=a31cffeeaf410435d5b802e87c7f4b17ec8f1ac433f0ed2366989cc7e26f75f1ec76e0f9a031aa8622e2e27e7b1773d2fa63c387191fa3ed6658e652fb15e645
+url.checksum: md5=f75b8179e4bbe7e2b4a074dcef62de95, sha256=3b0a6bcd854adc9a1a590f527751bec278a058b2152ac50b26f4276a1c49e67c
+url.checksum: md5=f75b8179e4bbe7e2b4a074dcef62de95, sha256=3b0a6bcd854adc9a1a590f527751bec278a058b2152ac50b26f4276a1c49e67c, sha512=a31cffeeaf410435d5b802e87c7f4b17ec8f1ac433f0ed2366989cc7e26f75f1ec76e0f9a031aa8622e2e27e7b1773d2fa63c387191fa3ed6658e652fb15e645
+url.checksum: sha256=3b0a6bcd854adc9a1a590f527751bec278a058b2152ac50b26f4276a1c49e67c
+url.checksum: sha256=3b0a6bcd854adc9a1a590f527751bec278a058b2152ac50b26f4276a1c49e67c, md5=f75b8179e4bbe7e2b4a074dcef62de95, sha512=a31cffeeaf410435d5b802e87c7f4b17ec8f1ac433f0ed2366989cc7e26f75f1ec76e0f9a031aa8622e2e27e7b1773d2fa63c387191fa3ed6658e652fb15e645
+### MD5=f75b8179e4bbe7e2b4a074dcef62de95
+### SHA256=3b0a6bcd854adc9a1a590f527751bec278a058b2152ac50b26f4276a1c49e67c
+### SHA512=a31cffeeaf410435d5b802e87c7f4b17ec8f1ac433f0ed2366989cc7e26f75f1ec76e0f9a031aa8622e2e27e7b1773d2fa63c387191fa3ed6658e652fb15e645
+### cat hashes | sed-hash $MD5 md5-hash | sed-hash $SHA256 sha256-hash | sed-hash $SHA512
+                - archive: md5=+md5-hash+, in opam file: md5=+md5-hash+
+                - archive: sha256=+sha256-hash+, in opam file: sha256=+sha256-hash+
+                - archive: sha256=+sha256-hash+, in opam file: sha256=+sha256-hash+
++ bash "${BASEDIR}/OPAM/opam-init/hooks/printer.sh" "...building..." "opam-version:++current++" "switch:global-wrappers" "jobs:2" "root:${BASEDIR}/OPAM" "make:make" "name:i-am-a-repo-pkg" "version:1" "depends:dep.1" "installed:false" "enable:" "pinned:false" "bin:${BASEDIR}/OPAM/global-wrappers/bin" "sbin:${BASEDIR}/OPAM/global-wrappers/sbin" "lib:${BASEDIR}/OPAM/global-wrappers/lib" "man:${BASEDIR}/OPAM/global-wrappers/man" "doc:${BASEDIR}/OPAM/global-wrappers/doc" "share:${BASEDIR}/OPAM/global-wrappers/share" "etc:${BASEDIR}/OPAM/global-wrappers/etc" "build:${BASEDIR}/OPAM/global-wrappers/.opam-switch/build/i-am-a-repo-pkg.1" "hash:md5=+md5-hash+" "dev:false" "build-id:+hash+" "opamfile:${OPAMTMP}/opam" "installed-files:" "a-build-command" (CWD=${BASEDIR}/OPAM/global-wrappers/.opam-switch/build/i-am-a-repo-pkg.1)
+"eta.installl" "md5=+md5-hash+"
+          expected md5=+md5-hash+
+          expected sha256=+sha256-hash+
+extra-files: [["bad-md5" "md5=+md5-hash+"] ["bad-sha" "sha256=+sha256-hash+"] ["good-md5" "md5=+md5-hash+"] ["good-sha" "sha256=+sha256-hash+"] ["missing-hash" "md5=+md5-hash+"]]
+extra-files: [["bad-md5" "sha256=+sha256-hash+"] ["bad-sha" "sha256=+sha256-hash+"] ["good-md5" "sha256=+sha256-hash+"] ["good-sha" "sha256=+sha256-hash+"] ["missing-hash" "sha256=+sha256-hash+"]]
+extra-files: ["missing-hash" "md5=+md5-hash+"]
+          got      md5=+md5-hash+
+          got      sha256=+sha256-hash+
+   hash:md5=+md5-hash+
+- hash:md5=+md5-hash+
+          - md5=+md5-hash+ (match)
+          - md5=11111111111111111111111111111111 (MISMATCH)
+"qux.installl" "md5=+md5-hash+"
+          - sha256=+sha256-hash+ (MISMATCH)
+          - sha512=+hash+ (MISMATCH)
+SYSTEM                          copy ${OPAMTMP}/archive.tgz -> ${BASEDIR}/OPAM/download-cache/md5/pre/+md5-hash+
+SYSTEM                          mkdir ${BASEDIR}/OPAM/download-cache/md5/pre
++ tar "xfz" "${BASEDIR}/OPAM/download-cache/md5/pre/+md5-hash+" "-C" "${OPAMTMP}"
+url.checksum: md5=+md5-hash+
+url.checksum: md5=+md5-hash+, sha512=+hash+
+url.checksum: md5=+md5-hash+, sha256=+sha256-hash+
+url.checksum: md5=+md5-hash+, sha256=+sha256-hash+, sha512=+hash+
+url.checksum: sha256=+sha256-hash+
+url.checksum: sha256=+sha256-hash+, md5=+md5-hash+, sha512=+hash+
+### <hashes-d5>
+SYSTEM                          copy ${OPAMTMP}/archive.tgz -> ${BASEDIR}/OPAM/download-cache/md5/d5/d55b8179e4bbe7e2b4a074dcef62de95
+SYSTEM                          mkdir ${BASEDIR}/OPAM/download-cache/md5/d5
++ tar "xfz" "${BASEDIR}/OPAM/download-cache/md5/d5/d55b8179e4bbe7e2b4a074dcef62de95" "-C" "${OPAMTMP}"
+### MD5=d55b8179e4bbe7e2b4a074dcef62de95
+### cat hashes-d5 | sed-hash $MD5 md5-hash
+SYSTEM                          copy ${OPAMTMP}/archive.tgz -> ${BASEDIR}/OPAM/download-cache/md5/pre/+md5-hash+
+SYSTEM                          mkdir ${BASEDIR}/OPAM/download-cache/md5/pre
++ tar "xfz" "${BASEDIR}/OPAM/download-cache/md5/pre/+md5-hash+" "-C" "${OPAMTMP}"
+### <hashes-basic>
+0123456789abcdef0123456789abcdef
+0a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f6789
+### cat hashes-basic | sed-hash $MD5
+0123456789abcdef0123456789abcdef
+0a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f6789
+### cat hashes-basic | sed-hash 0123456789abcdef0123456789abcdef
++hash+
+0a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f6789
+### cat hashes-basic | sed-hash 0a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f6789
+0123456789abcdef0123456789abcdef
++hash+
+### cat hashes-basic | sed-hash 0123456789abcdef0123456789
+Bad 'sed-hash' argument (0123456789abcdef0123456789), expecting a environment variable beginning with '$' or a hash of 32, 64, or 128 characters0123456789abcdef0123456789abcdef
+0a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f6789
+### cat hashes-basic | sed-hash 0a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67
+Bad 'sed-hash' argument (0a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67), expecting a environment variable beginning with '$' or a hash of 32, 64, or 128 characters0123456789abcdef0123456789abcdef
+0a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f6789
+### cat hashes-basic | sed-hash 0a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f678999999
+Bad 'sed-hash' argument (0a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f678999999), expecting a environment variable beginning with '$' or a hash of 32, 64, or 128 characters0123456789abcdef0123456789abcdef
+0a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f6789
+### cat hashes-basic | sed-hash FOO
+Bad 'sed-hash' argument (FOO), expecting a environment variable beginning with '$' or a hash of 32, 64, or 128 characters0123456789abcdef0123456789abcdef
+0a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f6789
+### cat hashes-basic | sed-hash $FOO
+0123456789abcdef0123456789abcdef
+0a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f6789
+### cat hashes-basic | sed-hash
+Bad rewrite "| sed-hash", expecting '| RE -> STR' or '>$ VAR'
+0123456789abcdef0123456789abcdef
+0a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f6789
+### ###################
+### :V: Additional commands
+### ###################
+### :V:1: opam-cat
+### <pkg.opam>
+opam-version: "2.0"
+build:
+  [ "false" ]
+install:
+  [
+    [ "true" ]
+  ]
+### opam-cat pkg.opam
+build: ["false"]
+install: [["true"]]
+opam-version: "2.0"
+### :V:2: json-cat
+### opam switch create empty --empty --json=opam.json
+### json-cat opam.json
+{
+  "opam-version": "currentv",
+  "command-line": [
+    "${OPAM}",
+    "switch",
+    "create",
+    "empty",
+    "--empty",
+    "--json=opam.json"
+  ]
+}
+### opam install foo --json=opam.json
+The following actions will be performed:
+=== install 1 package
+  - install foo 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed foo.1
+Done.
+### json-cat opam.json
+{
+  "opam-version": "currentv",
+  "command-line": [
+    "${OPAM}",
+    "install",
+    "foo",
+    "--json=opam.json"
+  ],
+  "switch": "empty",
+  "request": {
+    "action": "install",
+    "install": [
+      "foo"
+    ],
+    "remove": [],
+    "upgrade": [],
+    "all": [
+      "foo"
+    ],
+    "criteria": "-removed,-count[avoid-version,changed],-count[version-lag,request],-count[version-lag,changed],-count[missing-depexts,changed],-changed"
+  },
+  "solution": [
+    {
+      "install": {
+        "name": "foo",
+        "version": "1"
+      }
+    }
+  ],
+  "results": [
+    {
+      "action": {
+        "build": {
+          "name": "foo",
+          "version": "1"
+        }
+      },
+      "result": "OK",
+      "duration": 6.2831853071
+    },
+    {
+      "action": {
+        "install": {
+          "name": "foo",
+          "version": "1"
+        }
+      },
+      "result": "OK",
+      "duration": 6.2831853071
+    }
+  ]
+}
+### :V:3: Cache cat
+### <OPER/repo>
+opam-version: "2.0"
+### <OPER/packages/foo/foo.2/opam>
+opam-version: "2.0"
+### <OPER/packages/un/un.2/opam>
+opam-version: "2.0"
+### <OPER/packages/deux/deux.2/opam>
+opam-version: "2.0"
+### opam switch create cache --empty
+### opam repository add oper ./OPER
+[oper] Initialised
+[NOTE] Repository oper has been added to the selections of switch cache only.
+       Run `opam repository add oper --all-switches|--set-default' to use it in all existing switches, or in newly created switches, respectively.
+
+### opam install bar baz foo un deux
+The following actions will be performed:
+=== install 5 packages
+  - install bar  1
+  - install baz  1
+  - install deux 2
+  - install foo  2
+  - install un   2
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed bar.1
+-> installed baz.1
+-> installed deux.2
+-> installed foo.2
+-> installed un.2
+Done.
+### :V:3:a: installed packages cache
+### opam-cache installed cache
+=> un.2 <=
+opam-version: "2.0"
+name: "un"
+version: "2"
+=> foo.2 <=
+opam-version: "2.0"
+name: "foo"
+version: "2"
+=> deux.2 <=
+opam-version: "2.0"
+name: "deux"
+version: "2"
+=> baz.1 <=
+opam-version: "2.0"
+name: "baz"
+version: "1"
+extra-files: ["xf-baz" "md5=9ac116bceba2bdf45065df19d26a6b64"]
+=> bar.1 <=
+opam-version: "2.0"
+name: "bar"
+version: "1"
+extra-files: ["xf-bar" "md5=dbaf1ea561686374373dc7d154f3a0ff"]
+### opam-cache installed cache foo
+=> foo.2 <=
+opam-version: "2.0"
+name: "foo"
+version: "2"
+### opam-cache installed cache foo un
+=> un.2 <=
+opam-version: "2.0"
+name: "un"
+version: "2"
+=> foo.2 <=
+opam-version: "2.0"
+name: "foo"
+version: "2"
+### opam-cache installed cache inexistent
+Empty selection
+### opam switch create cache2 --empty
+### opam-cache installed cache2
+Empty cache
+### opam-cache installed cache2 foo
+Empty cache
+### opam-cache installed cache3
+No cache
+### :V:3:b: repo cache
+### opam-cache repo
+=> oper:un.2 <=
+opam-version: "2.0"
+name: "un"
+version: "2"
+=> oper:foo.2 <=
+opam-version: "2.0"
+name: "foo"
+version: "2"
+=> oper:deux.2 <=
+opam-version: "2.0"
+name: "deux"
+version: "2"
+=> default:qux.1 <=
+opam-version: "2.0"
+name: "qux"
+version: "1"
+extra-files: ["xf-qux" "md5=ccacf3e9d1e3f473e093042aa309e9da"]
+=> default:grault.1 <=
+opam-version: "2.0"
+name: "grault"
+version: "1"
+extra-files: [
+  ["file" "md5=00000000000000000000000000000000"]
+  ["xf-grault" "md5=9fd8d4d58e5fd899478b03ab24a11d00"]
+  ["xf-grault2" "md5=5c1ff559ac6490338d362978c058f44a"]
+]
+=> default:foo.1 <=
+opam-version: "2.0"
+name: "foo"
+version: "1"
+extra-files: ["xfile" "md5=f343d90d29f2632b7e5fcf8ee249d1b5"]
+=> default:corge.1 <=
+opam-version: "2.0"
+name: "corge"
+version: "1"
+extra-files: ["xf-corge" "md5=71e14bfb95ec10cb60f3b6cafd908a08"]
+=> default:baz.1 <=
+opam-version: "2.0"
+name: "baz"
+version: "1"
+extra-files: ["xf-baz" "md5=9ac116bceba2bdf45065df19d26a6b64"]
+=> default:bar.1 <=
+opam-version: "2.0"
+name: "bar"
+version: "1"
+extra-files: ["xf-bar" "md5=dbaf1ea561686374373dc7d154f3a0ff"]
+### opam-cache repo foo
+=> oper:foo.2 <=
+opam-version: "2.0"
+name: "foo"
+version: "2"
+=> default:foo.1 <=
+opam-version: "2.0"
+name: "foo"
+version: "1"
+extra-files: ["xfile" "md5=f343d90d29f2632b7e5fcf8ee249d1b5"]
+### opam-cache repo un baz
+=> oper:un.2 <=
+opam-version: "2.0"
+name: "un"
+version: "2"
+=> default:baz.1 <=
+opam-version: "2.0"
+name: "baz"
+version: "1"
+extra-files: ["xf-baz" "md5=9ac116bceba2bdf45065df19d26a6b64"]
+### opam-cache repo inexistent
+Empty selection
+### :V:3:c: Invalid installed cache
+### opam switch create cache4 --empty
+### opam install foo
+The following actions will be performed:
+=== install 1 package
+  - install foo 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed foo.1
+Done.
+### opam-cache installed cache4
+=> foo.1 <=
+opam-version: "2.0"
+name: "foo"
+version: "1"
+extra-files: ["xfile" "md5=f343d90d29f2632b7e5fcf8ee249d1b5"]
+### sh -c 'echo XXX > OPAM/cache4/.opam-switch/packages/cache'
+### opam-cache installed cache4
+Invalid cache
+### opam-cache installed cache4
+Invalid cache
+### :V:3:d: Invalid repo cache
+### sh -c 'echo XXX > OPAM/repo/state-${MAGICV}.cache'
+### opam-cache repo un
+Invalid cache
+### opam-cache repo un
+Invalid cache
+### :V:4: unset
+### env | grep REFTEST_UNSET
+### REFTEST_UNSET=test
+### env | grep REFTEST_UNSET
+REFTEST_UNSET=test
+### REFTEST_UNSET=""
+### env | grep REFTEST_UNSET
+REFTEST_UNSET=
+### unset REFTEST_UNSET
+### env | grep REFTEST_UNSET
+### :V:4: opam-set-os
+### opam var --global os-distribution=void
+Added '[os-distribution "void" "Set through 'opam var'"]' to field global-variables in global configuration
+### opam var --global os-family=void
+Added '[os-family "void" "Set through 'opam var'"]' to field global-variables in global configuration
+### opam var --global os=void
+Added '[os "void" "Set through 'opam var'"]' to field global-variables in global configuration
+### opam var os-distribution
+void
+### opam var os-family
+void
+### opam var os
+void

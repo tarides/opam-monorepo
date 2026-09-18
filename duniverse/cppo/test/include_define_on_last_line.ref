@@ -1,0 +1,7 @@
+# 1 "define_on_last_line.cppo"
+(* This #define is NOT ended by a new line, but is nevertheless accepted. *)
+# 2 "include_define_on_last_line.cppo"
+(* Check that the definition of TWICE has been accepted: *)
+let f x = 
+# 3 "include_define_on_last_line.cppo"
+           x + x 

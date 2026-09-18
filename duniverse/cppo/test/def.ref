@@ -1,0 +1,152 @@
+# 1 "def.cppo"
+(* This macro application combinator provides call-by-value
+   semantics: the actual argument is evaluated up front and
+   its value is bound to a variable, which is passed as an
+   argument to the macro [F]. *)
+
+# 10 "def.cppo"
+(* Some trivial tests. *)
+# 13 "def.cppo"
+let forty_one = 
+# 13 "def.cppo"
+                
+  (let __x = ( 41) in  __x )
+    (* Multiple lines permitted; no backslash required. *)
+ 
+# 14 "def.cppo"
+let forty_two = 
+# 14 "def.cppo"
+                
+  (let __x = (      42  ) in  __x )
+    (* Multiple lines permitted; no backslash required. *)
+ 
+
+# 16 "def.cppo"
+(* A [for]-loop macro. *)
+
+# 25 "def.cppo"
+(* A [for]-loop macro that performs unrolling. *)
+
+# 47 "def.cppo"
+(* In the examples that follow, #scope ... #endscope is used to
+   avoid the need to #undefine local macros such as BODY and F. *)
+
+(* Iteration over an array, with a normal loop. *)
+let iter f a =
+
+  
+# 54 "def.cppo"
+  
+(
+  for __index = 0 to  Array.length a-1 do
+     (f a.(__index)) 
+  done
+)
+ 
+
+# 57 "def.cppo"
+(* Iteration over an array, with an unrolled loop. *)
+let unrolled_iter f a =
+
+  
+# 61 "def.cppo"
+   (
+  (* #define can be nested inside #def. *)
+  (* #def can be nested inside #def. *)
+  let __finish = ( Array.length a) in
+  let __index = ref (0) in
+  while !__index + 2 <= __finish do
+     
+  (let __x = ( !__index) in  (f a.(__x)) )
+    (* Multiple lines permitted; no backslash required. *)
+  ;
+     
+  (let __x = ( !__index + 1) in  (f a.(__x)) )
+    (* Multiple lines permitted; no backslash required. *)
+  ;
+    
+    __index := !__index +  2
+ 
+  done;
+  while !__index < __finish do
+     
+  (let __x = ( !__index) in  (f a.(__x)) )
+    (* Multiple lines permitted; no backslash required. *)
+  ;
+    
+    __index := !__index +  1
+ 
+  done
+)
+ 
+
+# 64 "def.cppo"
+(* Printing an array, with a normal loop. *)
+let print_int_array a =
+
+  
+# 68 "def.cppo"
+  
+(
+  for __index = 0 to  Array.length a-1 do
+     Printf.printf "%d" a.(__index) 
+  done
+)
+ 
+
+# 71 "def.cppo"
+(* A higher-order macro that produces a definition of [iter],
+   and accepts an arbitrary definition of the macro [LOOP]. *)
+
+# 81 "def.cppo"
+(* Some noise, which does not affect the above definitions. *)
+
+# 84 "def.cppo"
+
+
+  let iter f a =
+    
+(
+  for __index = 0 to  Array.length a-1 do
+     (f a.(__index)) 
+  done
+)
+ 
+ 
+# 85 "def.cppo"
+
+
+  let unrolled_iter f a =
+     (
+  (* #define can be nested inside #def. *)
+  (* #def can be nested inside #def. *)
+  let __finish = ( Array.length a) in
+  let __index = ref (0) in
+  while !__index + 2 <= __finish do
+     
+  (let __x = ( !__index) in  (f a.(__x)) )
+    (* Multiple lines permitted; no backslash required. *)
+  ;
+     
+  (let __x = ( !__index + 1) in  (f a.(__x)) )
+    (* Multiple lines permitted; no backslash required. *)
+  ;
+    
+    __index := !__index +  2
+ 
+  done;
+  while !__index < __finish do
+     
+  (let __x = ( !__index) in  (f a.(__x)) )
+    (* Multiple lines permitted; no backslash required. *)
+  ;
+    
+    __index := !__index +  1
+ 
+  done
+)
+ 
+ 
+
+# 87 "def.cppo"
+(* Just because we can, undefine BODY. *)

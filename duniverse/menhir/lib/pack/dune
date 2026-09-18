@@ -1,0 +1,13 @@
+;; The helper script pack.ml generates menhirLib.{ml,mli}
+;; by concatenating the modules listed in menhirLib.mlpack.
+
+(executable
+  (name pack)
+  (modules pack)
+)
+
+(rule
+  (targets menhirLib.ml menhirLib.mli)
+  (deps (glob_files ../*.{ml,mli}) menhirLib.mlpack)
+  (action (run ./pack.exe))
+)

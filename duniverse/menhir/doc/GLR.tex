@@ -1,0 +1,1283 @@
+\section{GLR Parsing}
+\label{sec:GLR}
+
+% ------------------------------------------------------------------------------
+
+\subsection{LR versus GLR}
+\label{sec:GLR:intro}
+
+\menhir traditionally constructs LR parsers,
+which are \emph{deterministic} parsers.
+Whenever a parser might need to decide between several actions,
+this~decision is made ahead of time, when the parser is constructed;
+so, at runtime, when the parser runs, it never needs to make a~choice
+or to explore several possibilities.
+
+When \menhir does not know what decision to make,
+it asks for help from the user by reporting a \emph{conflict}.
+There are three types of conflicts:
+\begin{enumerate}
+\item a \emph{shift/reduce} conflict
+      represents a choice between
+      consuming the next input token
+      and reducing a production;
+\item a \emph{reduce/reduce} conflict
+      represents a choice between
+      reducing several productions;
+\item an \emph{end-of-stream} conflict
+      represents a choice between
+      querying the lexer for the next input token
+      and performing a default reduction
+      without querying the lexer.
+\end{enumerate}
+
+A deterministic parser does not tolerate ambiguity:
+it either rejects the input
+or accepts the input and constructs a~single parse tree, % or: semantic value
+that~is, a~unique witness of the fact that the input
+is syntactically correct.
+%
+A deterministic parser runs in linear time,
+that is, in time~$O(n)$,
+where $n$ is the length of the input.
+%
+In summary,
+the strengths of deterministic parsers are
+guaranteed unambiguity and efficiency.
+
+In contrast,
+a \emph{non-deterministic parser}
+does not require resolving conflicts
+at parser construction time.
+%
+At runtime, when a non-deterministic parser
+encounters several possibilities,
+it explores all of them in parallel.
+%
+The upside of this approach is that there is no need
+to statically decide, once and for all, which way a~conflict
+should be resolved.
+%
+The main downsides, of course, are
+the need to face ambiguity at runtime
+and a~possibly catastrophic loss of efficiency.
+%
+A non-deterministic parser does not build a single parse tree: instead, it
+usually builds a~parse forest, which contains disjunction nodes; it is then up
+to the user to somehow deal with these disjunctions, which represent multiple
+possible interpretations of the input.
+%
+A non-deterministic parser does not always run in linear time:
+in the presence of ambiguity,
+it time complexity can be polynomial (\sref{sec:GLR:complexity}).
+% its time complexity can be $O(n^3)$ or $O(n^k)$,
+% where the exponent~$k$ depends on the grammar.
+
+The Generalized LR (GLR) algorithm, first described by Lang~\cite{lang-74}
+and independently discovered by Tomita~\cite{tomita-85},
+% also described and improved by
+% Rekers
+% Kipps
+% Nozohoor-Farshi
+% Piastra & Bolognesi
+% Scott and Johnstone
+% -- see Grune & Jacobs for references
+is a non-deterministic parsing algorithm.
+In short, when a GLR parser encounters a choice between several
+actions, it creates several distinct ``threads'' of computation
+so as to explore the consequences of each action in parallel.
+Furthermore, if it determines that two threads, after performing
+a number of unrelated actions, have reached a~common state, then
+it merges them back into a single thread. Thus, a small ambiguous
+segment inside a large, mostly unambiguous input has limited cost.
+
+GLR parsing has been studied and improved over the years by many
+researchers. \menhir's implementation of this algorithm is inspired
+by McPeak's presentation~\cite{mcpeak-02,mcpeak-necula-04}, with
+several key improvements in efficiency. Following McPeak's approach,
+\menhir's GLR parser executes user-provided semantic actions and
+user-provided ``merge functions'' to build semantic values.
+Semantic values are typically
+abstract syntax trees, which may have shared subtrees,
+and which may contain disjunction nodes,
+reflecting the presence of ambiguous input segments.
+%
+These abstract syntax ``trees'' are really abstract syntax DAGs
+(directed acyclic graphs), but, out of habit, we will often keep
+saying ``trees''.
+
+% An alternative approach would be to have no semantic actions
+% or merge functions and let the parser build a ``parse forest''.
+% % shared packed parse forest (SPPF)
+% % or a BSR set, following Scott and Johnstone
+% When a data structure is used, one can arrange to do GLR parsing
+% in time $O(n^3)$. % Kipps 1991, cf. Grune and Jacobs ref. [165]
+% However, the end user must then work to decode this data structure;
+% this is painful, and this decoding process is likely to re-introduce
+% the inefficiency caused by semantic actions. We prefer to eliminate
+% the parse forest and run semantic actions directly, thereby gaining
+% a constant factor in efficiency and greater simplicity for the end user.
+
+% ------------------------------------------------------------------------------
+
+\subsection{GLR parsing using \menhir}
+\label{sec:GLR:menhir}
+
+Here is a~brief introduction to GLR parsing with \menhir.
+
+\begin{enumerate}
+\item Write your grammar in an \mly file as you normally would.
+\item As far as possible,
+      avoid conflicts altogether,
+      or resolve conflicts by providing
+      priority and associativity declarations
+      (\sref{sec:assoc})
+      and \dprec annotations
+      (\sref{sec:productiongroups})
+      as you normally would.
+      If a~conflict cannot be avoided or resolved,
+      then leave~it.
+      In GLR mode, \menhir does \emph{not}
+      resolve severe conflicts
+      in an arbitrary way,
+      as it normally would~(\sref{sec:conflicts:severe:resolution}).
+      Instead, it tolerates ambiguity.
+\item If you believe that a~nonterminal symbol is ambiguous
+      (\sref{sec:GLR:default:merge})
+      then you should provide a \emph{merge function}
+      (\sref{sec:GLR:merge})
+      for this symbol,
+      in the \mly file,
+      following the definition of this symbol.
+      A merge function is an OCaml function, between curly braces,
+      preceded with the keyword \dmerge.
+\item Unless you have provided a merge function for every nonterminal symbol,
+      you must also provide a \emph{default merge function}
+      (\sref{sec:GLR:default:merge}).
+      A default merge function is an OCaml function, between curly braces,
+      preceded with the keyword \dmerge.
+      Its declaration must appear in the first section of the \mly file,
+      before \percentpercent.
+      % which separates declarations and rules
+\item Invoke \menhir with the command-line switch \oGLR.
+\item Link your program with the library \menhirGLR.
+\item Invoke the generated parser in the same way as usual.
+      At this time, in GLR mode, only the monolithic API (\sref{sec:monolithic}) is supported.
+      The incremental API, the inspection API, and the unparsing API are not supported.
+\end{enumerate}
+
+The following subsections provide more information about
+semantic actions (\sref{sec:GLR:actions}),
+merge functions (\sref{sec:GLR:merge}, \sref{sec:GLR:default:merge}),
+and
+technical details and current limitations (\sref{sec:GLR:details}).
+We also discuss how to understand and analyze the time complexity of
+a~GLR parser (\sref{sec:GLR:complexity})
+and offer a~comparison between Elkhound and \menhir (\sref{sec:GLR:comparison:elkhound}).
+
+% LATER once we have a good (realistic) demo of the GLR mode, point to it.
+% at the moment, we only have demos/calc-GLR, which is artificial.
+
+% ------------------------------------------------------------------------------
+
+\subsection{Semantic actions}
+\label{sec:GLR:actions}
+
+Semantic actions in GLR mode work essentially in the same way as they do in LR
+mode (\sref{sec:actions}). If $A \ar \alpha$ is a~production, then,
+once the components of the right-hand side $\alpha$ have been recognized, the
+production $A \ar \alpha$ is \emph{reduced}: that~is, the semantic
+action that is associated with this production is invoked. The semantic action
+has access to the semantic value of each symbol in the right-hand side
+$\alpha$ and must construct and return the semantic value of the left-hand
+side $A$.
+
+The following remarks about semantic actions may be useful:
+\begin{enumerate}
+\item Semantic actions have access to the position keywords (\sref{sec:positions}),
+      but the manner in which positions are computed
+      differs in LR mode and in GLR mode
+      (\sref{sec:GLR:positions}).
+\item Semantic actions should be cheap: they should have time complexity $O(1)$.
+\item Semantic actions can have side effects:
+      that is, they can use mutable state.
+      It is recommended to avoid this feature.
+      Using a mutable counter to assign unique identifiers
+      to abstract syntax DAG nodes is a reasonable use.
+\item The execution of semantic actions is \emph{not} delayed in any way:
+      semantic actions are executed during parsing.
+      Their execution obeys a left-to-right discipline,
+      based on the \emph{right} ends of the input segments
+      that they cover. That is,
+      if $j$ and $j'$ are two input indices
+      such that $j < j'$,
+      then a production whose right-hand side covers the interval $[i, j)$
+      will be reduced \emph{before}
+      a production whose right-hand side covers the interval $[i', j')$.
+\item The parser can appear to execute several ``threads'' in parallel,
+      each of which executes a distinct sequence of semantic actions.
+      The execution of these ``threads'' is in in fact sequential;
+      the operations of the various ``threads'' are interleaved,
+      so the execution of a~semantic action is atomic.
+      Sometimes a ``thread'' reaches a~dead end and dies.
+      This event is not observable.
+      In such an~event, some of the semantic values
+      that this thread has constructed
+      may become unused and may be reclaimed by the garbage collector.
+\item In a~semantic action, if for some reason
+      you are able to determine that
+      the reduction that is currently taking place is ``wrong''
+      (that is, this reduction represents an incorrect interpretation of the input)
+      then you can kill the current parser ``thread'' via the function call \callreject,
+      which does not return.
+\end{enumerate}
+
+Using \callreject lets you eliminate some ambiguity, that is,
+throw away certain abstract syntax subtrees and (eventually)
+build abstract syntax trees that contain fewer disjunction nodes.
+%
+Contrary to what one might expect,
+this does not necessarily lead to a savings in time.
+%
+If, for some $A$, $i$, and $j$,
+\emph{all} of the parser threads
+that would have recognized the nonterminal symbol $A$
+in the input segment $[i, j)$
+are killed by this mechanism,
+\emph{then} some work is saved,
+as the consequences of recognizing $A$ in the segment $[i, j)$
+are not explored.
+%
+However, if any of these threads survives
+then the symbol $A$ is recognized in the segment $[i, j)$,
+the~consequences of this event must be explored,
+and no work is saved.
+
+% This discussion is somewhat over-simplified, as it not just a matter of
+% recognizing A over [i, j); it is also a matter of which state the parser is
+% in at offset i (and therefore, which state is reached at offset j). Anyway,
+% the number of states is O(1) so this detail can be safely omitted.
+
+In LR mode, a~semantic value is used (passed to a semantic action) exactly
+once. In GLR mode, this is no longer true: a~semantic value may be never used,
+used once, or used several times. As a result, if the semantic actions build
+abstract syntax trees, then these trees can have shared subtrees: they are
+really abstract syntax DAGs. Traversing such a DAG requires some care: a naive
+tree traversal, which traverses a shared subtree more than once, has
+exponential time complexity.
+
+% this might go without saying, but is better said:
+Both in LR mode and in GLR mode, semantic actions are executed in a bottom-up
+manner. That~is to say, when a~semantic action is executed, the semantic
+values to which this semantic action has access have already been computed.
+% they are stable (they will not be modified in the future)
+% no need for cyclic parse forests or cyclic semantic values
+
+% ------------------------------------------------------------------------------
+
+\subsection{Merge functions}
+\label{sec:GLR:merge}
+
+Whenever the parser determines that the nonterminal symbol~$A$
+can be recognized in the input segment $[i, j)$,
+it~constructs a~semantic value,
+which can be viewed as a~witness of the fact that
+$A$~can be recognized over $[i, j)$.
+%
+There are sometimes several reasons
+why $A$~can be recognized over $[i, j)$.
+In other words,
+there can exist several ways of interpreting the input fragment
+delimited by the indices $i$ and $j$
+as an instance of the~symbol~$A$.
+%
+In this case, several semantic values are built.
+These semantic values must then be \emph{merged},
+that is, combined, so as to obtain a single semantic value.
+
+In the typical scenario where a semantic value is an abstract syntax DAG,
+a merge function should typically build a \emph{disjunction node}.
+Such a node reflects the existence of an ambiguity:
+there is more than one proof of the fact that the symbol $A$
+can be recognized in the segment $[i, j)$.
+%
+Each child of the disjunction node represents one such proof.
+%
+As usual, it is up to you, the user, to define the algebraic data type of
+abstract syntax DAGs. Therefore, it is also up to you to equip this type with
+a constructor for disjunction nodes. This constructor might have exactly two
+children, or might carry a list of children; this is up to you. It is also up
+to you to write merge functions.
+
+Every nonterminal symbol needs a merge function.
+(This constraint can be relaxed
+by providing a default merge function; see \sref{sec:GLR:default:merge}.)
+To provide a merge function for the symbol~$A$,
+after the definition of this symbol,
+use the keyword \dmerge,
+followed with the merge function itself,
+between curly braces.
+The merge function should be an OCaml function
+of type $\semvtype{A} \ar \semvtype{A} \ar \semvtype{A}$,
+where we write $\semvtype{A}$
+to mean ``the type of the semantic values associated with the symbol~$A$''.
+%
+In other words, a~merge function expects two semantic values
+and returns a semantic value.
+
+One may distinguish two kinds of semantic values:
+a ``plain'' value is one that is produced by a~semantic action;
+a ``composite'' value is one that is produced by a~merge function.
+A~merge function is asymmetric:
+whereas its first argument may be a plain value or a composite value,
+its second argument
+is a~plain value.
+
+A~merge function should have time complexity $O(1)$.
+Its main purpose should be to build a~disjunction node.
+Although one could imagine other strategies,
+such as returning one of the two arguments
+and discarding the other one,
+these strategies would not speed up parsing.
+Therefore, attempting to perform disambiguation
+inside a merge function is pointless.
+
+A merge function can use the position keywords
+\kstartpos and \kendpos (\sref{sec:GLR:positions})
+to obtain the start position and end position
+of the interval $[i, j)$.
+%
+At this time, a merge function
+does not have access to the input indices $i$ and~$j$.
+
+A parameterized nonterminal symbol (\sref{sec:templates}) can have a merge
+function, and (if it is ambiguous) should have a merge function. When this
+symbol is instantiated, each instance inherits a copy of the merge function.
+%
+A~nonterminal symbol that is marked \dinline (\sref{sec:inline}) does not
+need and cannot have a merge function.
+
+% ------------------------------------------------------------------------------
+
+\subsection{Default merge functions}
+\label{sec:GLR:default:merge}
+
+In principle, every nonterminal symbol needs a merge function
+(\sref{sec:GLR:merge}).
+%
+If, for some symbol, no merge function is provided,
+then, for this symbol, the \emph{default merge function} is used instead.
+%
+To declare a default merge function,
+use the keyword \dmerge,
+followed with the default merge function itself,
+between curly braces.
+%
+This declaration must appear in the first section of the \mly file,
+before the delimiter \percentpercent.
+%
+
+A default merge function serves the same purpose as a merge function, and
+works in the same way. Compared with a merge function, it receives one more
+argument, which is the name of a~nonterminal symbol~$A$ whose semantic values
+must be merged. Because the dependent type $(A:\mathit{string}) \ar
+\semvtype{A} \ar \semvtype{A} \ar \semvtype{A}$ cannot be expressed in OCaml,
+a default merge function must be polymorphic: its type must be
+$\forall\semvtyvar.\; \mathit{string} \ar \semvtyvar \ar \semvtyvar \ar \semvtyvar$.
+Therefore, the two semantic values must be considered as opaque
+by the default merge function.
+
+Let us say that a symbol~$A$ is \emph{ambiguous} if it is possible to
+construct two distinct reasons why $A$~can be recognized in an input
+segment $[i, j)$. Otherwise, let us say that $A$ is \emph{unambiguous}. If $A$
+is unambiguous then its merge function is dead: the need to merge two
+semantic values associated with this symbol never arises.
+%
+It~would be pleasant if \menhir would require a merge function for each
+ambiguous symbol, and would require no merge function for unambiguous symbols.
+%
+Unfortunately, \menhir cannot tell whether a symbol is ambiguous;
+this property is~undecidable.
+%
+Therefore \menhir requires that every nonterminal symbol be covered,
+either by its own merge function, or by the default merge function.
+%
+If you believe that a merge function is dead then you can let
+this function print an error message and either die or return one of
+the semantic values that it has received as arguments.
+
+% ------------------------------------------------------------------------------
+
+\subsection{Technical details}
+\label{sec:GLR:details}
+
+\paragraph{Cyclic grammars}
+\label{sec:GLR:cyclic}
+
+A~grammar is \emph{cyclic} if there exists a nonterminal symbol~\nt{A}
+and \nt{B} such that $\nt{A} \longrightarrow^+ \nt{A}$,
+that~is,
+in one or more steps,
+\nt{A} generates \nt{A}.
+%
+Under the assumption that the symbol \nt{A} is reachable
+from a~start symbol,
+such a~grammar is infinitely ambiguous:
+for some input sentences,
+there exist an~infinite number of parse trees.
+%
+\menhir forbids cyclic grammars,
+both in LR mode and in GLR mode.
+%
+In LR mode, this restriction seems natural,
+since ambiguity is considered undesirable.
+%
+In GLR mode, this restriction ensures that
+semantic actions can be applied bottom-up
+(\sref{sec:GLR:actions}).
+%
+It exists also in Elkhound (\sref{sec:GLR:comparison:elkhound}).
+
+\paragraph{Hidden left recursion}
+
+A~grammar has \emph{hidden left recursion}
+if there exists a nonterminal symbol~\nt{A}
+such that $\nt{A} \longrightarrow^+ \alpha\nt{A}\beta$
+where~$\alpha$ is a nonempty string of nonterminal symbols
+and $\alpha$ is nullable,
+that~is, $\alpha \longrightarrow^+ \epsilon$.
+%
+Under the assumption that the symbol \nt{A} is reachable
+from a~start symbol,
+such a~grammar is not in the class~LR$(k)$;
+either it is infinitely ambiguous
+or it requires unbounded lookahead.
+%
+% roughly, we cannot guess how many times we should reduce \alpha immediately,
+% as this amounts to guessing how many times we can recognize \beta in the future.
+% if \beta is nullable then the grammar is infinitely ambiguous
+% if \beta can generate a nonempty word then unbounded lookahead is needed.
+%
+\menhir forbids hidden left recursion,
+both in LR mode and in GLR mode.
+%
+In LR mode, this restriction seems natural.
+%
+In GLR mode,
+this restriction ensures that
+the graph-structured stack (GSS)
+remains acyclic.
+%
+This property is in fact not essential:
+the GLR algorithm does not rely on~it.
+%
+% GLR will reduce \alpha exactly once
+% and construct one edge,
+% without wondering how many times this edge
+% may participate in future reductions.
+%
+Therefore, in the future,
+this restriction may be removed.
+
+\paragraph{Expansion of nullable suffixes}
+\label{sec:GLR:expansion}
+
+If one or more nullable nonterminal symbols
+appear at the end of a~production,
+we say that this production exhibits \emph{a~nullable suffix}.
+%
+The presence of a~nullable suffix in a~production
+introduces an~inefficiency (\sref{sec:GLR:complexity}).
+%
+To avoid this problem,
+\menhir transforms the grammar
+so~that,
+in the transformed grammar,
+no production has a~nullable suffix.
+
+% General idea:
+Roughly speaking,
+if the nonterminal symbol \nt{A} is nullable
+and participates in a~nullable suffix
+then it is transformed into
+a disjunction $\nt{empty\_A} \mid \nt{nonempty\_A}$,
+where
+the new nonterminal symbol \nt{empty\_A}
+groups the productions that generate the empty word~$\epsilon$
+and
+the new nonterminal symbol \nt{nonempty\_A}
+groups the productions that generate nonempty words.
+%
+Furthermore, the symbol \nt{empty\_A} is marked \dinline,
+so it is expanded away and disappears.
+
+% Example:
+For example,
+suppose that the grammar contains the production
+%
+\[\begin{array}{rcl}
+\nt{expr} & \ar & \nt{expr} \; \twhere \; \ntlist(\ntdecl)
+\end{array}\]
+%
+where
+$\twhere$ is a terminal symbol
+and
+where
+% (as~usual)
+the symbol $\ntlist(\ntdecl)$
+is defined by
+$\ntlist(\ntdecl) \ar \epsilon \mid \ntdecl \; \ntlist(\ntdecl)$.
+%
+Because $\ntlist(\ntdecl)$ is nullable, % generates the empty word,
+this production has a~nullable suffix.
+%
+Once the grammar is transformed,
+this production is replaced with two productions:
+%
+\[\begin{array}{rcl}
+\nt{expr} & \ar & \nt{expr} \; \twhere \\
+\nt{expr} & \ar & \nt{expr} \; \twhere \; \nelist(\ntdecl)
+\end{array}\]
+%
+where the symbol $\nelist(\ntdecl)$
+is defined by
+$\nelist(\ntdecl) \ar \ntdecl \mid \ntdecl \; \nelist(\ntdecl)$.
+
+% Cost.
+This example involves a right-recursive list,
+but the transformation applies equally well
+to left-recursive symbols
+and to non-recursive symbols (such as options).
+%
+In the worst case,
+this transformation could cause an~exponential blowup
+in the size of the grammar.
+%
+To avoid such a blowup,
+as a~rule of thumb,
+it is recommended to avoid sequences of nullable symbols:
+for~example,
+instead of $A? \; B? \; C? \; D?$
+(which, after expansion, would give rise to 16 productions),
+it is recommended to write
+$\llist(A \mid B \mid C \mid D)$
+and to check for well-formedness
+% absence of repetitions, ordering constraints
+in a~later stage.
+
+The grammar is transformed by \menhir before it explains conflicts.
+Therefore, the conflict explanations produced by \menhir refer to
+the transformed grammar.
+%
+We believe
+% (but are not certain)
+that the transformation itself cannot create new conflicts.
+
+\paragraph{Failure}
+
+As explained earlier (\sref{sec:GLR:intro}),
+a~GLR parser conceptually runs
+several parsing ``threads''
+in parallel.
+%
+When such a thread reaches a~state where no action is permitted,
+it dies silently.
+%
+% Another way to put this would be,
+% the parser alternates between a reduction phase and a shift phase.
+% In the shift phase,
+% any thread that is unable to shift is discarded.
+% (Its consequences under reduction have already been explored.)
+%
+If all threads have died then
+the~GLR~parser itself dies
+by raising the exception \texttt{Error}.
+%
+The type of this exception in GLR mode
+is not the same as in LR mode.
+%
+In GLR mode,
+the exception \texttt{Error}
+carries a~parameter,
+which is a~list of GSS nodes:
+%
+\begin{verbatim}
+  exception Error of (int, Obj.t) MenhirGLR.GSS.node list
+\end{verbatim}
+%
+This aspect should be considered unstable
+and may change in the future.
+
+In GLR mode, the command line switches
+\oexncarriesstate and \ofixedexc are not supported.
+%
+The special token \error is also not supported.
+
+\paragraph{Successful termination}
+
+As explained earlier (\sref{sec:GLR:intro}),
+a~GLR parser conceptually runs
+several parsing ``threads''
+in parallel.
+%
+A~GLR parser produced by \menhir
+terminates as soon as
+one thread declares success,
+that~is,
+as soon as
+one thread recognizes the start symbol.
+
+It is up to the user
+to avoid end-of-stream conflicts,
+which are situations where
+both
+recognizing the start symbol
+\emph{and}
+querying the lexer for the next token
+are valid actions.
+%
+If there is an end-of-stream conflict
+then
+one thread might declare success
+while one or~more other threads
+want to continue parsing.
+%
+In this case,
+a~GLR~parser generated by \menhir
+terminates successfully,
+discarding all of the unfinished threads.
+%
+Therefore, an~ambiguity is silently ignored.
+
+\paragraph{Lexical feedback}
+
+\emph{Lexical feedback} refers to the use of mutable state that is shared
+between the lexer and the parser, allowing the parser to influence the lexer
+through side effects.
+This technique is also known, more trivially, as a~``lexer hack''.
+%
+To perform lexical feedback in a~correct manner,
+it is necessary to understand
+\emph{at~what times} the parser invokes the lexer
+to request the next token.
+%
+In other words, it is necessary to understand exactly
+in what order
+the execution of the semantic actions
+and the invocations of the lexer
+are interleaved.
+%
+This is difficult,
+therefore highly discouraged.
+
+The times at which the lexer is invoked
+are currently undocumented.
+%
+We draw the reader's attention to the fact that they are not the same
+in LR mode and in GLR mode.
+
+% In LR mode:
+% - the next token is read eagerly (as soon as possible)
+% - except when there is a default reduction on #
+% In GLR mode:
+% - the next token is read lazily (as late as possible)
+% - in other words, it is not read before a default reduction
+% - but of course, if multiple parsing threads run in parallel,
+%   one of them may request the next token earlier than the others
+
+% I believe that the new behavior (GLR) is in line with Bison.
+
+% In the future, in GLR mode, we might offer a choice between the two
+% behaviors. (But this adds complication, so I will wait until there
+% is a request for it.)
+
+\paragraph{Positions}
+\label{sec:GLR:positions}
+
+In GLR mode, the position keywords (\sref{sec:positions}) can be used in
+semantic actions, in the same way as in LR mode. However, the
+manner in which positions are computed differs slightly. In other words,
+simply enabling \oGLR can cause different positions to be computed.
+
+The fundamental reason why there can be a~disagreement and a~difficulty is
+that there are several ways of thinking about ``positions'' in the input:
+%
+\begin{enumerate}
+\item
+  One way is to consider the input as a stream of tokens
+  and to define a \emph{date} as an index into the input.
+  In this view, a date represents a position between
+  two tokens. If the input stream has length~$n$ then
+  the set of all dates is the interval $[0, n]$.
+  Thus, in total, there exist $n+1$ dates.
+\item
+  Another way is to consider the input as a string of characters
+  and to reason directly in terms of the \emph{positions}
+  returned by the lexer, whose type is \verb+Lexing.position+.
+  Each invocation of the lexer returns one token and \emph{two} positions:
+  the start position and the end position of this token.
+  If the input stream has length~$n$ then
+  the~lexer produces $2n$ positions in total.
+\end{enumerate}
+
+The existence of these two systems creates a tension.
+%
+In short, in LR mode,
+\menhir works directly with the second system,
+that~is, the positions produced by the~lexer.
+%
+This creates difficulties with productions whose right-hand side is empty;
+certain conventions are used in this case (\sref{sec:positions}).
+%
+In GLR mode, instead,
+\menhir works with dates internally,
+and translates dates to positions
+in the following manner:
+%
+\begin{itemize}
+\item
+If the date~$i$ must be translated to a start position,
+then the start position of the token that follows the input index~$i$
+is used.
+In the special case where $i$ is $n$,
+instead of the start position of the token at index~$i$,
+which does not exist,
+% the end position of the previous token is used:
+% that~is,
+the date~$i$ is translated to an end position,
+as per the next item.
+\item
+If the date~$i$ must be translated to an end position,
+then the end position of the token that precedes the input index~$i$
+is used.
+In the special case where $i$ is $0$,
+instead of the end position of the token at index~$-1$,
+which does not exist,
+the initial position is used.
+% this is the start position that can be read in the lexing buffer
+% before the lexer has ever been called.
+\end{itemize}
+
+In the case of a~production with an empty right-hand side,
+this translation produces a possibly counter-intuitive result.
+Such a~production spans an empty date interval,
+of the form $[i, i]$.
+%
+In this case,
+the start position \kstartpos
+is obtained by translating the date~$i$
+to a~start position,
+while
+the end position \kendpos
+is obtained by translating the date~$i$
+to an end position.
+%
+As a~result,
+assuming $0 < i < n$,
+\kstartpos is the start position
+of the~token at index $i$,
+whereas
+\kendpos is the end position
+of the token at index $i-1$.
+%
+Therefore
+the position \kendpos
+comes \emph{earlier} in the text
+than the position \kstartpos.
+%
+Then,
+the fragment of input text between \kendpos and \kstartpos
+is whitespace (or whatever the lexer considers whitespace).
+
+% Is it still true in GLR mode that \dinline does not affect the computation
+% of positions? I think so, yes, as it obiously does not affect the
+% computation of dates, and positions are computed as a function of dates.
+
+\paragraph{Tolerating known conflicts}
+
+When using \menhir in~GLR mode,
+it is important
+to study the conflicts reported by \menhir
+(\sref{sec:conflicts})
+and to eliminate as many conflicts as possible,
+either by changing the~grammar
+or by introducing priority declarations (\sref{sec:assoc}).
+%
+As a~general rule,
+conflicts should be eliminated because they are costly.
+%
+In~particular,
+end-of-stream conflicts should be eliminated
+because a~GLR cannot deal with them properly
+(see ``Successful termination'' above).
+
+If a~conflict cannot be eliminated,
+then it is acceptable to keep~it:
+after all,
+the point of using a~GLR parser is to tolerate some conflicts.
+%
+Unfortunately,
+there is currently no~way of marking a~specific conflict
+(or a group of conflicts) as ``tolerated'',
+so~that \menhir stops warning about this conflict.
+%
+We intend to remedy this shortcoming in the future.
+
+% ------------------------------------------------------------------------------
+
+\subsection{Time complexity}
+\label{sec:GLR:complexity}
+
+The time complexity of GLR parsing critically depends on the amount of
+ambiguity that exists in the grammar, in the automaton, and in the input.
+%
+At one extreme, if at compile-time ambiguity is absent
+(there are no conflicts)
+or is eliminated
+(all~conflicts are resolved)
+then
+a~deterministic automaton is constructed
+and
+GLR parsing has linear time complexity,
+just like LR parsing.
+%
+(In such a~scenario, \menhir's GLR parser can be roughly 50\% slower than
+\menhir's table-based LR parser.)
+% according to `make benchmarks`
+%
+Once ambiguity appears,
+the time complexity of GLR parsing degrades
+and becomes polynomial in the length of the input.
+%
+In the worst case,
+it is $O(n^{p+1})$,
+where $p$ is the maximum length of a~production.
+%
+(We ignore a logarithmic factor that exists in our implementation.)
+% because of the priority queue
+% and because of the sets of edges in the GSS
+
+How is this worst-case bound obtained?
+%
+The total cost of the ``shift'' actions of a GLR parser is $O(n)$.
+It is therefore dominated by the cost of the reductions.
+%
+Furthermore,
+still ignoring a~logarithmic factor,
+the cost of the reductions is $O(1)$ per reduction.
+%
+Therefore,
+to understand the time complexity of GLR parsing,
+it suffices to assess how many reductions
+may take place
+in the worst case.
+%
+Let us consider a production $A \ar \sym_1\sym_2\ldots\sym_k$.
+Its~right-hand side is a sequence of terminal or nonterminal symbols~$\sym_i$,
+where $i$ ranges over $[1, k]$.
+%
+This production can be reduced
+only when the parser finds a \emph{match},
+that is,
+a~sequence of $k+1$ input indices $i_0 \leq i_1 \leq i_2 \leq \ldots \leq i_k$
+such that
+the symbol~$x_1$ is recognized in the input segment $[i_0, i_1]$,
+the symbol~$x_2$ is recognized in the input segment $[i_1, i_2]$,
+and so on.
+%
+% Implicitly, we are saying that a semantic action is invoked
+% at most once per match.
+%
+How many matches can there be?
+%
+Because a match is a tuple of $k+1$ input indices,
+the answer is, $O(n^{k+1})$.
+%
+How large can $k$ be?
+%
+The answer, $k$ is at most equal to $p$,
+the maximum length of a~production.
+%
+This explains the bound $O(n^{p+1})$.
+
+In reality, this bound is pessimistic, for at least two reasons:
+first, it does not account for rigid symbols;
+second,
+% it~does not account for the left context.
+it~assumes that every match gives rise to a reduction.
+Let us explain these two points in turn.
+
+First,
+consider, for example,
+a production of length three,
+$A \ar \sym_1\sym_2\sym_3$,
+and~suppose that~$x_2$ is a~terminal symbol.
+How many matches for this production might exist?
+By the previous reasoning,
+the answer would be $O(n^4)$,
+because a match involves four indices $i_0, i_1, i_2, i_3$.
+However, upon second thought, these indices are not independent:
+for the terminal symbol $\sym_2$ to be recognized in the segment $[i_1, i_2]$,
+the equation $i_1 + 1 = i_2$ must hold.
+Thus, at most $O(n^3)$ matches can exist.
+This reasoning applies not just to terminal symbols,
+but to all \emph{rigid} symbols.%
+\footnote{A symbol~$\sym$ is \emph{rigid} if and only if
+for all words $w_1, w_2 \in \lang(\sym)$,
+if $w_1$ is a prefix of $w_2$,
+then $w_1=w_2$.
+In other words, $\sym$ is rigid if and only if
+two words generated by $\sym$ cannot be in the
+strict prefix relation.
+All terminal symbols are rigid.}
+%
+Thus, in reality,
+the worst-case time complexity of GLR parsing is
+$O(n^{p+1})$ where $p$ is the maximum number of \emph{non-rigid}
+symbols in a right-hand side.
+
+Second, in our analysis so far,
+we have pessimistically assumed
+that every match may give rise to a reduction.
+However, in reality, this is not the case:
+a~match that does not follow a suitable \emph{left context}
+is ignored by a~GLR parser.
+In other words, a~GLR parser attempts to recognize a symbol~$A$
+at input offset $i_0$ only if such an attempt
+is warranted by the partial input that has been read so far.
+For example,
+let $\mathit{GL}_1$ be
+the grammar $S \ar \llist(a) \; b$
+where $a$ and $b$ are terminal symbols
+and where $\llist(a)$ is a left-recursive list of $a$'s:
+$\llist(a) \ar \epsilon \mid \llist(a) \; a$.
+This grammar is in fact deterministic; it is in the class LR(1).
+Suppose that the input is $a^n \; b$.
+How many matches for the symbol $\llist(a)$ exist in this input?
+The answer is $O(n^2)$: there is a~quadratic number of runs of $a$'s.
+How many matches will actually cause a reduction?
+The answer is $O(n)$: only the matches that begin at offset~$0$
+will be detected by an LR or GLR parser.
+Indeed, there is no reason for such a~parser
+to look for a~match at any offset other than~$0$.
+%
+This example shows that counting matches
+can yield a pessimistic worst-case bound.
+
+To continue this discussion,
+let us consider three more example grammars.
+
+First,
+let us examine the grammar $\mathit{GR}_1$,
+defined by $S \ar \rlist(a) \; b$
+where $\rlist(a)$ is a~right-recursive list:
+$\rlist(a) \ar \epsilon \mid a \; \rlist(a)$.
+This grammar is also in the class LR(1).
+Suppose that the input is $a^n \; b$.
+How many matches for the symbol $\rlist(a)$ exist in this input?
+The answer is still $O(n^2)$: there is a~quadratic number of runs of $a$'s.
+How many matches will actually cause a~reduction?
+The answer is still $O(n)$:
+only the matches that end at offset~$n$
+will be reduced. (These matches can begin at an arbitrary offset~$i$.)
+Indeed, the lookahead symbol is exploited:
+an~LR or GLR parser for this grammar will reduce a run of $a$'s
+to $\rlist(a)$ only if this run is followed by the symbol~$b$.
+
+Next,
+let us look at the grammar $\mathit{GR}_2$
+% this is gamma5r in data/benchmark-GLR
+defined by $S \ar \rlist(a) \; a \; b$.
+%
+This grammar is unambiguous,
+but is \emph{not} in the class LR(1).
+%
+There is a shift-reduce conflict:
+every time an LR or GLR parser looks ahead at a~new symbol~$a$,
+it~cannot know whether this is the last~$a$.
+So, a~GLR parser for this grammar will both shift
+(which is the correct action if this is not the last~$a$)
+and reduce $\rlist(a)$
+(which is the correct action if this is the last~$a$).
+%
+Suppose that the input is $a^n \; a \; b$.
+How many matches for the symbol $\rlist(a)$ exist in this input?
+The answer is still $O(n^2)$.
+How many matches will actually cause a~reduction?
+This time, the answer is $O(n^2)$:
+for every pair of indices $i$ and $j$
+such that $0 \leq i \leq j \leq n$,
+a~GLR parser will recognize $\rlist(a)$ in the interval $[i, j)$.
+%
+A~comparison of the grammars $\mathit{GR}_1$ and $\mathit{GR}'_1$ shows that
+the cost of introducing a single source of ambiguity can be huge: allowing
+the symbol~$a$ to follow a (right-recursive) list of $a$'s
+changes the time complexity of GLR parsing from linear to quadratic.
+
+As a~last example,
+let us look at the grammar $\mathit{GL}_2$
+% this is gamma5l in data/benchmark-GLR
+defined by $S \ar \llist(a) \; a \; b$.
+%
+Like $\mathit{GR}_2$,
+this grammar is unambiguous
+but is not in the class LR(1).
+%
+Suppose that the input is $a^n \; a \; b$.
+How many matches for the symbol $\llist(a)$ exist in this input?
+The answer is still $O(n^2)$.
+How many matches will actually cause a~reduction?
+The answer is $O(n)$,
+because,
+as in the case of the grammar $\mathit{GL}_1$,
+only the matches that begin at offset~$0$
+are considered by a~GLR parser.
+%
+A~comparison of the grammars $\mathit{GR}_2$ and $\mathit{GL}_2$
+shows that the choice between a~left-recursive list
+and a~right-recursive list can make a~huge difference:
+in this case, using a~right-recursive list
+changes the time complexity of GLR parsing from linear to quadratic.
+%
+As a~general rule,
+with GLR~parsing,
+it~seems advisable to prefer left-recursive definitions.
+
+We warn the reader that the list-like symbols
+defined in \menhir's standard library (\sref{sec:library}),
+including \nt{list}, \nt{nonempty\_list}, and $\nt{separated\_nonempty\_list}$,
+are right-recursive.
+%
+In situations where the end of a~list is not unambiguously announced
+by the lookahead symbol, one should avoid using these symbols
+and introduce left-recursive symbols instead.
+%
+% In general, whenever \menhir reports a conflict that involves reducing
+% a right-recursive symbol, instead of tolerating this conflict, one should
+% use a left-recursive symbol instead, if possible.
+
+To conclude this section,
+let us formulate two final remarks
+about the worst-case time complexity of GLR parsing.
+%
+We have indicated that it is~$O(n^{p+1})$
+where $n$ is the length of the input
+and $p$ is the maximum number of non-rigid symbols in a right-hand side.
+%
+Our first remark is,
+in realistic scenarios,
+an~input typically contains ambiguous input fragments,
+separated with non-ambiguous parts.
+%
+In such a~scenario,
+one can think of the~parameter~$n$
+as the length of the ambiguous input fragments,
+as opposed to the length of the whole input.
+%
+In other words, the complexity of GLR parsing
+is kept in check % it will be linear
+if in practice the input does not contain long ambiguous fragments:
+%
+It is important to \emph{keep ambiguity local}.
+%
+Our second remark
+is that \menhir applies several transformations
+to the grammar:
+it expands away
+the symbols that are marked \dinline
+and (in GLR mode)
+expands away
+the nullable symbols
+that appear at the end of a~production (\sref{sec:GLR:expansion}).
+%
+When assessing the value of~$p$,
+one should take these transformations into account.
+
+% One could point out that the time complexity is linear in the size of the
+% abstract syntax tree that is eventually built (with disjunction nodes).
+% Indeed, each unit of work expended by the parser ends up either building
+% a new edge or merging into an existing edge.
+
+% ------------------------------------------------------------------------------
+
+\subsection{Comparison with Elkhound}
+\label{sec:GLR:comparison:elkhound}
+
+% This section would belong in a~research paper
+% and feels a bit out of place in a manual.
+
+% Perhaps we will remove it if/once
+% a research paper on Menhir's GLR algorithm is published.
+
+% Elkhound is available on [github](https://github.com/WeiDUorg/elkhound).
+
+\menhir's implementation of GLR parsing is inspired by
+\href{https://scottmcpeak.com/elkhound/}{Elkhound}
+\cite{mcpeak-02,mcpeak-necula-04},
+and makes a~significant number of improvements over Elkhound.
+McPeak's technical report~\cite{mcpeak-02}
+explains GLR very well,
+and provides very clear pseudo-code,
+although one must be aware
+that it contains an omission,
+as \href{https://scottmcpeak.com/elkhound/reduceViaPath_bug.html}{acknowledged} by McPeak.
+%
+% \menhir's GLR algorithm is implemented in this file:
+% https://gitlab.inria.fr/fpottier/menhir/-/blob/GLR/GLR/GLR.ml?ref_type=heads
+%
+The main common points and differences between Elkhound and \menhir
+are as follows:
+\begin{itemize}
+
+% Common point:
+\item
+Following Elkhound, \menhir requires the grammar to be acyclic (\sref{sec:GLR:cyclic}),
+and performs reductions in a~bottom-up manner (\sref{sec:GLR:actions}):
+when a~semantic action is invoked,
+the semantic values to which this semantic action has access
+have already been computed.
+% no need for cyclic parse forests or cyclic semantic values
+
+% Like Elkhound, \menhir uses user-supplied semantic actions
+% and builds semantic values directly; there are no parse forests.
+% Thus the hope of parsing in time O(n^3) is abandoned
+% but this approach should be much more comfortable for the end user.
+% (If the user wants O(n^3) complexity,
+%  they can still manually write the grammar
+%  in a form where every right-hand side has
+%  at most 2 non-rigid symbols.)
+
+% Difference:
+\item
+An important source of inefficiency exists in Elkhound
+as well as in earlier GLR algorithms by Nozohoor-Farshi~\cite{nozohoor-farshi-91}
+and by Rekers~\cite{rekers-91}.
+When a pre-existing top node receives a new edge,
+these algorithms must search every top node
+for reduction paths that exploit this new edge.
+% not necessarily as their first edge!
+%
+% How much do we gain? The number of top nodes is bounded by a constant,
+% so if this search is properly implemented, it should cost only O(1).
+%
+The cost of this search, if properly implemented, should be only $O(1)$,
+because the number of top nodes is $O(1)$.
+%
+Nevertheless, in practice, we believe that this search can create
+significant overhead.
+%
+This search is needed only if some productions
+end with a nullable symbol.
+%
+To remove the need for this search,
+\menhir transforms the grammar at compile-time.
+The nullable nonterminal symbols that appear at the end of
+a~production are expanded away (\sref{sec:GLR:expansion}),
+so that,
+in the transformed grammar,
+no production ends with a~nullable nonterminal symbol.
+
+% Difference:
+\item
+Following Elkhound, \menhir stores the pending reductions in a~priority queue.
+Whereas Elkhound's priority queue is a~doubly-linked list, where insertion
+requires linear time, \menhir uses an efficient priority queue, where
+insertion and extraction require logarithmic time.
+
+% Difference:
+\item
+Whereas Elkhound stores the outgoing edges of a~node is a~linked list,
+% src/smbase/objlist.h
+% src/smbase/voidlist.h
+whose membership test requires linear time,
+\menhir stores them in a~set,
+where insertion and membership testing require logarithmic time.
+
+% Difference:
+\item
+Like Elkhound, \menhir implements a hybrid of the LR and GLR algorithms,
+so as to achieve greater speed when parsing unambiguous input fragments.
+We find this feature less crucial than McPeak does: in our setting,
+the LR/GLR hybrid is, at best, roughly twice faster than pure GLR.
+
+% Difference:
+\item
+The LR/GLR hybrid algorithm requires maintaining the \emph{deterministic
+depth} of each node. For this purpose, McPeak's technique exploits reference
+counts, which \menhir does not maintain, and sometimes involves expensive
+re-computations.
+% When an existing top node receives a new edge, the ddepth of all of its
+% ancestors must be recomputed; and since there is no way of moving from
+% a node towards its ancestors, all top nodes must be traversed.
+\menhir uses a~different, more efficient way of computing
+deterministic depths.
+
+% clever implementation of ordering on productions,
+% which is used by the priority queue:
+% McPeak's implementation requires two indirections
+% on each side (production -> lhs -> order)
+% whereas ours require none
+% (because we number the productions in a way that reflects their priority).
+
+% clever implementation of the set of top nodes?
+% \menhir is able to find a top node by state number
+% in constant time,
+% whereas Elkhound does this by searching all of the top nodes
+% -- also constant time, with a larger constant.
+% Elkhound contains code to index the top nodes by state number
+% but it is disabled; the comments indicate that this can make
+% things slower (why?). (See USE_PARSER_INDEX.)
+
+% OCaml has GC, so \menhir does not need del, dup, or reference counts
+
+\end{itemize}
+
+Whereas McPeak reports that
+Elkhound's performance on the grammar $E \ar E + E \mid b$
+is $O(n^4)$,
+% \cite[Figure 17]{mcpeak-02}
+\menhir's performance on this grammar is $O(n^3)$.
+% this grammar is arith0 in data/benchmark-GLR
+\menhir's performance is consistent
+with our time complexity analysis~(\sref{sec:GLR:complexity}):
+it is $O(n^{p+1})$ where $p$,
+the maximum number of non-rigid symbols in a~right-hand side, is~2.
+% TODO what explains this?
+% TODO could we slow down Menhir on purpose to reproduce O(n^4) behavior?
+
+% ------------------------------------------------------------------------------
+
+% Comparison with Bison's GLR mode
+
+% https://www.gnu.org/software/bison/manual/bison.html#GLR-Parsers
+
+% Bison's documentation states that it can need
+% "exponential time and space for some grammars".
+% It seems to implement a "simplified" version of GLR
+% but does not really explain in what way it is simplified
+% and why it has exponential complexity.
+
+% Bison allows declaring `%expect-rr 1`
+% to state that one reduce/reduce conflict is expected (ugh!).
+
+% Bison allows declaring %merge functions
+% (each production must be annotated with %merge, which seems strange).
+
+% Bison also allows marking productions with %dprec <integer level>
+%   -- this is used when one prefers one production to another,
+%      so it seems to be (roughly) sugar for a merge function that keeps
+%      one argument and throws away the other.
+
+% Bison allows a mid-rule action %?{...}
+% to reject the current parse.
+
+% Bison delays the execution of semantic actions until the point where
+% there is only one stack. (Not the case in Elkhound / Menhir.)
+
+% ------------------------------------------------------------------------------
+
+% LATER comparison with other competitors?
+% tree-sitter
+% ASF+SDF
+% Rascal (GLL)
+% dypgen

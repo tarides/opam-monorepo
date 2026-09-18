@@ -1,0 +1,43 @@
+name: Main workflow
+
+on:
+  - pull_request
+  - push
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+        ocaml-compiler:
+          - 5.0
+          - 4.14.1
+          - 4.13.1
+          - 4.08.1
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+      - name: Install dependencies
+        run: |
+          opam install . --deps-only --with-test
+
+      - name: Build
+        run: |
+          opam exec -- dune build
+
+      - name: Tests
+        run: |
+          opam exec -- dune build @runtest
+
+      - name: Opam Lint
+        run: |
+          opam lint uri.opam uri-re.opam uri-sexp.opam uri-bench.opam

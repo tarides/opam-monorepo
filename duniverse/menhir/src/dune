@@ -1,0 +1,35 @@
+;; This directory contains the "body" of Menhir, that is, the modules that read
+;; the command line, the modules that call the front-end and middle-end modules,
+;; plus the back-ends.
+
+(library
+  (name body)
+  (libraries
+    base
+    menhirSdk
+    front
+    middle
+    driver
+  )
+  (flags :standard -open Base -open MenhirSdk -open Front -open Middle)
+)
+
+;; Copy the content of the StackLang subdirectory into this directory.
+
+(copy_files# StackLang/*.{ml,mli})
+
+;; The sources of the runtime library ("menhirLib.ml" and "menhirLib.mli")
+;; are embedded in the source code of Menhir using the following rule. It
+;; generates a single file "menhirLibSource.ml" with contents "let impl =
+;; {|<contents of menhirLib.ml>|}" and "let intf = {|<contents of
+;; menhirLib.mli>|}".
+
+(rule
+  (with-stdout-to menhirLibSource.ml
+    (progn
+      (echo "let impl = {|")
+      (cat ../lib/pack/menhirLib.ml)
+      (echo "|}")
+      (echo "let intf = {|")
+      (cat ../lib/pack/menhirLib.mli)
+      (echo "|}"))))

@@ -1,0 +1,9 @@
+(executable
+ (name opatch)
+ (public_name opatch)
+ (package opatch)
+ (modules opatch version)
+ (libraries unix patch))
+
+(rule
+ (write-file version.ml "let v = \"%{version:opatch}\""))

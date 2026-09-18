@@ -1,0 +1,36 @@
+# 1 "lexical.cppo"
+(* This test shows that the definition of BAR captures the original
+   definition of FOO, so even if FOO is redefined, the expansion of
+   BAR does not change. *)
+# 8 "lexical.cppo"
+ "new definition"  
+# 8 "lexical.cppo"
+    (* expands to "new definition" *)
+# 9 "lexical.cppo"
+  "original definition"   
+# 9 "lexical.cppo"
+    (* expands to "original definition" *)
+
+(* This test shows that a formal parameter can shadow a previously
+   defined macro. *)
+# 14 "lexical.cppo"
+ 42  
+# 14 "lexical.cppo"
+      (* expands to 42 *)
+
+(* This test shows that two formal parameters can have the same
+   name. In that case, the second parameter shadows the first one. *)
+# 19 "lexical.cppo"
+ 23+23  
+# 19 "lexical.cppo"
+         (* expands to 23+23 *)
+
+(* This test shows that it is OK to pass an empty argument to a macro
+   that expects one parameter. This is interpreted as passing one
+   empty argument. *)
+# 25 "lexical.cppo"
+ show(42) 
+# 26 "lexical.cppo"
+ show("23") 
+# 27 "lexical.cppo"
+ show() 

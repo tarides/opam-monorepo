@@ -1,0 +1,6 @@
+let id x = x
+#define ID(X) X
+#define APPLY(F : [.], X) F(X)
+APPLY(ID(id), 42)
+  (* invalid because APPLY expects a macro as an argument:
+     ID would be a valid argument; ID(id) is not. *)

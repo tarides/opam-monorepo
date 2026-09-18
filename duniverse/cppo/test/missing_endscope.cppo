@@ -1,0 +1,14 @@
+(* A common problem: *)
+
+#scope
+#def TWICE(e)
+  e + e
+#enddef
+(* missing #endscope here *)
+
+let f x =
+  TWICE(x)
+
+(* The error is detected by the parser at the end of the file,
+   but we are able to report the location of the #scope as the
+   source of the problem. *)

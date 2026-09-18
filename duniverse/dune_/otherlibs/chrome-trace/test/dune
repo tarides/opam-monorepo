@@ -1,0 +1,14 @@
+(library
+ (name chrome_trace_tests)
+ (inline_tests)
+ (libraries
+  stdune
+  chrome_trace
+  ;; This is because of the (implicit_transitive_deps false)
+  ;; in dune-project
+  ppx_expect.config
+  ppx_expect.config_types
+  base
+  ppx_inline_test.config)
+ (preprocess
+  (pps ppx_expect)))

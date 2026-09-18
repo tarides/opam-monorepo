@@ -1,0 +1,2 @@
+Error: File "comment_in_formals.cppo", line 1, characters 15-16
+Error: Invalid formal parameter: expected an identifier

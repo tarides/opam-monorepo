@@ -1,0 +1,416 @@
+
+module MenhirBasics = struct
+  
+  exception Error
+  
+  type token = 
+    | TIMES
+    | RPAREN
+    | PLUS
+    | LPAREN
+    | INT of (
+# 1 "demos/calc-mini/parser.mly"
+       (int)
+# 15 "demos/calc-mini/parser.ml"
+  )
+    | EOL
+  
+end
+
+include MenhirBasics
+
+let _eRR =
+  MenhirBasics.Error
+
+type _menhir_env = {
+  _menhir_lexer: Lexing.lexbuf -> token;
+  _menhir_lexbuf: Lexing.lexbuf;
+  _menhir_token: token;
+  mutable _menhir_error: bool
+}
+
+and _menhir_state = 
+  | MenhirState7
+  | MenhirState4
+  | MenhirState1
+  | MenhirState0
+
+let rec main : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (int) =
+  fun lexer lexbuf ->
+    let _menhir_env = {
+      _menhir_lexer = lexer;
+      _menhir_lexbuf = lexbuf;
+      _menhir_token = Obj.magic ();
+      _menhir_error = false;
+    } in
+    Obj.magic (_menhir_run0 _menhir_env ((), _menhir_env._menhir_lexbuf.Lexing.lex_curr_p))
+
+and _menhir_run11 :  'ttv_tail 'ttv_return. _menhir_env -> 'ttv_tail * _menhir_state * (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    (* State 11: *)
+    (* Not allocating top stack cell *)
+    (* Reducing without looking ahead at # *)
+    _menhir_reduce5 _menhir_env (Obj.magic _menhir_stack)
+
+and _menhir_error11 :  'ttv_tail 'ttv_return. _menhir_env -> ('ttv_tail * _menhir_state * (int)) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    let (_menhir_stack, _menhir_s, _) = _menhir_stack in
+    _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s
+
+and _menhir_run10 :  'ttv_tail 'ttv_return. _menhir_env -> 'ttv_tail * _menhir_state * (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    (* State 10: *)
+    assert (not _menhir_env._menhir_error);
+    let _tok = _menhir_env._menhir_token in
+    match _tok with
+    | EOL ->
+        (* Shifting (EOL) to state 11 *)
+        _menhir_run11 _menhir_env (Obj.magic _menhir_stack)
+    | PLUS ->
+        (* Shifting (PLUS) to state 7 *)
+        _menhir_run7 _menhir_env (Obj.magic _menhir_stack)
+    | TIMES ->
+        (* Shifting (TIMES) to state 4 *)
+        _menhir_run4 _menhir_env (Obj.magic _menhir_stack)
+    | _ ->
+        assert (not _menhir_env._menhir_error);
+        (* Initiating error handling *)
+        _menhir_env._menhir_error <- true;
+        _menhir_error10 _menhir_env (Obj.magic _menhir_stack)
+
+and _menhir_error10 :  'ttv_tail 'ttv_return. _menhir_env -> 'ttv_tail * _menhir_state * (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    let (_menhir_stack, _menhir_s, _) = _menhir_stack in
+    _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s
+
+and _menhir_run9 :  'ttv_tail 'ttv_return. _menhir_env -> 'ttv_tail -> _menhir_state -> (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack _menhir_s _v ->
+    (* State 9: *)
+    (* Not allocating top stack cell *)
+    (* Reducing without looking ahead at # *)
+    _menhir_reduce0 _menhir_env (Obj.magic _menhir_stack) _menhir_s _v
+
+and _menhir_error9 :  'ttv_tail 'ttv_return. _menhir_env -> 'ttv_tail * _menhir_state * (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    let (_menhir_stack, _menhir_s, _) = _menhir_stack in
+    _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s
+
+and _menhir_run8 :  'ttv_tail 'ttv_return. _menhir_env -> (('ttv_tail * _menhir_state * (int))) * _menhir_state * (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    (* State 8: *)
+    assert (not _menhir_env._menhir_error);
+    let _tok = _menhir_env._menhir_token in
+    match _tok with
+    | TIMES ->
+        (* Shifting (TIMES) to state 4 *)
+        _menhir_run4 _menhir_env (Obj.magic _menhir_stack)
+    | EOL | PLUS | RPAREN ->
+        _menhir_reduce3 _menhir_env (Obj.magic _menhir_stack)
+    | _ ->
+        assert (not _menhir_env._menhir_error);
+        (* Initiating error handling *)
+        _menhir_env._menhir_error <- true;
+        _menhir_error8 _menhir_env (Obj.magic _menhir_stack)
+
+and _menhir_error8 :  'ttv_tail 'ttv_return. _menhir_env -> (('ttv_tail * _menhir_state * (int))) * _menhir_state * (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    let (_menhir_stack, _menhir_s, _) = _menhir_stack in
+    _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s
+
+and _menhir_run7 :  'ttv_tail 'ttv_return. _menhir_env -> 'ttv_tail * _menhir_state * (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    (* State 7: *)
+    let _menhir_env = _menhir_discard _menhir_env in
+    let _tok = _menhir_env._menhir_token in
+    match _tok with
+    | INT _v ->
+        (* Shifting (INT) to state 2 *)
+        _menhir_run2 _menhir_env (Obj.magic _menhir_stack) MenhirState7 _v
+    | LPAREN ->
+        (* Shifting (LPAREN) to state 1 *)
+        _menhir_run1 _menhir_env (Obj.magic _menhir_stack) MenhirState7
+    | _ ->
+        assert (not _menhir_env._menhir_error);
+        (* Initiating error handling *)
+        _menhir_env._menhir_error <- true;
+        _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) MenhirState7
+
+and _menhir_error7 :  'ttv_tail 'ttv_return. _menhir_env -> ('ttv_tail * _menhir_state * (int)) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    let (_menhir_stack, _menhir_s, _) = _menhir_stack in
+    _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s
+
+and _menhir_run6 :  'ttv_tail 'ttv_return. _menhir_env -> ('ttv_tail * _menhir_state) * _menhir_state * (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    (* State 6: *)
+    (* Not allocating top stack cell *)
+    let _menhir_env = _menhir_discard _menhir_env in
+    (* Reducing without looking ahead at EOL | PLUS | RPAREN | TIMES *)
+    _menhir_reduce2 _menhir_env (Obj.magic _menhir_stack)
+
+and _menhir_error6 :  'ttv_tail 'ttv_return. _menhir_env -> (('ttv_tail * _menhir_state) * _menhir_state * (int)) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    let (_menhir_stack, _menhir_s, _) = _menhir_stack in
+    _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s
+
+and _menhir_run5 :  'ttv_tail 'ttv_return. _menhir_env -> (('ttv_tail * _menhir_state * (int))) * _menhir_state * (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    (* State 5: *)
+    (* Reducing without looking ahead at EOL | PLUS | RPAREN | TIMES *)
+    _menhir_reduce4 _menhir_env (Obj.magic _menhir_stack)
+
+and _menhir_error5 :  'ttv_tail 'ttv_return. _menhir_env -> (('ttv_tail * _menhir_state * (int))) * _menhir_state * (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    let (_menhir_stack, _menhir_s, _) = _menhir_stack in
+    _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s
+
+and _menhir_run4 :  'ttv_tail 'ttv_return. _menhir_env -> 'ttv_tail * _menhir_state * (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    (* State 4: *)
+    let _menhir_env = _menhir_discard _menhir_env in
+    let _tok = _menhir_env._menhir_token in
+    match _tok with
+    | INT _v ->
+        (* Shifting (INT) to state 2 *)
+        _menhir_run2 _menhir_env (Obj.magic _menhir_stack) MenhirState4 _v
+    | LPAREN ->
+        (* Shifting (LPAREN) to state 1 *)
+        _menhir_run1 _menhir_env (Obj.magic _menhir_stack) MenhirState4
+    | _ ->
+        assert (not _menhir_env._menhir_error);
+        (* Initiating error handling *)
+        _menhir_env._menhir_error <- true;
+        _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) MenhirState4
+
+and _menhir_error4 :  'ttv_tail 'ttv_return. _menhir_env -> ('ttv_tail * _menhir_state * (int)) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    let (_menhir_stack, _menhir_s, _) = _menhir_stack in
+    _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s
+
+and _menhir_run3 :  'ttv_tail 'ttv_return. _menhir_env -> ('ttv_tail * _menhir_state) * _menhir_state * (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    (* State 3: *)
+    assert (not _menhir_env._menhir_error);
+    let _tok = _menhir_env._menhir_token in
+    match _tok with
+    | PLUS ->
+        (* Shifting (PLUS) to state 7 *)
+        _menhir_run7 _menhir_env (Obj.magic _menhir_stack)
+    | RPAREN ->
+        (* Shifting (RPAREN) to state 6 *)
+        _menhir_run6 _menhir_env (Obj.magic _menhir_stack)
+    | TIMES ->
+        (* Shifting (TIMES) to state 4 *)
+        _menhir_run4 _menhir_env (Obj.magic _menhir_stack)
+    | _ ->
+        assert (not _menhir_env._menhir_error);
+        (* Initiating error handling *)
+        _menhir_env._menhir_error <- true;
+        _menhir_error3 _menhir_env (Obj.magic _menhir_stack)
+
+and _menhir_error3 :  'ttv_tail 'ttv_return. _menhir_env -> ('ttv_tail * _menhir_state) * _menhir_state * (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    let (_menhir_stack, _menhir_s, _) = _menhir_stack in
+    _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s
+
+and _menhir_run2 :  'ttv_tail 'ttv_return. _menhir_env -> 'ttv_tail -> _menhir_state -> (
+# 1 "demos/calc-mini/parser.mly"
+       (int)
+# 220 "demos/calc-mini/parser.ml"
+) -> 'ttv_return =
+  fun _menhir_env _menhir_stack _menhir_s _v ->
+    (* State 2: *)
+    (* Not allocating top stack cell *)
+    let _menhir_env = _menhir_discard _menhir_env in
+    (* Reducing without looking ahead at EOL | PLUS | RPAREN | TIMES *)
+    _menhir_reduce1 _menhir_env (Obj.magic _menhir_stack) _menhir_s _v
+
+and _menhir_error2 :  'ttv_tail 'ttv_return. _menhir_env -> 'ttv_tail * _menhir_state * (
+# 1 "demos/calc-mini/parser.mly"
+       (int)
+# 232 "demos/calc-mini/parser.ml"
+) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    let (_menhir_stack, _menhir_s, _) = _menhir_stack in
+    _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s
+
+and _menhir_run1 :  'ttv_tail 'ttv_return. _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
+  fun _menhir_env _menhir_stack _menhir_s ->
+    (* State 1: *)
+    let _menhir_stack = (_menhir_stack, _menhir_s) in
+    let _menhir_env = _menhir_discard _menhir_env in
+    let _tok = _menhir_env._menhir_token in
+    match _tok with
+    | INT _v ->
+        (* Shifting (INT) to state 2 *)
+        _menhir_run2 _menhir_env (Obj.magic _menhir_stack) MenhirState1 _v
+    | LPAREN ->
+        (* Shifting (LPAREN) to state 1 *)
+        _menhir_run1 _menhir_env (Obj.magic _menhir_stack) MenhirState1
+    | _ ->
+        assert (not _menhir_env._menhir_error);
+        (* Initiating error handling *)
+        _menhir_env._menhir_error <- true;
+        _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) MenhirState1
+
+and _menhir_error1 :  'ttv_tail 'ttv_return. _menhir_env -> 'ttv_tail * _menhir_state -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    let (_menhir_stack, _menhir_s) = _menhir_stack in
+    _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s
+
+and _menhir_run0 :  'ttv_tail 'ttv_return. _menhir_env -> 'ttv_tail -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    (* State 0: *)
+    let _menhir_env = _menhir_discard _menhir_env in
+    let _tok = _menhir_env._menhir_token in
+    match _tok with
+    | INT _v ->
+        (* Shifting (INT) to state 2 *)
+        _menhir_run2 _menhir_env (Obj.magic _menhir_stack) MenhirState0 _v
+    | LPAREN ->
+        (* Shifting (LPAREN) to state 1 *)
+        _menhir_run1 _menhir_env (Obj.magic _menhir_stack) MenhirState0
+    | _ ->
+        assert (not _menhir_env._menhir_error);
+        (* Initiating error handling *)
+        _menhir_env._menhir_error <- true;
+        _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) MenhirState0
+
+and _menhir_error0 :  'ttv_tail 'ttv_return. _menhir_env -> 'ttv_tail -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    raise _eRR
+
+and _menhir_goto_expr :  'ttv_tail 'ttv_return. _menhir_env -> 'ttv_tail -> _menhir_state -> (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack _menhir_s _v ->
+    let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
+    match _menhir_s with
+    | MenhirState1 ->
+        _menhir_run3 _menhir_env (Obj.magic _menhir_stack)
+    | MenhirState4 ->
+        _menhir_run5 _menhir_env (Obj.magic _menhir_stack)
+    | MenhirState7 ->
+        _menhir_run8 _menhir_env (Obj.magic _menhir_stack)
+    | MenhirState0 ->
+        _menhir_run10 _menhir_env (Obj.magic _menhir_stack)
+
+and _menhir_goto_main :  'ttv_tail 'ttv_return. _menhir_env -> 'ttv_tail -> _menhir_state -> (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack _menhir_s _v ->
+    (* State should be MenhirState0 *)
+    _menhir_run9 _menhir_env (Obj.magic _menhir_stack) _menhir_s _v
+
+and _menhir_reduce5 :  'ttv_tail 'ttv_return. _menhir_env -> 'ttv_tail * _menhir_state * (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    (* Reducing production main -> expr EOL *)
+    let (_menhir_stack, _menhir_s, (e : (int))) = _menhir_stack in
+    let _v : (int) = 
+# 15 "demos/calc-mini/parser.mly"
+    ( e )
+# 309 "demos/calc-mini/parser.ml"
+     in
+    _menhir_goto_main _menhir_env _menhir_stack _menhir_s _v
+
+and _menhir_reduce4 :  'ttv_tail 'ttv_return. _menhir_env -> (('ttv_tail * _menhir_state * (int))) * _menhir_state * (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    (* Reducing production expr -> expr TIMES expr *)
+    let ((_menhir_stack, _menhir_s, (e1 : (int))), _, (e2 : (int))) = _menhir_stack in
+    let _v : (int) = 
+# 25 "demos/calc-mini/parser.mly"
+    ( e1 * e2 )
+# 320 "demos/calc-mini/parser.ml"
+     in
+    _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
+
+and _menhir_reduce3 :  'ttv_tail 'ttv_return. _menhir_env -> (('ttv_tail * _menhir_state * (int))) * _menhir_state * (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    (* Reducing production expr -> expr PLUS expr *)
+    let ((_menhir_stack, _menhir_s, (e1 : (int))), _, (e2 : (int))) = _menhir_stack in
+    let _v : (int) = 
+# 23 "demos/calc-mini/parser.mly"
+    ( e1 + e2 )
+# 331 "demos/calc-mini/parser.ml"
+     in
+    _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
+
+and _menhir_reduce2 :  'ttv_tail 'ttv_return. _menhir_env -> ('ttv_tail * _menhir_state) * _menhir_state * (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack ->
+    (* Reducing production expr -> LPAREN expr RPAREN *)
+    let ((_menhir_stack, _menhir_s), _, (e : (int))) = _menhir_stack in
+    let _v : (int) = 
+# 21 "demos/calc-mini/parser.mly"
+    ( e )
+# 342 "demos/calc-mini/parser.ml"
+     in
+    _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
+
+and _menhir_reduce1 :  'ttv_tail 'ttv_return. _menhir_env -> 'ttv_tail -> _menhir_state -> (
+# 1 "demos/calc-mini/parser.mly"
+       (int)
+# 349 "demos/calc-mini/parser.ml"
+) -> 'ttv_return =
+  fun _menhir_env _menhir_stack _menhir_s (i : (
+# 1 "demos/calc-mini/parser.mly"
+       (int)
+# 354 "demos/calc-mini/parser.ml"
+  )) ->
+    (* Reducing production expr -> INT *)
+    let _v : (int) = 
+# 19 "demos/calc-mini/parser.mly"
+    ( i )
+# 360 "demos/calc-mini/parser.ml"
+     in
+    _menhir_goto_expr _menhir_env _menhir_stack _menhir_s _v
+
+and _menhir_reduce0 :  'ttv_tail 'ttv_return. _menhir_env -> 'ttv_tail -> _menhir_state -> (int) -> 'ttv_return =
+  fun _menhir_env _menhir_stack _menhir_s (_1 : (int)) ->
+    (* Accepting *)
+    Obj.magic _1
+
+and _menhir_discard : _menhir_env -> _menhir_env =
+  fun _menhir_env ->
+    let lexer = _menhir_env._menhir_lexer in
+    let lexbuf = _menhir_env._menhir_lexbuf in
+    let _tok = lexer lexbuf in
+    {
+      _menhir_lexer = lexer;
+      _menhir_lexbuf = lexbuf;
+      _menhir_token = _tok;
+      _menhir_error = false;
+    }
+
+and _menhir_print_token : token -> string =
+  fun _tok ->
+    match _tok with
+    | EOL ->
+        "EOL"
+    | INT _ ->
+        "INT"
+    | LPAREN ->
+        "LPAREN"
+    | PLUS ->
+        "PLUS"
+    | RPAREN ->
+        "RPAREN"
+    | TIMES ->
+        "TIMES"
+
+and _menhir_fail :  'a. unit -> 'a =
+  fun () ->
+    Printf.eprintf "Internal failure -- please contact the parser generator's developers.\n%!";
+    assert false
+
+and _menhir_errorcase :  'ttv_tail 'ttv_return. _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
+  fun _menhir_env _menhir_stack _menhir_s ->
+    match _menhir_s with
+    | MenhirState7 ->
+        _menhir_error7 _menhir_env (Obj.magic _menhir_stack)
+    | MenhirState4 ->
+        _menhir_error4 _menhir_env (Obj.magic _menhir_stack)
+    | MenhirState1 ->
+        _menhir_error1 _menhir_env (Obj.magic _menhir_stack)
+    | MenhirState0 ->
+        _menhir_error0 _menhir_env (Obj.magic _menhir_stack)
+
+# 269 "<standard.mly>"
+  
+
+# 417 "demos/calc-mini/parser.ml"

@@ -1,0 +1,40 @@
+;; The library Base is built here.
+
+;; This library is internal; a user of Menhir should not be aware of its
+;; existence. It is meant to collect various modules that are essentially
+;; independent of Menhir: utility functions, data structures, etc.
+
+(library
+  (name base)
+  (libraries
+    unix
+    vendored_fix
+    vendored_bitsets
+    vendored_pprint
+  )
+)
+
+;; The following lexers are built by ocamllex.
+
+(ocamllex
+  DecodeString
+  LineCount
+)
+
+;; This rule allows distinguishing development builds and release builds.
+;; The file profile.ml defines the Boolean flag [release] to be [true]
+;; in a release build and false in a development build.
+
+(rule
+  (enabled_if (= %{profile} dev))
+  (action
+    (with-stdout-to profile.ml
+      (echo "let release = false")
+)))
+
+(rule
+  (enabled_if (= %{profile} release))
+  (action
+    (with-stdout-to profile.ml
+      (echo "let release = true")
+)))

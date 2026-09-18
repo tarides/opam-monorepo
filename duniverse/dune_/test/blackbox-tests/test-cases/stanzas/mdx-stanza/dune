@@ -1,0 +1,15 @@
+(cram
+ (applies_to :whole_subtree)
+ (deps
+  (package mdx))
+ (alias all-mdx-tests)
+ (enabled_if
+  ; temporary workaround for #10874
+  (<> %{system} macosx)))
+
+(cram
+ (applies_to shared-libraries)
+ (deps
+  %{bin:gcc}
+  %{bin:ar}
+  (package mdx)))

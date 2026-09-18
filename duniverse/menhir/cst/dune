@@ -1,0 +1,10 @@
+;; The library MenhirCST is compiled in this directory.
+
+;; This library provides runtime support for converting DCSTs
+;; into CSTs.
+
+(library
+  (name menhirCST)
+  (public_name menhirCST)
+  (modules Settle)
+)

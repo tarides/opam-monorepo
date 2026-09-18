@@ -1,0 +1,40 @@
+name: build
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
+        ocaml-compiler:
+          - 4.14.0
+        include:
+          - os: ubuntu-latest
+            ocaml-compiler: 4.03.0
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: setup-ocaml
+        uses: avsm/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+      - name: setup
+        run: |
+          opam pin add . -y --no-action
+          opam depext -y swhid_core
+          opam install -y ./*.opam --deps-only --with-test
+          opam upgrade --fixup
+      - name: build
+        run: opam exec -- dune build @install
+      - name: test
+        run: opam exec -- dune runtest

@@ -1,0 +1,2 @@
+Error: File "at_least_one_arg.cppo", line 2, characters 12-13
+Error: A macro must have at least one formal parameter

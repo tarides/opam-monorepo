@@ -1,0 +1,8 @@
+(library
+ (name fmt_tty)
+ (public_name fmt.tty)
+ (optional)
+ (libraries unix fmt)
+ (modules fmt_tty)
+ (flags :standard -w -3-6-27)
+ (wrapped false))

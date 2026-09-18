@@ -1,0 +1,4 @@
+This expression has DAG size 10.
+The number of disjunction nodes in this expression is 1.
+At line 1, characters 5-14: ambiguous subexpression (2 readings):
+3 + 5 * 2

@@ -1,0 +1,10 @@
+diff --git a/git3.old b/git3.new
+similarity index 50%
+rename from a
+rename to c
+index 257cc56..3bd1f0e 100644
+--- a/git3.old
++++ b/git3.new
+@@ -1 +1,2 @@
+ foo
++bar

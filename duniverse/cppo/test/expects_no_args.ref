@@ -1,0 +1,2 @@
+Error: File "expects_no_args.cppo", line 3, characters 4-11
+Error: "FOO" expects 0 argument but is applied to 1 argument.

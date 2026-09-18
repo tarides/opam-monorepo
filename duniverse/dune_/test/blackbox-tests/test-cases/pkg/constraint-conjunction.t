@@ -1,0 +1,23 @@
+Exercise the solver on a package with a conjunction in its dependency
+constraints.
+
+  $ mkrepo
+
+  $ mkpkg a
+
+  $ mkpkg foo << EOF
+  > depends: [
+  >   "a" { >= "0.0.0" & < "1.0.0" }
+  > ]
+  > EOF
+
+  $ solve foo
+  Solution for dune.lock:
+  - a.0.0.1
+  - foo.0.0.1
+
+  $ cat ${default_lock_dir}/foo.0.0.1.pkg
+  (version 0.0.1)
+  
+  (depends
+   (all_platforms (a)))

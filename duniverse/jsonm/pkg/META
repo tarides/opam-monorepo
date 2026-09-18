@@ -1,0 +1,7 @@
+description = "Non-blocking streaming JSON codec"
+version = "1.0.2+dune"
+requires = "uutf"
+archive(byte) = "jsonm.cma"
+archive(native) = "jsonm.cmxa"
+plugin(byte) = "jsonm.cma"
+plugin(native) = "jsonm.cmxs"

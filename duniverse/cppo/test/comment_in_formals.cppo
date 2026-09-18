@@ -1,0 +1,2 @@
+#define FOO(x, (* a comment *) y) x+y
+FOO(42, 23)

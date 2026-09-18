@@ -1,0 +1,30 @@
+--- first.old	2019-03-10 19:09:28.825116000 +0100
++++ first.new	2019-03-10 19:09:36.053702000 +0100
+@@ -1,6 +1,7 @@
+ foo
+ foo
+ foo
++foo3
+ foo
+ foo
+ foo
+@@ -9,6 +10,7 @@
+ foo
+ foo
+ foo
++foo5
+ foo
+ foo
+ foo
+@@ -31,6 +33,11 @@
+ foo
+ foo
+ foo
++bar
+ foo
+ foo
+ foo
++foo
++foo
++foo
++bar2

@@ -1,0 +1,565 @@
+open Import
+open Memo.O
+module Opam_file = Dune_pkg.Opam_file
+
+let default_build_command =
+  let before_1_11 =
+    lazy
+      (Opam_file.parse_value
+         (Lexbuf.from_string
+            ~fname:"<internal>"
+            {|
+[
+  [ "dune" "subst" ] {pinned}
+  [ "dune" "build" "-p" name "-j" jobs]
+  [ "dune" "runtest" "-p" name "-j" jobs] {with-test}
+  [ "dune" "build" "-p" name "@doc"] {with-doc}
+]
+|}))
+  and from_1_11_before_2_7 =
+    lazy
+      (Opam_file.parse_value
+         (Lexbuf.from_string
+            ~fname:"<internal>"
+            {|
+[
+  [ "dune" "subst" ] {pinned}
+  [ "dune" "build" "-p" name "-j" jobs
+      "@install"
+      "@runtest" {with-test}
+      "@doc" {with-doc}
+  ]
+]
+|}))
+  and from_2_7 =
+    lazy
+      (Opam_file.parse_value
+         (Lexbuf.from_string
+            ~fname:"<internal>"
+            {|
+[
+  [ "dune" "subst" ] {dev}
+  [ "dune" "build" "-p" name "-j" jobs
+      "@install"
+      "@runtest" {with-test}
+      "@doc" {with-doc}
+  ]
+]
+|}))
+  and from_2_9 =
+    lazy
+      (Opam_file.parse_value
+         (Lexbuf.from_string
+            ~fname:"<internal>"
+            {|
+[
+  [ "dune" "subst" ] {dev}
+  [ "dune" "build" "-p" name "-j" jobs "--promote-install-files=false"
+      "@install"
+      "@runtest" {with-test}
+      "@doc" {with-doc}
+  ]
+  [ "dune" "install" "-p" name "--create-install-files" name ]
+]
+|}))
+  and from_3_0 ~with_subst ~with_sites =
+    let subst = if with_subst then {|  [ "dune" "subst" ] {dev} |} else "" in
+    let promote_install_files =
+      if with_sites then {|  "--promote-install-files=false" |} else ""
+    in
+    let install =
+      if with_sites
+      then {| [ "dune" "install" "-p" name "--create-install-files" name ] |}
+      else ""
+    in
+    lazy
+      (Opam_file.parse_value
+         (Lexbuf.from_string
+            ~fname:"<internal>"
+            (Printf.sprintf
+               {|
+[
+  %s
+  [ "dune" "build" "-p" name "-j" jobs %s
+      "@install"
+      "@runtest" {with-test}
+      "@doc" {with-doc}
+  ]
+  %s
+]
+|}
+               subst
+               promote_install_files
+               install)))
+  and from_3_23 ~with_subst ~with_sites ~runtest =
+    let subst = if with_subst then {|  [ "dune" "subst" ] {dev} |} else "" in
+    let promote_install_files =
+      if with_sites then {|  "--promote-install-files=false" |} else ""
+    in
+    let install =
+      if with_sites
+      then {| [ "dune" "install" "-p" name "--create-install-files" name ] |}
+      else ""
+    in
+    lazy
+      (Opam_file.parse_value
+         (Lexbuf.from_string
+            ~fname:"<internal>"
+            (Printf.sprintf
+               {|
+[
+  %s
+  [ "dune" "build" "-p" name "-j" jobs %s
+      "%s" {with-test}
+      "@doc" {with-doc}
+  ]
+  %s
+]
+|}
+               subst
+               promote_install_files
+               runtest
+               install)))
+  in
+  fun project package ->
+    let version = Dune_project.dune_version project in
+    let with_subst = Toggle.enabled (snd (Dune_project.subst_config project)) in
+    let with_sites = Dune_project.(is_extension_set project dune_site_extension) in
+    Lazy.force
+      (if version < (1, 11)
+       then before_1_11
+       else if version < (2, 7)
+       then from_1_11_before_2_7
+       else if version < (2, 9)
+       then from_2_7
+       else if version < (3, 0)
+       then from_2_9
+       else if version < (3, 23)
+       then from_3_0 ~with_subst ~with_sites
+       else (
+         match Package.exclusive_dir package with
+         | None -> from_3_0 ~with_subst ~with_sites
+         | Some (_loc, dir) ->
+           from_3_23
+             ~with_subst
+             ~with_sites
+             ~runtest:("@runtest/" ^ Path.Source.to_string dir)))
+;;
+
+let var_of_sw sw : Package_constraint.Value.t =
+  match String_with_vars.pform_only sw with
+  | None ->
+    (match String_with_vars.text_only sw with
+     | Some s -> String_literal s
+     | None -> assert false)
+  | Some s ->
+    Variable
+      (match s with
+       | Var Architecture -> Package_variable_name.arch
+       | Var (Os Os) -> Package_variable_name.os
+       | Var (Os Os_version) -> Package_variable_name.os_version
+       | Var (Os Os_distribution) -> Package_variable_name.os_distribution
+       | Var (Os Os_family) -> Package_variable_name.os_family
+       | _ -> assert false)
+;;
+
+let rec constraint_of_blang (blang : Blang.t) : Package_constraint.t =
+  match blang with
+  | Const b -> Package_constraint.Uop (Eq, String_literal (Bool.to_string b))
+  | Not b -> Package_constraint.Not (constraint_of_blang b)
+  | And xs -> And (List.map ~f:constraint_of_blang xs)
+  | Or xs -> Or (List.map ~f:constraint_of_blang xs)
+  | Compare (op, lhs, rhs) -> Bop (op, var_of_sw lhs, var_of_sw rhs)
+  | Expr b -> Bvar (var_of_sw b)
+;;
+
+let package_fields package ~project =
+  let open Opam_file.Create in
+  let tags =
+    let tags = Package.tags package in
+    if tags = [] then [] else [ "tags", string_list tags ]
+  in
+  let optional =
+    [ "synopsis", Package.synopsis package; "description", Package.description package ]
+    |> List.filter_map ~f:(fun (k, v) ->
+      match v with
+      | None -> None
+      | Some v -> Some (k, string v))
+  in
+  let dep_fields =
+    [ "depends", Package.depends package
+    ; "conflicts", Package.conflicts package
+    ; "depopts", Package.depopts package
+    ]
+    |> List.filter_map ~f:(fun (k, v) ->
+      match v with
+      | [] -> None
+      | _ :: _ -> Some (k, list Dune_pkg.Package_dependency.opam_depend v))
+  in
+  let available =
+    match Package.enabled_if package with
+    | None -> []
+    | Some blang ->
+      [ ( "available"
+        , constraint_of_blang blang |> Dune_pkg.Package_dependency.opam_constraint )
+      ]
+  in
+  let fields = [ optional; dep_fields; available ] in
+  let fields =
+    let dune_version = Dune_project.dune_version project in
+    if dune_version >= (2, 0) && tags <> [] then tags :: fields else fields
+  in
+  List.concat fields
+;;
+
+let dune_name = Package.Name.of_string "dune"
+let odoc_name = Package.Name.of_string "odoc"
+let menhir_name = Package.Name.of_string "menhir"
+
+let merge_dune_constraints lang_constraint user_constraint =
+  match lang_constraint, user_constraint with
+  | ( Package_constraint.Uop (Gte, String_literal lang_v)
+    , Package_constraint.Uop (Gte, String_literal user_v) ) ->
+    if OpamVersionCompare.compare lang_v user_v <= 0
+    then user_constraint
+    else (
+      User_warning.emit
+        [ Pp.textf
+            "The lower bound >= %s on dune in the depends field is less than the dune \
+             language version %s. The generated opam file will use >= %s instead."
+            user_v
+            lang_v
+            lang_v
+        ];
+      lang_constraint)
+  | _ -> And [ lang_constraint; user_constraint ]
+;;
+
+let insert_dune_dep depends dune_version =
+  let lang_constraint : Package_constraint.t =
+    let dune_version = Dune_lang.Syntax.Version.to_string dune_version in
+    Uop (Gte, String_literal dune_version)
+  in
+  let rec loop acc = function
+    | [] ->
+      let dune_dep =
+        { Package_dependency.name = dune_name; constraint_ = Some lang_constraint }
+      in
+      dune_dep :: List.rev acc
+    | (dep : Package_dependency.t) :: rest ->
+      if Package.Name.equal dep.name dune_name
+      then (
+        let dep =
+          if dune_version < (2, 6)
+          then dep
+          else
+            { dep with
+              constraint_ =
+                Some
+                  (match dep.constraint_ with
+                   | None -> lang_constraint
+                   | Some user_constraint ->
+                     if dune_version >= (3, 23)
+                     then merge_dune_constraints lang_constraint user_constraint
+                     else And [ lang_constraint; user_constraint ])
+            }
+        in
+        List.rev_append acc (dep :: rest))
+      else loop (dep :: acc) rest
+  in
+  loop [] depends
+;;
+
+let rec already_requires_odoc : Package_constraint.t -> bool = function
+  | Uop _ | Bop _ -> true
+  | Bvar (String_literal _) -> false
+  | Bvar (Variable var) ->
+    Dune_lang.Package_variable_name.(one_of var [ with_doc; build; post ])
+  | And l -> List.for_all ~f:already_requires_odoc l
+  | Or l -> List.exists ~f:already_requires_odoc l
+  | Not t -> not (already_requires_odoc t)
+;;
+
+let insert_odoc_dep depends =
+  let with_doc : Package_constraint.t =
+    Bvar (Variable Dune_lang.Package_variable_name.with_doc)
+  in
+  let odoc_dep = { Package_dependency.name = odoc_name; constraint_ = Some with_doc } in
+  let rec loop acc = function
+    | [] -> List.rev (odoc_dep :: acc)
+    | (dep : Package_dependency.t) :: rest ->
+      if
+        Package.Name.equal dep.name odoc_name
+        && Option.forall ~f:already_requires_odoc dep.constraint_
+      then (* Stop now as odoc will be required anyway *)
+        List.rev_append (dep :: acc) rest
+      else loop (dep :: acc) rest
+  in
+  loop [] depends
+;;
+
+(* Menhir 20180523 added --infer-write-query and --infer-read-reply,
+   which dune's menhir rules rely on unconditionally. *)
+let menhir_constraint : Package_constraint.t = Uop (Gte, String_literal "20180523")
+
+(* If the package's [(depends ...)] field already lists [menhir]
+   without a constraint, fill in the lower bound. Existing user-
+   written constraints (whether version bounds, [{with-test}], or
+   anything else) are preserved verbatim. We do not add menhir as a
+   new dependency: doing so unconditionally is the over-injection
+   bug reported in #14428. *)
+let upgrade_menhir_constraint depends =
+  List.map depends ~f:(fun (dep : Package_dependency.t) ->
+    if Package.Name.equal dep.name menhir_name
+    then
+      { dep with
+        constraint_ = Some (Option.value dep.constraint_ ~default:menhir_constraint)
+      }
+    else dep)
+;;
+
+let maintenance_intent dune_version info =
+  if dune_version < (3, 18)
+  then None
+  else (
+    match Package_info.maintenance_intent info with
+    | None -> Some [ "(latest)" ]
+    | x -> x)
+;;
+
+let opam_fields project (package : Package.t) =
+  let dune_version = Dune_project.dune_version project in
+  let package_name = Package.name package in
+  let package =
+    if dune_version < (1, 11) || Package.Name.equal package_name dune_name
+    then package
+    else
+      Package.map_depends package ~f:(fun depends -> insert_dune_dep depends dune_version)
+  in
+  let package =
+    if dune_version < (2, 7) || Package.Name.equal package_name odoc_name
+    then package
+    else Package.map_depends package ~f:insert_odoc_dep
+  in
+  let package =
+    match Dune_project.find_extension_version project Dune_lang.Menhir.syntax with
+    | None -> package
+    | Some _ -> Package.map_depends package ~f:upgrade_menhir_constraint
+  in
+  let package_fields = package_fields package ~project in
+  let open Opam_file.Create in
+  let info = Package.info package in
+  let optional_fields =
+    [ "bug-reports", Package_info.bug_reports info
+    ; "homepage", Package_info.homepage info
+    ; "doc", Package_info.documentation info
+    ; ( "license"
+      , match Package_info.license info with
+        | Some [ x ] -> Some x
+        | _ -> None )
+    ; "version", Option.map ~f:Package_version.to_string (Package.version package)
+    ; "dev-repo", Option.map ~f:Source_kind.to_string (Package_info.source info)
+    ]
+    |> List.filter_map ~f:(fun (k, v) -> Option.map v ~f:(fun v -> k, string v))
+  in
+  let list_fields =
+    [ "maintainer", Package_info.maintainers info
+    ; "x-maintenance-intent", maintenance_intent dune_version info
+    ; "authors", Package_info.authors info
+    ; ( "license"
+      , match Package_info.license info with
+        | None | Some [ _ ] -> None
+        | Some l -> Some l )
+    ]
+    |> List.filter_map ~f:(fun (k, v) ->
+      match v with
+      | None | Some [] -> None
+      | Some (_ :: _ as v) -> Some (k, string_list v))
+  in
+  let fields =
+    [ "opam-version", string "2.0"; "build", default_build_command project package ]
+  in
+  let fields = List.concat [ fields; list_fields; optional_fields; package_fields ] in
+  if dune_version < (1, 11) then fields else Opam_file.Create.normalise_field_order fields
+;;
+
+let template_file = Path.extend_basename ~suffix:Filename.template
+
+let build_path ~build_dir pkg =
+  let opam_path = Path.Build.append_source build_dir (Package.opam_file pkg) in
+  match Package.has_opam_file pkg with
+  | Generated_with_diff -> Path.Build.extend_basename opam_path ~suffix:Filename.generated
+  | Exists _ | Generated -> opam_path
+;;
+
+let opam_template ~opam_path =
+  let open Action_builder.O in
+  let opam_template_path = template_file opam_path in
+  Action_builder.if_file_exists
+    opam_template_path
+    ~then_:
+      (let+ contents = Action_builder.contents opam_template_path in
+       Some (opam_template_path, contents))
+    ~else_:(Action_builder.return None)
+;;
+
+let generate project pkg ~template =
+  let opam_fname = Package.opam_file pkg in
+  let filter_fields =
+    match template with
+    | None -> Fun.id
+    | Some (fname, contents) ->
+      let vars_in_template =
+        Lexbuf.from_string ~fname:(Path.to_string fname) contents
+        |> Opam_file.parse
+        |> Opam_file.existing_variables
+      in
+      List.filter ~f:(fun (v, _) -> not (String.Set.mem vars_in_template v))
+  in
+  let generated_fields =
+    opam_fields project pkg
+    |> filter_fields
+    |> Opam_file.Create.of_bindings ~file:(Path.source opam_fname)
+  in
+  sprintf
+    "# This file is generated by dune, edit dune-project instead\n%s\n%s"
+    (OpamPrinter.FullPos.opamfile generated_fields)
+    (match template with
+     | None -> ""
+     | Some (_, s) -> s)
+;;
+
+let add_alias_rule (ctx : Build_context.t) ~profile ~project ~pkg =
+  let build_dir = ctx.build_dir in
+  let dir = Path.Build.append_source build_dir (Dune_project.root project) in
+  let source_opam_path = Package.opam_file pkg |> Path.source in
+  let opam_path = Path.Build.append_source build_dir (Package.opam_file pkg) in
+  let generated_opam_path = build_path ~build_dir pkg in
+  let opam_alias = Alias.make Alias0.opam ~dir in
+  let* use_source_opam =
+    if Profile.is_release profile
+    then Build_system.file_exists source_opam_path
+    else Memo.return false
+  in
+  let aliases = [ Alias.make Alias0.install ~dir; Alias.make Alias0.runtest ~dir ] in
+  let* () =
+    let deps =
+      if use_source_opam
+      then Action_builder.return ()
+      else Action_builder.path (Path.build generated_opam_path)
+    in
+    Rules.Produce.Alias.add_deps opam_alias deps
+  in
+  let* () =
+    match Package.has_opam_file pkg with
+    | Generated_with_diff when not use_source_opam ->
+      Rules.Produce.Alias.add_action
+        opam_alias
+        ~loc:(Loc.in_file source_opam_path)
+        (let open Action_builder.O in
+         let+ () = Action_builder.path (Path.build generated_opam_path)
+         and+ () =
+           Action_builder.if_file_exists
+             source_opam_path
+             ~then_:(Action_builder.path (Path.build opam_path))
+             ~else_:(Action_builder.return ())
+         in
+         Action.Full.make (Action.diff (Path.build opam_path) generated_opam_path))
+    | Exists _ | Generated | Generated_with_diff -> Memo.return ()
+  in
+  Memo.parallel_iter aliases ~f:(fun alias ->
+    Rules.Produce.Alias.add_deps alias (Action_builder.dep (Dep.alias opam_alias)))
+;;
+
+let add_opam_file_rule sctx ~project ~pkg =
+  let build_dir = Super_context.context sctx |> Context.build_dir in
+  let opam_path = Path.Build.append_source build_dir (Package.opam_file pkg) in
+  let generated_opam_path = build_path ~build_dir pkg in
+  let opam_rule =
+    let open Action_builder.O in
+    (let+ template = opam_template ~opam_path:(Path.build opam_path) in
+     generate project pkg ~template)
+    |> Action_builder.write_file_dyn generated_opam_path
+  in
+  let dir = Path.Build.append_source build_dir (Dune_project.root project) in
+  match Package.has_opam_file pkg with
+  | Generated_with_diff ->
+    let* () = Super_context.add_rule sctx ~dir opam_rule in
+    let visible_opam_rule =
+      Action_builder.copy ~src:(Path.build generated_opam_path) ~dst:opam_path
+    in
+    Super_context.add_rule sctx ~mode:Fallback ~dir visible_opam_rule
+  | Exists _ | Generated ->
+    let mode = Rule.Mode.Promote { lifetime = Unlimited; into = None; only = None } in
+    Super_context.add_rule sctx ~mode ~dir opam_rule
+;;
+
+let add_opam_file_rules sctx project =
+  Memo.when_ (Dune_project.generate_opam_files project) (fun () ->
+    let packages = Dune_project.packages project in
+    Memo.parallel_iter_seq
+      (Dune_lang.Package_name.Map.to_seq packages)
+      ~f:(fun (_name, (pkg : Package.t)) -> add_opam_file_rule sctx ~project ~pkg))
+;;
+
+let add_rules sctx project =
+  Memo.when_ (Dune_project.generate_opam_files project) (fun () ->
+    let packages = Dune_project.packages project in
+    Memo.parallel_iter_seq
+      (Dune_lang.Package_name.Map.to_seq packages)
+      ~f:(fun (_name, (pkg : Package.t)) ->
+        let* () =
+          add_alias_rule
+            (Context.build_context (Super_context.context sctx))
+            ~profile:(Context.profile (Super_context.context sctx))
+            ~project
+            ~pkg
+        in
+        match Dune_project.opam_file_location project with
+        | `Inside_opam_directory -> Memo.return ()
+        | `Relative_to_project -> add_opam_file_rule sctx ~project ~pkg))
+;;
+
+module Gen_rules = Build_config.Gen_rules
+
+let gen_rules sctx ~dir ~nearest_src_dir ~src_dir =
+  match nearest_src_dir with
+  | None -> None
+  | Some nearest_src_dir ->
+    let project = Source_tree.Dir.project nearest_src_dir in
+    let project_root = Dune_project.root project in
+    (match Path.Source.is_descendant src_dir ~of_:project_root with
+     | false -> None
+     | true ->
+       let project_root = Dune_project.root project in
+       let project_rules = Path.Source.equal project_root src_dir in
+       let opam_file_location = Dune_project.opam_file_location project in
+       let opam_dir = "opam" in
+       let inside_generated_opam_directory =
+         match opam_file_location with
+         | `Inside_opam_directory ->
+           Path.Source.equal src_dir (Path.Source.relative project_root opam_dir)
+         | `Relative_to_project -> false
+       in
+       if (not inside_generated_opam_directory) && not project_rules
+       then None
+       else (
+         let allowed_subdirs =
+           match opam_file_location with
+           | `Inside_opam_directory when project_rules ->
+             Filename.Set.singleton Filename.opam
+           | `Relative_to_project | `Inside_opam_directory -> Filename.Set.empty
+         in
+         let rules =
+           Rules.collect_unit (fun () ->
+             let* sctx = sctx in
+             let+ () = if project_rules then add_rules sctx project else Memo.return ()
+             and+ () =
+               if inside_generated_opam_directory
+               then add_opam_file_rules sctx project
+               else Memo.return ()
+             in
+             ())
+         in
+         Some (Gen_rules.rules_for ~allowed_subdirs ~dir rules)))
+;;

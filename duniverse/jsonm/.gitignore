@@ -1,0 +1,11 @@
+_b0
+_build
+tmp
+dist
+*~
+\.\#*
+\#*#
+*.native
+*.install
+*.byte
+CLOCK.org

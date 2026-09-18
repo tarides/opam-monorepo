@@ -1,0 +1,8 @@
+(library
+ (name logs_lwt)
+ (public_name logs.lwt)
+ (libraries lwt logs)
+ (modules logs_lwt)
+ (flags :standard -w -27 -safe-string)
+ (optional)
+ (wrapped false))

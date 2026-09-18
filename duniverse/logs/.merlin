@@ -1,0 +1,4 @@
+PKG b0.kit fmt fmt.tty fmt.cli js_of_ocaml-compiler.runtime mtime.clock lwt
+S src
+S test
+B _b0/**

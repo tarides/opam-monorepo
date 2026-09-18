@@ -1,0 +1,16 @@
+(executable
+ (name test)
+ (modules test)
+ (libraries patch alcotest))
+
+(rule
+ (alias runtest)
+ (deps (source_tree data) (:< test.exe))
+ (action (run %{<})))
+
+(executable
+ (name crowbar_test)
+ (modules crowbar_test)
+ (libraries patch crowbar))
+
+(dirs :standard \ opam-repository)

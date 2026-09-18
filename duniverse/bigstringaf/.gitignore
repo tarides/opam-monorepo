@@ -1,0 +1,5 @@
+.*.sw[a-z]
+*~
+_build/
+_opam/
+*.install

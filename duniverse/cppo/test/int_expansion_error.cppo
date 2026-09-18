@@ -1,0 +1,4 @@
+#define FOO 3+3
+#if FOO = 0
+  let x = "Hello"
+#endif

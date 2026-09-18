@@ -1,0 +1,131 @@
+# 1 "scope.cppo"
+(* This example shows that the definition of FOO that is nested inside
+   the (multi-line) definition of BAR affects only the body of the
+   definition of BAR. It does not affect the text that follows a call
+   to BAR. So, a multi-line macro definition acts as a scope delimiter. *)
+
+# 11 "scope.cppo"
+ "definition of FOO at the top level"  
+# 11 "scope.cppo"
+    (* expands to "definition of FOO at the top level" *)
+# 12 "scope.cppo"
+
+   "definition of FOO inside BAR"  (* expands to "definition of FOO inside BAR" *)
+ 
+# 13 "scope.cppo"
+ "definition of FOO at the top level"  
+# 13 "scope.cppo"
+    (* expands to "definition of FOO at the top level" *)
+
+(* If one wishes to delimit a scope, without actually defining a macro,
+   one can use #scope ... #endscope. *)
+
+
+  
+# 20 "scope.cppo"
+   "first definition of HELLO"  
+# 20 "scope.cppo"
+        (* expands to "first definition of HELLO" *)
+
+  
+# 24 "scope.cppo"
+   "second definition of HELLO"  
+# 24 "scope.cppo"
+        (* expands to "second definition of HELLO" *)
+HELLO (* this does not expand *)
+
+(* The effect of #scope ... #endscope can be simulated by writing
+   #def DUMMY ... #enddef DUMMY #undef DUMMY
+   but this is a bit unnatural. *)
+
+# 36 "scope.cppo"
+
+   "definition of HELLO inside the scope"  (* expands to "definition of HELLO inside the scope" *)
+ 
+# 38 "scope.cppo"
+HELLO (* this does not expand *)
+
+(* Another simple example. *)
+
+
+# 44 "scope.cppo"
+let x = 
+# 44 "scope.cppo"
+         "I am defined"  
+# 44 "scope.cppo"
+           (* expands to "I am defined" *)
+# 47 "scope.cppo"
+let y = 
+# 47 "scope.cppo"
+         42  
+# 47 "scope.cppo"
+           (* expands to 42 *)
+
+(* Check that the effect of #undef is also local.
+   This example relies on the above definition of HI. *)
+
+
+# 54 "scope.cppo"
+let qwd = HI (* HI is not recognized as a macro and expands to itself *)
+let z = 
+# 56 "scope.cppo"
+         42  
+# 56 "scope.cppo"
+           (* expands to 42 *)
+
+(* Scopes can be nested. *)
+
+# 61 "scope.cppo"
+let x = 
+# 61 "scope.cppo"
+         0  
+# 61 "scope.cppo"
+              (* expands to 0 *)
+
+  
+# 65 "scope.cppo"
+  let y = 
+# 65 "scope.cppo"
+           1  
+# 65 "scope.cppo"
+                (* expands to 1 *)
+
+    
+# 69 "scope.cppo"
+    let z = 
+# 69 "scope.cppo"
+             2  
+# 69 "scope.cppo"
+                  (* expands to 2 *)
+  let _ = 
+# 71 "scope.cppo"
+           1  
+# 71 "scope.cppo"
+                (* expands to 1 *)
+let _ = 
+# 73 "scope.cppo"
+         0  
+# 73 "scope.cppo"
+              (* expands to 0 *)
+
+(* Another example of nesting. *)
+
+
+
+    
+# 81 "scope.cppo"
+    let message1 = 
+# 81 "scope.cppo"
+                    "Hello, "  
+# 81 "scope.cppo"
+                         ^ 
+# 81 "scope.cppo"
+                            "man" 
+  
+# 83 "scope.cppo"
+  (* Here, MAN is no longer defined, but HELLO still is. *)
+  let message2 = 
+# 84 "scope.cppo"
+                  "Hello, "  
+# 84 "scope.cppo"
+                       ^ "world"

@@ -1,0 +1,26 @@
+This expression evaluates to 8
+This expression is printed as follows:
+( 22 + 33 ) / 5 * 2 - - 3 - - 2 + 12 * - 2 + 5
+This expression is pretty-printed in 10 columns as follows:
+( 22 +
+  33
+) /
+5 *
+2 -
+-3 -
+-2 +
+12 * -2 +
+5
+This expression is pretty-printed in 20 columns as follows:
+(22 + 33) / 5 *
+2 -
+-3 -
+-2 +
+12 * -2 +
+5
+This expression is pretty-printed in 40 columns as follows:
+(22 + 33) / 5 * 2 - -3 - -2 +
+12 * -2 +
+5
+This expression is pretty-printed in 80 columns as follows:
+(22 + 33) / 5 * 2 - -3 - -2 + 12 * -2 + 5

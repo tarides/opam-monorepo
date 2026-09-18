@@ -1,0 +1,52 @@
+name: Reverse Dependencies
+
+on:
+  workflow_call:
+    inputs:
+      packages:
+        required: true
+        type: string
+      dune_version:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: 'Packages to test (e.g., "all", "lwt", "base core")'
+        required: false
+        default: 'all'
+        type: string
+      dune_version:
+        description: 'Dune version: "dev" (local checkout) or git ref (e.g., "3.16.0", commit sha)'
+        required: false
+        default: 'dev'
+        type: string
+
+concurrency:
+  group: "${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  revdeps:
+    name: OCaml Reverse Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: nixbuild/nix-quick-install-action@v34
+      - name: Build OCaml reverse dependencies
+        run: |
+          prefix=".#revdeps.x86_64-linux"
+          targets=""
+          for pkg in ${{ inputs.packages }}; do
+            targets="$targets $prefix.$pkg"
+          done
+
+          dune_version="${{ inputs.dune_version }}"
+          if [ "$dune_version" = "dev" ] || [ -z "$dune_version" ]; then
+            nix build $targets --keep-going --override-input revdeps-dune path:.
+          else
+            nix build $targets --keep-going --override-input revdeps-dune "github:ocaml/dune/$dune_version"
+          fi

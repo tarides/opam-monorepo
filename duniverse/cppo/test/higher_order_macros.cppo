@@ -1,0 +1,69 @@
+(* This macro application combinator provides call-by-value
+   semantics: the actual argument is evaluated up front and
+   its value is bound to a variable, which is passed as an
+   argument to the macro [F]. *)
+#define APPLY(F : [.], X : .)(let __x = (X) in F(__x))
+
+(* Some trivial tests. *)
+#define ID(X) X
+#define C     42
+let forty_one = APPLY(ID, 41)
+let forty_two = APPLY(ID, C )
+
+(* A [for]-loop macro. *)
+#define LOOP(start, finish, body : [.]) (\
+  for __index = start to finish-1 do\
+    body(__index)\
+  done\
+)
+
+(* A [for]-loop macro that performs unrolling. *)
+#define UNROLLED_LOOP(start, finish, body : [.]) (\
+  let __finish = (finish) in\
+  let __index = ref (start) in\
+  while !__index + 2 <= __finish do\
+    APPLY(body, !__index);\
+    APPLY(body, !__index + 1);\
+    __index := !__index + 2\
+  done;\
+  while !__index < __finish do\
+    APPLY(body, !__index);\
+    __index := !__index + 1\
+  done\
+)
+
+(* In some of the examples that follow, #scope ... #endscope is used
+   to avoid the need to #undefine local macros such as BODY and F. *)
+
+(* Iteration over an array, with a normal loop. *)
+let iter f a =
+  #scope
+  #define BODY(i) (f a.(i))
+  LOOP(0, Array.length a, BODY)
+  #endscope
+
+(* Iteration over an array, with an unrolled loop. *)
+let unrolled_iter f a =
+  #scope
+  #define BODY(i) (f a.(i))
+  UNROLLED_LOOP(0, Array.length a, BODY)
+  #endscope
+
+(* Printing an array, with a normal loop. *)
+let print_int_array a =
+  #define F(i) Printf.printf "%d" a.(i)
+  LOOP(0, Array.length a, F)
+
+(* A higher-order macro that produces a definition of [iter],
+   and accepts an arbitrary definition of the macro [LOOP]. *)
+#define BODY(i) (f a.(i))
+#define DEFINE_ITER(iter, LOOP : [..[.]]) \
+  let iter f a = \
+  LOOP(0, Array.length a, BODY)
+#undef BODY
+
+(* Some noise, which does not affect the above definitions. *)
+#define BODY(i) "noise"
+
+DEFINE_ITER(iter, LOOP)
+DEFINE_ITER(unrolled_iter, UNROLLED_LOOP)

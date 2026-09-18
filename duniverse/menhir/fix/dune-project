@@ -1,0 +1,16 @@
+(lang dune 2.8)
+(name vendored_fix)
+(generate_opam_files true)
+(package
+  (name vendored_fix)
+  (authors "François Pottier <francois.pottier@inria.fr>")
+  (maintainers "François Pottier <francois.pottier@inria.fr>")
+  (source (uri git+https://gitlab.inria.fr/fpottier/fix.git))
+  (homepage https://gitlab.inria.fr/fpottier/fix)
+  (bug_reports https://gitlab.inria.fr/fpottier/fix/issues)
+  (synopsis "Algorithmic building blocks for memoization, recursion, and more")
+  (license "LGPL-2.0-only WITH OCaml-LGPL-linking-exception")
+  (depends
+    (ocaml (>= 4.03))
+  )
+)

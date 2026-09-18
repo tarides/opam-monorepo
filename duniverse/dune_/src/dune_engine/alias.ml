@@ -1,0 +1,93 @@
+open Import
+
+module Name = struct
+  include Stdune.Alias_name
+
+  let default = of_string "default"
+end
+
+module T : sig
+  type t = private
+    { dir : Path.Build.t
+    ; name : Name.t
+    }
+
+  val make : Name.t -> dir:Path.Build.t -> t
+  val of_user_written_path : loc:Loc.t -> Path.t -> t
+end = struct
+  type t =
+    { dir : Path.Build.t
+    ; name : Name.t
+    }
+
+  let make name ~dir = { dir; name }
+
+  let of_user_written_path ~loc path =
+    match Path.as_in_build_dir path with
+    | Some path ->
+      let name =
+        Path.Build.basename path
+        |> Filename.to_string
+        |> Name.of_string_opt_loose
+        |> Option.value_exn
+      in
+      { dir = Path.Build.parent_exn path; name }
+    | None ->
+      User_error.raise
+        ~loc
+        [ Pp.text "Invalid alias!"
+        ; Pp.textf
+            "Tried to reference path outside build dir: %S"
+            (Path.to_string_maybe_quoted path)
+        ]
+  ;;
+end
+
+include T
+
+let compare { dir; name } t =
+  let open Ordering.O in
+  let= () = Name.compare name t.name in
+  Path.Build.compare dir t.dir
+;;
+
+let equal x y = compare x y = Eq
+let hash { dir; name } = Tuple.T2.hash Path.Build.hash Name.hash (dir, name)
+let name t = t.name
+let dir t = t.dir
+
+let to_dyn { dir; name } =
+  let open Dyn in
+  Record [ "dir", Path.Build.to_dyn dir; "name", Name.to_dyn name ]
+;;
+
+let fully_qualified_name t = Path.Build.relative t.dir (Name.to_string t.name)
+
+let get_ctx (path : Path.Build.t) =
+  match Path.Build.extract_first_component path with
+  | None -> None
+  | Some (name, sub) ->
+    (match Context_name.of_string_opt (Filename.to_string name) with
+     | None -> None
+     | Some ctx -> Some (ctx, Path.Source.of_local sub))
+;;
+
+let describe ?(loc = Loc.none) alias =
+  let open Pp.O in
+  let pp =
+    match get_ctx alias.dir with
+    | None ->
+      Pp.textf "invalid-alias %s" (Path.Build.to_string (fully_qualified_name alias))
+    | Some (ctx, dir_in_context) ->
+      let pp =
+        Pp.textf "alias "
+        ++ Pp.verbatim
+             (Path.Source.to_string_maybe_quoted
+                (Path.Source.relative dir_in_context (Name.to_string alias.name)))
+      in
+      if Context_name.is_default ctx
+      then pp
+      else pp ++ Pp.textf " (context %s)" (Context_name.to_string ctx)
+  in
+  if Loc.is_none loc then pp else pp ++ Pp.textf " in %s" (Loc.to_file_colon_line loc)
+;;

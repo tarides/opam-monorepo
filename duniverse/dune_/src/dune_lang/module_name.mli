@@ -1,0 +1,123 @@
+open Import
+
+(** Represents a valid OCaml module name *)
+type t
+
+module Unchecked : sig
+  type valid_name := t
+
+  (** Represents a module name that hasn't yet been checked for validity.
+      Used when crawling the source tree for `(include_subdirs qualified)`,
+      where Dune needs to check whether directories are valid module names. *)
+  type t
+
+  val compare : t -> t -> Ordering.t
+  val equal : t -> t -> bool
+  val allow_invalid : t -> valid_name
+  val validate_exn : t -> valid_name
+  val to_dyn : t -> Dyn.t
+
+  module Map : Stdune.Map.S with type key = t
+  module Set : Stdune.Set.S with type elt = t and type 'a map = 'a Map.t
+
+  module Path : sig
+    type nonrec t = t Nonempty_list.t
+
+    val compare : t -> t -> Ordering.t
+    val equal : t -> t -> bool
+    val to_dyn : t -> Dyn.t
+    val to_string : t -> string
+    val uncapitalize : t -> string
+
+    module Map : Stdune.Map.S with type key = t
+    module Set : Stdune.Set.S with type elt = t and type 'a map = 'a Map.t
+  end
+end
+
+(** Description of valid module names *)
+val valid_format_doc : User_message.Style.t Pp.t
+
+val add_suffix : t -> string -> t
+val equal : t -> t -> bool
+val compare : t -> t -> Ordering.t
+val repr : t Repr.t
+val uncapitalize : t -> string
+val pp_quote : Format.formatter -> t -> unit
+
+module Per_item : sig
+  include Per_item with type key = t
+
+  val decode : default:'a -> 'a Decoder.t -> 'a t Decoder.t
+  val repr : 'a Repr.t -> 'a t Repr.t
+end
+
+module Infix : Comparator.OPS with type t = t
+
+val of_local_lib_name : Loc.t * Lib_name.Local.t -> t
+val to_local_lib_name : t -> Lib_name.Local.t
+
+module Unique : sig
+  type name := t
+
+  (** We use [Unique] module names for OCaml unit names. These must be unique
+      across all libraries within a given linkage, so these names often involve
+      mangling on top of the user-written names because the user-written names
+      are only unique within a library.
+
+      These are the names that are used for the .cmi and .cmx artifacts.
+
+      Since [Unique] module names are sometimes mangled, they should not appear
+      in any user-facing messages or configuration files. *)
+  type nonrec t
+
+  val of_string : string -> t
+  val of_name_assuming_needs_no_mangling : name -> t
+
+  (** We allow invalid module names for backwards compatibility *)
+  val of_path_assuming_needs_no_mangling_allow_invalid : Path.t -> t
+
+  val to_dyn : t -> Dyn.t
+  val to_name : t -> loc:Loc.t -> name
+  val to_string : t -> string
+  val compare : t -> t -> Ordering.t
+  val equal : t -> t -> bool
+  val artifact_filename : t -> ext:Filename.Extension.t -> string
+
+  include Conv.S with type t := t
+  include Comparable_intf.S with type key := t
+end
+
+module Path : sig
+  type module_name := t
+  type nonrec t = t Nonempty_list.t
+
+  val compare : t -> t -> Ordering.t
+  val equal : t -> t -> bool
+  val to_dyn : t -> Dyn.t
+  val to_string : t -> string
+  val uncapitalize : t -> string
+
+  module Map : Stdune.Map.S with type key = t
+  module Set : Stdune.Set.S with type elt = t and type 'a map = 'a Map.t
+
+  val wrap : t -> Unique.t
+  val encode : t -> Dune_sexp.t list
+  val decode : t Decoder.t
+  val append_double_underscore : module_name list -> t
+end
+
+val wrap : t -> with_:Path.t -> Unique.t
+
+include Comparable_intf.S with type key := t
+
+val of_string_allow_invalid : Loc.t * string -> Unchecked.t
+val of_checked_string : string -> t
+val to_string : t -> string
+val unchecked : t -> Unchecked.t
+val to_dyn : t -> Dyn.t
+val of_string_user_error : Loc.t * string -> (t, User_message.t) result
+val of_string_opt : string -> t option
+
+include Dune_sexp.Conv.S with type t := t
+
+val decode_loc : (Loc.t * t) Dune_sexp.Decoder.t

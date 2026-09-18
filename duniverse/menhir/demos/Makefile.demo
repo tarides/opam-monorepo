@@ -1,0 +1,48 @@
+# This Makefile is common to every demo.
+
+# [make all] builds just this demo.
+
+.PHONY: all
+all:
+	@ dune build @all --no-print-directory
+
+# [make test] tests just this demo.
+
+.PHONY: test
+test:
+	dune build --force --display short @test
+
+# [make clean] cleans up just this demo.
+
+# Because [dune clean] does not seem to allow cleaning up just one directory,
+# we manually remove the build artefacts for this demo.
+
+include ../../Makefile.image
+
+.PHONY: clean
+clean::
+	rm -f *~
+	rm -rf $(IMAGE)
+
+# [make show] shows the compiled code for the parser.
+
+.PHONY: show
+show: test
+	more $(IMAGE)/parser.ml
+
+# [make api] shows the compiled signature for the parser.
+
+.PHONY: api
+api: test
+	more $(IMAGE)/parser.mli
+
+# [make view] shows a .pdf image of the LR(1) automaton.
+
+VIEW = $(shell \
+  if command -v open >/dev/null ; then echo open ; else echo evince ; fi)
+
+.PHONY: view
+view: all
+	dune exec menhir -- --infer --automaton-graph parser.mly && rm -f parser.{ml,mli}
+	dot -Tpdf parser.dot > parser.pdf && rm -f parser.dot
+	$(VIEW) parser.pdf

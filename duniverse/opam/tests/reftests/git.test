@@ -1,0 +1,252 @@
+N0REP0
+### : Check the bevahiour when presented with a broken submodule
+### mkdir submodule
+### git -C ./submodule init -q
+### git -C ./submodule config core.autocrlf false
+### touch ./submodule/some-file
+### git -C ./submodule add ./some-file
+### git -C ./submodule commit -qm "first commit"
+### mkdir use-submodule
+### git -C ./use-submodule init -q
+### git -C ./use-submodule config core.autocrlf false
+### git -C ./use-submodule submodule add ../submodule ./vendor
+Cloning into '${BASEDIR}/use-submodule/vendor'...
+done.
+### git -C ./use-submodule commit -qm "first commit"
+### <create-submodule-pkg.sh>
+mkdir -p REPO/packages/submodule/submodule.1
+ESCAPED_BASEDIR=$(printf '%s' "$BASEDIR" | sed 's/\\/\\\\/g')
+cat > REPO/packages/submodule/submodule.1/opam << EOF
+opam-version: "2.0"
+build: ["cat" "vendor/some-file"]
+url {
+  src: "git+file://${ESCAPED_BASEDIR}/use-submodule"
+}
+EOF
+### sh ./create-submodule-pkg.sh
+### opam update
+
+<><> Updating package repositories ><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file://${BASEDIR}/REPO
+Now run 'opam upgrade' to apply any package updates.
+### opam switch create submodule --empty
+### opam install submodule
+The following actions will be performed:
+=== install 1 package
+  - install submodule 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved submodule.1  (git+file://${BASEDIR}/use-submodule)
+-> installed submodule.1
+Done.
+### cp -r ./submodule ./submodule.bak
+### rm -r ./submodule
+### opam remove submodule
+The following actions will be performed:
+=== remove 1 package
+  - remove submodule 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   submodule.1
+Done.
+### opam install submodule | '".+[/\\]git(\.exe)? ' -> '"git '
+The following actions will be performed:
+=== install 1 package
+  - install submodule 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[ERROR] Could not synchronize ${BASEDIR}/OPAM/submodule/.opam-switch/sources/submodule.1 from "git+file://${BASEDIR}/use-submodule":
+        "git -C ${BASEDIR}/OPAM/submodule/.opam-switch/sources/submodule.1 submodule update --init --recursive" exited with code 1
+[ERROR] Failed to get sources of submodule.1: git+file://${BASEDIR}/use-submodule
+
+OpamSolution.Fetch_fail("git+file://${BASEDIR}/use-submodule")
+
+
+<><> Error report <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
++- The following actions failed
+| - fetch submodule 1
++- 
+- No changes have been performed
+# Return code 40 #
+### ::::::::::::::::::::::::::::::::::::::::::::::
+### : Submodules should be re-fetched when they are outdated / haven't been fetched correctly
+### ::::::::::::::::::::::::::::::::::::::::::::::
+### mv ./submodule.bak ./submodule
+### opam install submodule
+The following actions will be performed:
+=== install 1 package
+  - install submodule 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved submodule.1  (git+file://${BASEDIR}/use-submodule)
+-> installed submodule.1
+Done.
+### : Simulate corruption / --working-dir
+### <OPAM/submodule/.opam-switch/sources/submodule.1/vendor/some-file>
+changed content
+### opam update --dev
+[NOTE] submodule.1 has previously been updated with --working-dir, not resetting unless explicitly selected
+### opam reinstall -v submodule | sed-cmd cat
+The following actions will be performed:
+=== recompile 1 package
+  - recompile submodule 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+Processing  1/4: [submodule.1: git]
+-> retrieved submodule.1  (git+file://${BASEDIR}/use-submodule)
+Processing  2/4: [submodule: cat]
++ cat "vendor/some-file" (CWD=${BASEDIR}/OPAM/submodule/.opam-switch/build/submodule.1)
+- changed content
+-> compiled  submodule.1
+-> removed   submodule.1
+-> installed submodule.1
+Done.
+### : Check the handling or error 'git remote' exit code 2
+### opam switch create lock-exit-2 --empty
+### <pin:dep-nip/dep-nip.opam>
+opam-version: "2.0"
+### <pin:nip/nip.opam>
+opam-version: "2.0"
+depends: "dep-nip"
+### git -C dep-nip init -q --initial-branch=master
+### git -C dep-nip config core.autocrlf false
+### git -C dep-nip add dep-nip.opam
+### git -C dep-nip commit -qm 'opam'
+### opam pin -n ./dep-nip
+[NOTE] Package dep-nip does not exist in opam repositories registered in the current switch.
+dep-nip is now pinned to git+file://${BASEDIR}/dep-nip#master (version dev)
+### opam pin -n ./nip
+[NOTE] Package nip does not exist in opam repositories registered in the current switch.
+nip is now pinned to file://${BASEDIR}/nip (version dev)
+### opam install nip -y
+
+<><> Synchronising pinned packages ><><><><><><><><><><><><><><><><><><><><><><>
+[nip.dev] synchronised (no changes)
+
+The following actions will be performed:
+=== install 2 packages
+  - install dep-nip dev (pinned) [required by nip]
+  - install nip     dev (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved dep-nip.dev  (no changes)
+-> installed dep-nip.dev
+-> retrieved nip.dev  (file://${BASEDIR}/nip)
+-> installed nip.dev
+Done.
+### opam lock nip
+[ERROR] Remote branch not found for dep-nip.dev
+[WARNING] Dependency dep-nip.dev is pinned to local target git+file://${BASEDIR}/dep-nip#master, skipping
+Generated lock files for:
+  - nip.dev: ${BASEDIR}/nip.opam.locked
+### : Make sure the global or system git config doesn't change the behaviour of opam
+### opam switch create dup --empty
+### <mygitconfig>
+[diff]
+	renames = copies
+### <GIT_REPO_DUP/repo>
+opam-version: "2.0"
+### : NOTE: This file is large to make sure git doesn't suddenly decide
+### : that having 'copy from' in the diff isn't worth it.
+### <GIT_REPO_DUP/packages/duplicate/duplicate.1/opam>
+opam-version: "2.0"
+post-messages: """
+aaa
+bbb
+ccc
+ddd
+eee
+fff
+ggg
+hhh
+iii
+jjj
+kkk
+lll
+mmm
+nnn
+ooo
+ppp
+qqq
+rrr
+sss
+ttt
+uuu
+vvv
+www
+xxx
+yyy
+zzz
+"""
+### git -C GIT_REPO_DUP init -q --initial-branch=master
+### git -C GIT_REPO_DUP config core.autocrlf false
+### git -C GIT_REPO_DUP add *
+### git -C GIT_REPO_DUP commit -qm init
+### opam repo add dup ./GIT_REPO_DUP --this-switch
+[dup] Initialised
+### mkdir GIT_REPO_DUP/packages/duplicate/duplicate.2
+### cp GIT_REPO_DUP/packages/duplicate/duplicate.1/opam GIT_REPO_DUP/packages/duplicate/duplicate.2/opam
+### sed -i.bak 's/aaa/ααα/' GIT_REPO_DUP/packages/duplicate/duplicate.1/opam
+### rm GIT_REPO_DUP/packages/duplicate/duplicate.1/opam.bak
+### git -C GIT_REPO_DUP add *
+### git -C GIT_REPO_DUP commit -qm dup
+### GIT_CONFIG_GLOBAL=${BASEDIR}/mygitconfig GIT_CONFIG_SYSTEM=/dev/null
+### git config --get --global diff.renames
+copies
+### opam update -vv dup | sed-cmd git | grep -v "^- index "
+
+<><> Updating package repositories ><><><><><><><><><><><><><><><><><><><><><><>
+Processing  1/1: [dup: git]
++ git "-C" "${BASEDIR}/OPAM/repo/dup" "remote" "set-url" "origin" "file://${BASEDIR}/GIT_REPO_DUP"
++ git "-C" "${BASEDIR}/OPAM/repo/dup" "fetch" "-q" "file://${BASEDIR}/GIT_REPO_DUP" "--update-shallow" "--depth=1" "+HEAD:refs/remotes/opam-ref"
++ git "-C" "${BASEDIR}/OPAM/repo/dup" "add" "."
++ git "-C" "${BASEDIR}/OPAM/repo/dup" "-c" "diff.noprefix=false" "diff" "--text" "--no-ext-diff" "-R" "-p" "refs/remotes/opam-ref" "--"
+- diff --git b/packages/duplicate/duplicate.1/opam a/packages/duplicate/duplicate.1/opam
+- --- b/packages/duplicate/duplicate.1/opam
+- +++ a/packages/duplicate/duplicate.1/opam
+- @@ -1,6 +1,6 @@
+-  opam-version: "2.0"
+-  post-messages: """
+- -aaa
+- +ααα
+-  bbb
+-  ccc
+-  ddd
+- diff --git b/packages/duplicate/duplicate.2/opam a/packages/duplicate/duplicate.2/opam
+- new file mode 100644
+- --- /dev/null
+- +++ a/packages/duplicate/duplicate.2/opam
+- @@ -0,0 +1,29 @@
+- +opam-version: "2.0"
+- +post-messages: """
+- +aaa
+- +bbb
+- +ccc
+- +ddd
+- +eee
+- +fff
+- +ggg
+- +hhh
+- +iii
+- +jjj
+- +kkk
+- +lll
+- +mmm
+- +nnn
+- +ooo
+- +ppp
+- +qqq
+- +rrr
+- +sss
+- +ttt
+- +uuu
+- +vvv
+- +www
+- +xxx
+- +yyy
+- +zzz
+- +"""
+[dup] synchronised from git+file://${BASEDIR}/GIT_REPO_DUP
+Processing: [dup: loading data]
+Now run 'opam upgrade' to apply any package updates.
+### unset GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM

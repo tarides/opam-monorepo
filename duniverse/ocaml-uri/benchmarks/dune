@@ -1,0 +1,12 @@
+(executables
+ (names benchmark)
+ (package uri-bench)
+ (public_names uri-bench)
+ (libraries uri core_bench core_unix.command_unix))
+
+(alias
+ (name bench)
+ (deps
+  (:< benchmark.exe))
+ (action
+  (run %{<})))

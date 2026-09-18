@@ -1,0 +1,24 @@
+(library
+  (name opam_file_format)
+  (public_name opam-file-format)
+  (synopsis "Parser and printer for the opam file syntax")
+  (wrapped false)
+  (private_modules (:include compat/compat.sexp))
+  (flags :standard (:include flags.sexp)))
+
+(rule
+ (enabled_if (< %{ocaml_version} "5.0"))
+ (action (copy compat/domain.ml domain.ml)))
+
+(rule
+ (enabled_if (< %{ocaml_version} "4.03"))
+ (action (with-stdout-to flags.sexp (echo "(-w -50)"))))
+(rule
+ (enabled_if (>= %{ocaml_version} "4.03"))
+ (action (with-stdout-to flags.sexp (echo "()"))))
+
+(menhir (modules opamBaseParser) (infer false))
+(ocamllex opamLexer)
+
+(env (dev
+ (flags (:standard -warn-error -A))))

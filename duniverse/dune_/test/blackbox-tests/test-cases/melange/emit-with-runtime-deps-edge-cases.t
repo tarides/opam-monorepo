@@ -1,0 +1,214 @@
+Test simple interactions between melange.emit and copy_files
+
+  $ mkdir a
+  $ cat > dune-project <<EOF
+  > (lang dune 3.8)
+  > (using melange 0.1)
+  > (using directory-targets 0.1)
+  > EOF
+
+  $ cat > a/dune <<EOF
+  > (melange.emit
+  >  (alias mel)
+  >  (target output)
+  >  (emit_stdlib false)
+  >  (preprocess (pps melange.ppx))
+  >  (runtime_deps assets/file.txt assets/file.txt))
+  > EOF
+
+  $ mkdir a/assets
+  $ cat > a/assets/file.txt <<EOF
+  > hello from file
+  > EOF
+
+  $ cat > a/main.ml <<EOF
+  > external readFileSync : string -> encoding:string -> string = "readFileSync"
+  > [@@mel.module "fs"]
+  > let dirname = [%mel.raw "__dirname"]
+  > let file_path = "./assets/file.txt"
+  > let file_content = readFileSync (dirname ^ "/" ^ file_path) ~encoding:"utf8"
+  > let () = Js.log file_content
+  > EOF
+
+Rules created for the assets in the output directory
+
+  $ dune rules --root . --format=json @mel |
+  > jq -r 'include "dune"; rulesMatchingTarget("a/output/a/assets/file.txt") | select(ruleHasCopy("a/assets/file.txt"; "a/output/a/assets/file.txt")) | ruleDepFilePaths'
+  _build/default/a/assets/file.txt
+
+  $ dune build @mel
+
+The runtime_dep index.txt was copied to the build folder
+
+  $ ls _build/default/a/output/a/assets
+  file.txt
+
+  $ dune build a/output/a/assets/file.txt
+  $ ls _build/default/a/output/a
+  assets
+  main.js
+
+  $ node _build/default/a/output/a/main.js
+  hello from file
+  
+
+
+
+
+Test depending on non-existing paths
+
+  $ mkdir another
+  $ dune clean
+  $ cat > another/dune <<EOF
+  > (melange.emit
+  >  (alias non-existing-mel)
+  >  (target another-output)
+  >  (emit_stdlib false)
+  >  (preprocess (pps melange.ppx))
+  >  (runtime_deps doesnt-exist.txt))
+  > EOF
+
+  $ dune build @non-existing-mel
+  File "another/dune", lines 1-6, characters 0-151:
+  1 | (melange.emit
+  2 |  (alias non-existing-mel)
+  3 |  (target another-output)
+  4 |  (emit_stdlib false)
+  5 |  (preprocess (pps melange.ppx))
+  6 |  (runtime_deps doesnt-exist.txt))
+  Error: No rule found for another/doesnt-exist.txt
+  [1]
+
+Test depend on non-file dependencies
+
+  $ cat > another/dune <<EOF
+  > (melange.emit
+  >  (alias non-existing-mel)
+  >  (target another-output)
+  >  (emit_stdlib false)
+  >  (preprocess (pps melange.ppx))
+  >  (runtime_deps (sandbox none)))
+  > EOF
+  $ dune build @non-existing-mel
+  File "another/dune", line 6, characters 15-29:
+  6 |  (runtime_deps (sandbox none)))
+                     ^^^^^^^^^^^^^^
+  Error: only files are allowed in this position
+  [1]
+
+Test depending on paths that "escape" the melange.emit directory
+
+  $ dune clean
+  $ cat > another/dune <<EOF
+  > (melange.emit
+  >  (alias mel)
+  >  (target another-output)
+  >  (emit_stdlib false)
+  >  (preprocess (pps melange.ppx))
+  >  (runtime_deps ../a/assets/file.txt))
+  > EOF
+  $ cat > another/main.ml <<EOF
+  > external readFileSync : string -> encoding:string -> string = "readFileSync"
+  > [@@mel.module "fs"]
+  > let dirname = [%mel.raw "__dirname"]
+  > let file_path = "./assets/file.txt"
+  > let file_content = readFileSync (dirname ^ "/" ^ file_path) ~encoding:"utf8"
+  > let () = Js.log file_content
+  > EOF
+
+Rules are created for the runtime deps
+
+  $ dune rules --root . --format=json @mel |
+  > jq -r 'include "dune"; .[] | if ruleHasCopy("a/assets/file.txt"; "a/output/a/assets/file.txt") then "a/output/a/assets/file.txt <- \([ruleDepFilePaths] | join(" "))" elif ruleHasCopy("a/assets/file.txt"; "another/another-output/a/assets/file.txt") then "another/another-output/a/assets/file.txt <- \([ruleDepFilePaths] | join(" "))" else empty end'
+  a/output/a/assets/file.txt <- _build/default/a/assets/file.txt
+  another/another-output/a/assets/file.txt <- _build/default/a/assets/file.txt
+
+  $ dune build @mel
+
+Path ends ups being emitted "correctly", but outside the target dir.
+  $ ls _build/default/another/another-output/another
+  main.js
+  $ ls _build/default/another/another-output/a/assets
+  file.txt
+
+Test depending on external paths
+
+  $ mkdir external
+  $ cat > external/dune <<EOF
+  > (melange.emit
+  >  (alias mel)
+  >  (target external-output)
+  >  (emit_stdlib false)
+  >  (preprocess (pps melange.ppx))
+  >  (runtime_deps /etc/hosts))
+  > EOF
+  $ cat > external/main.ml <<EOF
+  > external readFileSync : string -> encoding:string -> string = "readFileSync"
+  > [@@mel.module "fs"]
+  > let dirname = [%mel.raw "__dirname"]
+  > let file_path = "./assets/file.txt"
+  > let file_content = readFileSync (dirname ^ "/" ^ file_path) ~encoding:"utf8"
+  > let () = Js.log file_content
+  > EOF
+
+  $ dune build @mel
+
+  $ dune trace cat | jq 'include "dune"; targetsMatchingFilter(test("[Mm]ain"))'
+  {
+    "target_files": [
+      "_build/default/external/.melange_src/main.pp.ml"
+    ]
+  }
+  {
+    "target_files": [
+      "_build/default/external/.external-output.mobjs/melange/melange__Main.cmi",
+      "_build/default/external/.external-output.mobjs/melange/melange__Main.cmj",
+      "_build/default/external/.external-output.mobjs/melange/melange__Main.cmt"
+    ]
+  }
+  {
+    "target_files": [
+      "_build/default/external/external-output/external/main.js"
+    ]
+  }
+
+External paths are not copied to the target directory
+
+  $ ls _build/default/external/external-output/external
+  main.js
+
+Test depending on runtime assets inside `(include_subdirs ..)`
+
+  $ mkdir -p incl/sub
+  $ cat > incl/dune <<EOF
+  > (include_subdirs unqualified)
+  > (melange.emit
+  >  (alias mel)
+  >  (target incl-output)
+  >  (emit_stdlib false)
+  >  (preprocess (pps melange.ppx))
+  >  (runtime_deps ./file.txt ./sub/file.txt))
+  > EOF
+  $ cat > incl/file.txt <<EOF
+  > hello from sub file
+  > EOF
+  $ cat > incl/sub/file.txt <<EOF
+  > hello from sub file
+  > EOF
+  $ cat > incl/sub/main.ml <<EOF
+  > external readFileSync : string -> encoding:string -> string = "readFileSync"
+  > [@@mel.module "fs"]
+  > let dirname = [%mel.raw "__dirname"]
+  > let file_path = "./file.txt"
+  > let file_content = readFileSync (dirname ^ "/" ^ file_path) ~encoding:"utf8"
+  > let () = Js.log file_content
+  > EOF
+
+  $ dune build @mel --display=short 2>&1 | grep -i main
+           ppx incl/.melange_src/sub/main.pp.ml
+          melc incl/.incl-output.mobjs/melange/melange__Main.{cmi,cmj,cmt}
+          melc incl/incl-output/incl/sub/main.js
+
+  $ node _build/default/incl/incl-output/incl/sub/main.js
+  hello from sub file
+  

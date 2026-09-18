@@ -1,0 +1,292 @@
+;; ---------------------------------------------------------------------------
+;; Positive tests.
+
+(rule
+ (targets ext.out)
+ (deps
+  (:< ext.cppo)
+  source.sh)
+ (action
+  (with-stdout-to
+   %{targets}
+   (run %{bin:cppo} -x "rot13:tr '[a-z]' '[n-za-m]'" -x
+     "source:sh source.sh '%F' %B %E" %{<}))))
+
+(rule
+ (targets comments.out)
+ (deps
+  (:< comments.cppo))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run %{bin:cppo} %{<}))))
+
+(rule
+ (targets cond.out)
+ (deps
+  (:< cond.cppo))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run %{bin:cppo} %{<}))))
+
+(rule
+ (targets tuple.out)
+ (deps
+  (:< tuple.cppo))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run %{bin:cppo} %{<}))))
+
+(rule
+ (targets loc.out)
+ (deps
+  (:< loc.cppo))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run %{bin:cppo} %{<}))))
+
+(rule
+ (targets paren_arg.out)
+ (deps
+  (:< paren_arg.cppo))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run %{bin:cppo} %{<}))))
+
+(rule
+ (targets unmatched.out)
+ (deps
+  (:< unmatched.cppo))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run %{bin:cppo} %{<}))))
+
+(rule
+ (targets version.out)
+ (deps
+  (:< version.cppo))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run %{bin:cppo} -V X:123.05.2-alpha.1+foo-2.1 -V COQ:8.13+beta1 -V OCAML:4.12.0~alpha1 %{<}))))
+
+(rule
+ (targets test.out)
+ (deps
+  (:< test.cppo)
+  incl.cppo
+  incl2.cppo)
+ (action
+  (with-stdout-to
+   %{targets}
+   (run %{bin:cppo} %{<}))))
+
+(rule
+ (targets lexical.out)
+ (deps (:< lexical.cppo))
+ (action (with-stdout-to %{targets} (run %{bin:cppo} %{<}))))
+
+(rule
+ (targets scope.out)
+ (deps (:< scope.cppo))
+ (action (with-stdout-to %{targets} (run %{bin:cppo} %{<}))))
+
+(rule
+ (targets higher_order_macros.out)
+ (deps (:< higher_order_macros.cppo))
+ (action (with-stdout-to %{targets} (run %{bin:cppo} %{<}))))
+
+(rule
+ (targets include_define_on_last_line.out)
+ (deps (:< include_define_on_last_line.cppo) define_on_last_line.cppo)
+ (action (with-stdout-to %{targets} (run %{bin:cppo} %{<}))))
+
+(rule
+ (targets def.out)
+ (deps (:< def.cppo))
+ (action (with-stdout-to %{targets} (run %{bin:cppo} %{<}))))
+
+(rule (alias runtest) (package cppo)
+      (action (diff ext.ref ext.out)))
+
+(rule (alias runtest) (package cppo)
+      (action (diff comments.ref comments.out)))
+
+(rule (alias runtest) (package cppo)
+      (action (diff cond.ref cond.out)))
+
+(rule (alias runtest) (package cppo)
+      (action (diff tuple.ref tuple.out)))
+
+(rule (alias runtest) (package cppo)
+      (action (diff loc.ref loc.out)))
+
+(rule (alias runtest) (package cppo)
+      (action (diff paren_arg.ref paren_arg.out)))
+
+(rule (alias runtest) (package cppo)
+      (action (diff version.ref version.out)))
+
+(rule (alias runtest) (package cppo)
+      (action (diff unmatched.ref unmatched.out)))
+
+(rule (alias runtest) (package cppo)
+      (action (diff test.ref test.out)))
+
+(rule (alias runtest) (package cppo)
+      (action (diff lexical.ref lexical.out)))
+
+(rule (alias runtest) (package cppo)
+      (action (diff scope.ref scope.out)))
+
+(rule (alias runtest) (package cppo)
+      (action (diff higher_order_macros.ref higher_order_macros.out)))
+
+(rule (alias runtest) (package cppo)
+      (action (diff include_define_on_last_line.ref include_define_on_last_line.out)))
+
+(rule (alias runtest) (package cppo)
+      (action (diff def.ref def.out)))
+
+;; ---------------------------------------------------------------------------
+;; Negative tests.
+
+(rule
+ (targets arity_mismatch.err)
+ (deps (:< arity_mismatch.cppo))
+ (action (with-stderr-to %{targets}
+   (with-accepted-exit-codes (not 0) (run %{bin:cppo} %{<})))))
+
+(rule (alias runtest) (package cppo)
+      (action (diff arity_mismatch.ref arity_mismatch.err)))
+
+(rule
+ (targets applied_to_none.err)
+ (deps (:< applied_to_none.cppo))
+ (action (with-stderr-to %{targets}
+   (with-accepted-exit-codes (not 0) (run %{bin:cppo} %{<})))))
+
+(rule (alias runtest) (package cppo)
+      (action (diff applied_to_none.ref applied_to_none.err)))
+
+(rule
+ (targets expects_no_args.err)
+ (deps (:< expects_no_args.cppo))
+ (action (with-stderr-to %{targets}
+   (with-accepted-exit-codes (not 0) (run %{bin:cppo} %{<})))))
+
+(rule (alias runtest) (package cppo)
+      (action (diff expects_no_args.ref expects_no_args.err)))
+
+(rule
+ (targets already_defined.err)
+ (deps (:< already_defined.cppo))
+ (action (with-stderr-to %{targets}
+   (with-accepted-exit-codes (not 0) (run %{bin:cppo} %{<})))))
+
+(rule (alias runtest) (package cppo)
+      (action (diff already_defined.ref already_defined.err)))
+
+(rule
+ (targets at_least_one_arg.err)
+ (deps (:< at_least_one_arg.cppo))
+ (action (with-stderr-to %{targets}
+   (with-accepted-exit-codes (not 0) (run %{bin:cppo} %{<})))))
+
+(rule (alias runtest) (package cppo)
+      (action (diff at_least_one_arg.ref at_least_one_arg.err)))
+
+(rule
+ (targets comment_in_formals.err)
+ (deps (:< comment_in_formals.cppo))
+ (action (with-stderr-to %{targets}
+   (with-accepted-exit-codes (not 0) (run %{bin:cppo} %{<})))))
+
+(rule (alias runtest) (package cppo)
+      (action (diff comment_in_formals.ref comment_in_formals.err)))
+
+(rule
+ (targets arity_mismatch_indirect.err)
+ (deps (:< arity_mismatch_indirect.cppo))
+ (action (with-stderr-to %{targets}
+   (with-accepted-exit-codes (not 0) (run %{bin:cppo} %{<})))))
+
+(rule (alias runtest) (package cppo)
+      (action (diff arity_mismatch_indirect.ref arity_mismatch_indirect.err)))
+
+(rule
+ (targets expect_ident.err)
+ (deps (:< expect_ident.cppo))
+ (action (with-stderr-to %{targets}
+   (with-accepted-exit-codes (not 0) (run %{bin:cppo} %{<})))))
+
+(rule (alias runtest) (package cppo)
+      (action (diff expect_ident.ref expect_ident.err)))
+
+(rule
+ (targets expect_ident_empty.err)
+ (deps (:< expect_ident_empty.cppo))
+ (action (with-stderr-to %{targets}
+   (with-accepted-exit-codes (not 0) (run %{bin:cppo} %{<})))))
+
+(rule (alias runtest) (package cppo)
+      (action (diff expect_ident_empty.ref expect_ident_empty.err)))
+
+(rule
+ (targets undefined.err)
+ (deps (:< undefined.cppo))
+ (action (with-stderr-to %{targets}
+   (with-accepted-exit-codes (not 0) (run %{bin:cppo} %{<})))))
+
+(rule (alias runtest) (package cppo)
+      (action (diff undefined.ref undefined.err)))
+
+(rule
+ (targets shape_mismatch.err)
+ (deps (:< shape_mismatch.cppo))
+ (action (with-stderr-to %{targets}
+   (with-accepted-exit-codes (not 0) (run %{bin:cppo} %{<})))))
+
+(rule (alias runtest) (package cppo)
+      (action (diff shape_mismatch.ref shape_mismatch.err)))
+
+(rule
+ (targets int_expansion_error.err)
+ (deps (:< int_expansion_error.cppo))
+ (action (with-stderr-to %{targets}
+   (with-accepted-exit-codes (not 0) (run %{bin:cppo} %{<})))))
+
+(rule (alias runtest) (package cppo)
+      (action (diff int_expansion_error.ref int_expansion_error.err)))
+
+(rule
+ (targets extraneous_enddef.err)
+ (deps (:< extraneous_enddef.cppo))
+ (action (with-stderr-to %{targets}
+   (with-accepted-exit-codes (not 0) (run %{bin:cppo} %{<})))))
+
+(rule (alias runtest) (package cppo)
+      (action (diff extraneous_enddef.ref extraneous_enddef.err)))
+
+(rule
+ (targets missing_enddef.err)
+ (deps (:< missing_enddef.cppo))
+ (action (with-stderr-to %{targets}
+   (with-accepted-exit-codes (not 0) (run %{bin:cppo} %{<})))))
+
+(rule (alias runtest) (package cppo)
+      (action (diff missing_enddef.ref missing_enddef.err)))
+
+(rule
+ (targets missing_endscope.err)
+ (deps (:< missing_endscope.cppo))
+ (action (with-stderr-to %{targets}
+   (with-accepted-exit-codes (not 0) (run %{bin:cppo} %{<})))))
+
+(rule (alias runtest) (package cppo)
+      (action (diff missing_endscope.ref missing_endscope.err)))

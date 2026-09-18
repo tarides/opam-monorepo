@@ -1,0 +1,622 @@
+N0REP0
+### OPAMYES=1
+### opam option opam-root-version --global | '"' -> '' >$ OPAMROOTVERSION
+### : Init with invariant :
+### :---:
+### <pkg:ocaml.4.02.3>
+opam-version: "2.0"
+depends: [ "ocaml-system" {= "4.02.3"} | "ocaml-base-compiler" {= "4.02.3"} ]
+flags: conf
+### <pkg:ocaml-system.4.02.3>
+opam-version: "2.0"
+depends: [ "ocaml" {post} ]
+available: sys-ocaml-version = "4.02.3"
+flags: compiler
+conflict-class: "ocaml-core-compiler"
+### <pkg:ocaml-base-compiler.4.02.3>
+opam-version: "2.0"
+depends: [ "ocaml" {= "4.02.3" & post} ]
+flags: compiler
+conflict-class: "ocaml-core-compiler"
+### :---:
+### <pkg:ocaml.4.05.0>
+opam-version: "2.0"
+depends: [ "ocaml-system" {= "4.05.0"} | "ocaml-base-compiler" {= "4.05.0"} ]
+flags: conf
+### <pkg:ocaml-system.4.05.0>
+opam-version: "2.0"
+depends: [ "ocaml" {post} ]
+available: sys-ocaml-version = "4.05.0"
+flags: compiler
+conflict-class: "ocaml-core-compiler"
+### <pkg:ocaml-base-compiler.4.05.0>
+opam-version: "2.0"
+depends: [ "ocaml" {= "4.05.0" & post} ]
+flags: compiler
+conflict-class: "ocaml-core-compiler"
+### :---:
+### <pkg:ocaml.4.07.0>
+opam-version: "2.0"
+depends: [ "ocaml-system" {= "4.07.0"} | "ocaml-base-compiler" {= "4.07.0"} ]
+flags: conf
+### <pkg:ocaml-system.4.07.0>
+opam-version: "2.0"
+depends: [ "ocaml" {post} ]
+available: sys-ocaml-version = "4.07.0"
+flags: compiler
+conflict-class: "ocaml-core-compiler"
+### <pkg:ocaml-base-compiler.4.07.0>
+opam-version: "2.0"
+depends: [ "ocaml" {= "4.07.0" & post} ]
+flags: compiler
+conflict-class: "ocaml-core-compiler"
+### :---:
+### <pkg:ocaml.4.10.0>
+opam-version: "2.0"
+depends: [ "ocaml-system" {= "4.10.0"} | "ocaml-base-compiler" {= "4.10.0"} ]
+flags: conf
+### <pkg:ocaml-system.4.10.0>
+depends: [ "ocaml" {post} ]
+opam-version: "2.0"
+available: sys-ocaml-version = "4.10.0"
+flags: compiler
+conflict-class: "ocaml-core-compiler"
+### <pkg:ocaml-base-compiler.4.10.0>
+opam-version: "2.0"
+depends: [ "ocaml" {= "4.10.0" & post} ]
+flags: compiler
+conflict-class: "ocaml-core-compiler"
+### :---:
+### :I: Default compiler selection
+### :I:1: No system compiler
+### rm -rf ${OPAMROOT}
+### <opamrc>
+eval-variables: [ sys-ocaml-version ["false"] "no system compiler" ]
+### opam init --no-setup --bypass-checks default REPO/ --config opamrc | grep -v Cygwin
+Configuring from ${BASEDIR}/opamrc and then from built-in defaults.
+
+<><> Fetching repository information ><><><><><><><><><><><><><><><><><><><><><>
+[default] Initialised
+
+<><> Creating initial switch 'default' (invariant ["ocaml" {>= "4.05.0"}] - initially with ocaml-base-compiler)
+
+<><> Installing new switch packages <><><><><><><><><><><><><><><><><><><><><><>
+Switch invariant: ["ocaml" {>= "4.05.0"}]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed ocaml-base-compiler.4.10.0
+-> installed ocaml.4.10.0
+Done.
+### opam switch invariant
+["ocaml" {>= "4.05.0"}]
+### :I:2: system compiler not compliant with default invariant
+### rm -rf ${OPAMROOT}
+### <opamrc>
+eval-variables: [ sys-ocaml-version ["echo" "4.02.3"] "old system compiler" ]
+### opam init --no-setup --bypass-checks default REPO/ --config opamrc | grep -v Cygwin
+Configuring from ${BASEDIR}/opamrc and then from built-in defaults.
+
+<><> Fetching repository information ><><><><><><><><><><><><><><><><><><><><><>
+[default] Initialised
+
+<><> Creating initial switch 'default' (invariant ["ocaml" {>= "4.05.0"}] - initially with ocaml-base-compiler)
+
+<><> Installing new switch packages <><><><><><><><><><><><><><><><><><><><><><>
+Switch invariant: ["ocaml" {>= "4.05.0"}]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed ocaml-base-compiler.4.10.0
+-> installed ocaml.4.10.0
+Done.
+### opam switch invariant
+["ocaml" {>= "4.05.0"}]
+### :I:3: Base compiler should be selected default
+### rm -rf ${OPAMROOT}
+### <opamrc>
+eval-variables: [ sys-ocaml-version ["echo" "4.07.0"] "new system compiler" ]
+### opam init --no-setup --bypass-checks default REPO/ --config opamrc | grep -v Cygwin
+Configuring from ${BASEDIR}/opamrc and then from built-in defaults.
+
+<><> Fetching repository information ><><><><><><><><><><><><><><><><><><><><><>
+[default] Initialised
+
+<><> Creating initial switch 'default' (invariant ["ocaml" {>= "4.05.0"}] - initially with ocaml-base-compiler)
+
+<><> Installing new switch packages <><><><><><><><><><><><><><><><><><><><><><>
+Switch invariant: ["ocaml" {>= "4.05.0"}]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed ocaml-base-compiler.4.10.0
+-> installed ocaml.4.10.0
+Done.
+### opam switch invariant
+["ocaml" {>= "4.05.0"}]
+### :I:4: ocaml-system explicit selection
+### rm -rf $OPAMROOT
+### <opamrc>
+eval-variables: [ sys-ocaml-version ["echo" "4.07.0"] "new system compiler" ]
+### opam init --no-setup --bypass-checks default REPO/ --config opamrc -c ocaml-system | grep -v Cygwin
+Configuring from ${BASEDIR}/opamrc and then from built-in defaults.
+
+<><> Fetching repository information ><><><><><><><><><><><><><><><><><><><><><>
+[default] Initialised
+
+<><> Creating initial switch 'ocaml-system' (invariant ["ocaml-system"]) ><><><>
+
+<><> Installing new switch packages <><><><><><><><><><><><><><><><><><><><><><>
+Switch invariant: ["ocaml-system"]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed ocaml-system.4.07.0
+-> installed ocaml.4.07.0
+Done.
+### opam switch invariant
+["ocaml-system"]
+### :II: Init with config file :
+### :II:a: default setup ::
+### rm -rf $OPAMROOT
+### opam init --bypass-checks --bare --no-setup default REPO/ | grep -v Cygwin
+No configuration file found, using built-in defaults.
+
+<><> Fetching repository information ><><><><><><><><><><><><><><><><><><><><><>
+[default] Initialised
+### opam-cat $OPAMROOT/config | 'opam-root-version: "${OPAMROOTVERSION}"' -> 'opam-root-version: current' | grep -v sys-pkg-manager-cmd | grep -v global-variables | grep -v eval-variables:
+default-compiler: ["ocaml-base-compiler"]
+default-invariant: ["ocaml" {>= "4.05.0"}]
+depext: true
+depext-cannot-install: false
+depext-run-installs: true
+download-jobs: 3
+opam-root-version: current
+opam-version: "2.0"
+repositories: "default"
+swh-fallback: false
+wrap-build-commands: ["%{hooks}%/sandbox.sh" "build"] {os = "linux" | os = "macos"}
+wrap-install-commands: ["%{hooks}%/sandbox.sh" "install"] {os = "linux" | os = "macos"}
+wrap-remove-commands: ["%{hooks}%/sandbox.sh" "remove"] {os = "linux" | os = "macos"}
+### :II:b: full configured opamrc ::
+### rm -rf $OPAMROOT
+### <opamrc>
+opam-version: "2.0"
+repositories: "norepo" {"REPO/"}
+default-compiler: "ocaml"
+default-invariant: "ocaml" { = "4.10.0"}
+jobs: 9
+download-command: "dl-tool"
+download-jobs: 8
+archive-mirrors: "REPO/cache"
+solver-criteria: "solver-criteri"
+solver-upgrade-criteria: "upgrade-criteri"
+solver-fixup-criteria: "fixup-criteri"
+solver: "a-solver"
+global-variables: [ GLOB "glob" "Set throught opamrc" ]
+eval-variables: [ var-to-eval ["true"] "tautology" ]
+recommended-tools: [ "recommended" ]
+required-tools: [ "required" { "tautology" } ]
+init-scripts:
+[ "a-script.sh"
+  """\
+#!/usr/bin/env bash
+echo "script $1 launched STOP i repeat STOP script $1 launched"
+""" ]
+pre-build-commands: ["%{hooks}%/a-script.sh" "pre-build" ]
+pre-install-commands: ["%{hooks}%/a-script.sh" "pre-install" ]
+pre-remove-commands: ["%{hooks}%/a-script.sh" "pre-remove" ]
+pre-session-commands: ["%{hooks}%/a-script.sh" "pre-session" ]
+wrap-build-commands: ["%{hooks}%/a-script.sh" "wrap-build" ]
+wrap-install-commands: ["%{hooks}%/a-script.sh" "wrap-install" ]
+wrap-remove-commands: ["%{hooks}%/a-script.sh" "wrap-remove" ]
+post-build-commands: ["%{hooks}%/a-script.sh" "post-build" ]
+post-install-commands: ["%{hooks}%/a-script.sh" "post-install" ]
+post-remove-commands: ["%{hooks}%/a-script.sh" "post-remove" ]
+post-session-commands: ["%{hooks}%/a-script.sh" "post-session" ]
+### opam init --bypass-checks --bare --no-setup --config opamrc | grep -v Cygwin
+Configuring from ${BASEDIR}/opamrc and then from built-in defaults.
+
+<><> Fetching repository information ><><><><><><><><><><><><><><><><><><><><><>
+[norepo] Initialised
+### opam-cat $OPAMROOT/config | 'opam-root-version: "${OPAMROOTVERSION}"' -> 'opam-root-version: current' | grep -v sys-pkg-manager-cmd | '\[\[os-distribution "cygwin" "Set by opam init"] ' -> '' | ']]' -> ']'
+archive-mirrors: "file://${BASEDIR}/REPO/cache"
+default-compiler: ["ocaml"]
+default-invariant: ["ocaml" {= "4.10.0"}]
+depext: true
+depext-cannot-install: false
+depext-run-installs: true
+download-command: "dl-tool"
+download-jobs: 8
+eval-variables: [var-to-eval ["true"] "tautology"]
+global-variables: [GLOB "glob" "Set throught opamrc"]
+jobs: 9
+opam-root-version: current
+opam-version: "2.0"
+post-build-commands: ["%{hooks}%/a-script.sh" "post-build"]
+post-install-commands: ["%{hooks}%/a-script.sh" "post-install"]
+post-remove-commands: ["%{hooks}%/a-script.sh" "post-remove"]
+post-session-commands: ["%{hooks}%/a-script.sh" "post-session"]
+pre-build-commands: ["%{hooks}%/a-script.sh" "pre-build"]
+pre-install-commands: ["%{hooks}%/a-script.sh" "pre-install"]
+pre-remove-commands: ["%{hooks}%/a-script.sh" "pre-remove"]
+pre-session-commands: ["%{hooks}%/a-script.sh" "pre-session"]
+repositories: "norepo"
+solver: "a-solver"
+solver-criteria: "solver-criteri"
+solver-fixup-criteria: "fixup-criteri"
+solver-upgrade-criteria: "upgrade-criteri"
+swh-fallback: false
+wrap-build-commands: ["%{hooks}%/a-script.sh" "wrap-build"]
+wrap-install-commands: ["%{hooks}%/a-script.sh" "wrap-install"]
+wrap-remove-commands: ["%{hooks}%/a-script.sh" "wrap-remove"]
+### opam-cat $OPAMROOT/repo/repos-config
+opam-version: "2.0"
+repositories: "norepo" {"file://${BASEDIR}/REPO"}
+### sh $OPAMROOT/opam-init/hooks/a-script.sh test
+script test launched STOP i repeat STOP script test launched
+### :II:c: partially configured opamrc ::
+### rm -rf $OPAMROOT
+### <opamrc>
+opam-version: "2.0"
+repositories: "norepo" {"REPO/"}
+default-compiler: "ocaml"
+download-jobs: 8
+archive-mirrors: "REPO/cache"
+eval-variables: [ var-to-eval ["true"] "tautology" ]
+required-tools: [ "required" { "tautology" } ]
+# As fields are overriden, it is needed to recreate sandbox script
+init-scripts: [
+[ "a-script.sh"
+  """\
+#!/usr/bin/env bash
+echo "script $1 launched STOP i repeat STOP script $1 launched"
+""" ]
+[ "sandbox.sh"
+  """\
+#!/usr/bin/env bash
+echo "SUCCESS"
+""" ]
+]
+pre-build-commands: ["%{hooks}%/a-script.sh" "pre-build" ]
+wrap-install-commands: ["%{hooks}%/a-script.sh" "wrap-install" ]
+post-session-commands: ["%{hooks}%/a-script.sh" "post-session" ]
+### opam init --bypass-checks --bare --no-setup --config opamrc | grep -v Cygwin
+Configuring from ${BASEDIR}/opamrc and then from built-in defaults.
+
+<><> Fetching repository information ><><><><><><><><><><><><><><><><><><><><><>
+[norepo] Initialised
+### opam-cat $OPAMROOT/config | 'opam-root-version: "${OPAMROOTVERSION}"' -> 'opam-root-version: current' | grep -v sys-pkg-manager-cmd | grep -v global-variables
+archive-mirrors: "file://${BASEDIR}/REPO/cache"
+default-compiler: ["ocaml"]
+default-invariant: ["ocaml" {>= "4.05.0"}]
+depext: true
+depext-cannot-install: false
+depext-run-installs: true
+download-jobs: 8
+eval-variables: [var-to-eval ["true"] "tautology"]
+opam-root-version: current
+opam-version: "2.0"
+post-session-commands: ["%{hooks}%/a-script.sh" "post-session"]
+pre-build-commands: ["%{hooks}%/a-script.sh" "pre-build"]
+repositories: "norepo"
+swh-fallback: false
+wrap-build-commands: ["%{hooks}%/sandbox.sh" "build"] {os = "linux" | os = "macos"}
+wrap-install-commands: ["%{hooks}%/a-script.sh" "wrap-install"]
+wrap-remove-commands: ["%{hooks}%/sandbox.sh" "remove"] {os = "linux" | os = "macos"}
+### opam-cat $OPAMROOT/repo/repos-config
+opam-version: "2.0"
+repositories: "norepo" {"file://${BASEDIR}/REPO"}
+### :II:d: Parse error on config file
+### <wrong-config>
+this is not the content of a config file
+### :II:d:1: With strict mode
+### rm -rf $OPAMROOT
+### opam init --bypass-checks --bare --no-setup --config wrong-config
+Configuring from ${BASEDIR}/wrong-config and then from built-in defaults.
+[ERROR] At ${BASEDIR}/wrong-config:1:5-1:7::
+        Parse error
+[ERROR] Strict mode: aborting
+[ERROR] Error in configuration file, fix it, use '--no-opamrc', or check your '--config FILE' arguments:
+OpamStd.OpamSys.Exit(30)
+# Return code 50 #
+### :II:d:2: Without strict mode
+### rm -rf $OPAMROOT
+### OPAMSTRICT=0 opam init --bypass-checks --bare --no-setup --config wrong-config
+Configuring from ${BASEDIR}/wrong-config and then from built-in defaults.
+[ERROR] Error in configuration file, fix it, use '--no-opamrc', or check your '--config FILE' arguments:
+At ${BASEDIR}/wrong-config:1:5-1:7::
+Parse error
+# Return code 50 #
+### :II:e: Show a reasonable error message when the file given to --config does not exist ::
+### :II:e:1: Non existing local file
+### rm -rf $OPAMROOT
+### opam init --bypass-checks --bare --no-setup --config some-non-existant-file
+[ERROR] File does not exist: ${BASEDIR}/some-non-existant-file
+# Return code 2 #
+### :II:e:2: Non existant vcs local file
+### rm -rf $OPAMROOT
+### opam init --bypass-checks --bare --no-setup --config git+file://$BASEDIR/config-files/config
+[ERROR] Version control url not supported for "git+file://${BASEDIR}/config-files/config"
+# Return code 2 #
+### :II:e:3: Existing VCS local file
+### mkdir config-files
+### <config-files/config>
+opam-version: "2.0"
+default-invariant : "foo"
+repositories: "norepo" {"REPO/"}
+### git -C config-files init -q --initial-branch=master
+### git -C config-files config core.autocrlf false
+### git -C config-files commit -qm 'init' --allow-empty
+### git -C config-files add config
+### git -C config-files commit -qm 'config'
+### test -f config-files/config
+### rm -rf $OPAMROOT
+### opam init --bypass-checks --bare --no-setup --config git+file://$BASEDIR/config-files/config
+[ERROR] Version control url not supported for "git+file://${BASEDIR}/config-files/config"
+# Return code 2 #
+### opam option default-invariant
+[ERROR] Opam has not been initialised, please run `opam init'
+# Return code 50 #
+### :II:e:4: Existing VCS local file, url not specifyin VCS
+### rm -rf $OPAMROOT
+### opam init --bypass-checks --bare --no-setup --config $BASEDIR/config-files/config
+Configuring from ${BASEDIR}/config-files/config and then from built-in defaults.
+
+<><> Fetching repository information ><><><><><><><><><><><><><><><><><><><><><>
+[norepo] Initialised
+### opam option default-invariant
+["foo"]
+### :II:e:5: Existing VCS file but the branch is not the one on disk
+### git -C config-files checkout -b no-config
+Switched to a new branch 'no-config'
+### git -C config-files rm config
+rm 'config'
+### git -C config-files commit -qm 'no-config'
+### test -f config-files/config
+# Return code 1 #
+### rm -rf $OPAMROOT
+### opam init --bypass-checks --bare --no-setup --config git+file://$BASEDIR/config-files/config#config
+[ERROR] Version control url not supported for "git+file://${BASEDIR}/config-files/config#config"
+# Return code 2 #
+### :II:e:6: Non existant distant VCS file
+### rm -rf $OPAMROOT
+### opam init --bypass-checks --bare --no-setup --config git+file://som.e/distant/config
+[ERROR] Version control url not supported for "git+file://som.e/distant/config"
+# Return code 2 #
+### :II:e:7: Non existant http file
+### rm -rf $OPAMROOT
+### opam --version >$ OPAMVERSION
+### opam init --bypass-checks --bare --no-setup --config http://som.e/url/to/config | sed-cmd curl | "${OPAMVERSION}" -> "current" | "[^ ]*\.part" -> file.part
+Fatal error:
+OpamDownload.Download_fail(_, "curl failed: \"curl --write-out %{http_code}\\n --retry 3 --retry-delay 2 --user-agent opam/current -L -o file.part -- http://som.e/url/to/config\" exited with code 6")
+# Return code 99 #
+### :II:f: Several erroring files
+### :II:f:1: 1 parse error, 1 non existant
+### <wrong-config>
+this is not the content of a config file
+### rm -rf $OPAMROOT
+### opam --version >$ OPAMVERSION
+### opam init --bypass-checks --bare --no-setup --config wrong-config --config non-existant
+[ERROR] File does not exist: ${BASEDIR}/non-existant
+# Return code 2 #
+### :II:f:2: 1 parse error, 1 non existant, 1 good
+### rm -rf $OPAMROOT
+### opam --version >$ OPAMVERSION
+### opam init --bypass-checks --bare --no-setup --config wrong-config --config non-existant --config $BASEDIR/config-files/config
+[ERROR] File does not exist: ${BASEDIR}/non-existant
+# Return code 2 #
+### :III: Debug logs
+### :III:1: CLIENT actions during --bare (detects if the default compiler was computed or not)
+### ::::::: See https://github.com/ocaml/opam/issues/5815
+### rm -rf $OPAMROOT
+### <opamrc>
+opam-version: "2.0"
+### OPAMDEBUGSECTIONS=CLIENT OPAMDEBUG=-5 opam init --bypass-checks --bare --no-setup --config opamrc REPO/ | grep -v Cygwin | grep -v git-location
+Configuring from ${BASEDIR}/opamrc and then from built-in defaults.
+CLIENT                          INIT default from file://${BASEDIR}/REPO
+CLIENT                          updating repository state
+
+<><> Fetching repository information ><><><><><><><><><><><><><><><><><><><><><>
+[default] Initialised
+### :IV: Advice message when default switch creation fails
+### <pkg:fail-compiler.1>
+opam-version: "2.0"
+build: "false"
+flags: compiler
+### :IV:1: simple compiler name without version
+### rm -rf $OPAMROOT
+### opam init --no-setup --bypass-checks default REPO/ -c fail-compiler | grep -v Cygwin
+No configuration file found, using built-in defaults.
+
+<><> Fetching repository information ><><><><><><><><><><><><><><><><><><><><><>
+[default] Initialised
+
+<><> Creating initial switch 'fail-compiler' (invariant ["fail-compiler"]) ><><>
+
+<><> Installing new switch packages <><><><><><><><><><><><><><><><><><><><><><>
+Switch invariant: ["fail-compiler"]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[ERROR] The compilation of fail-compiler.1 failed at "false".
+
+
+
+
+<><> Error report <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
++- The following actions failed
+| - build fail-compiler 1
++- 
+- No changes have been performed
+Switch initialisation failed: clean up? ('n' will leave the switch partially installed) [Y/n] y
+[NOTE] Opam has been initialised, but the initial switch creation failed.
+       Use opam switch create default fail-compiler to get started.
+# Return code 31 #
+### :IV:2: simple compiler name with version constraint
+### rm -rf $OPAMROOT
+### opam init --no-setup --bypass-checks default REPO/ -c fail-compiler.1 | grep -v Cygwin
+No configuration file found, using built-in defaults.
+
+<><> Fetching repository information ><><><><><><><><><><><><><><><><><><><><><>
+[default] Initialised
+
+<><> Creating initial switch 'fail-compiler.1' (invariant ["fail-compiler" {= "1"}])
+
+<><> Installing new switch packages <><><><><><><><><><><><><><><><><><><><><><>
+Switch invariant: ["fail-compiler" {= "1"}]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[ERROR] The compilation of fail-compiler.1 failed at "false".
+
+
+
+
+<><> Error report <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
++- The following actions failed
+| - build fail-compiler 1
++- 
+- No changes have been performed
+Switch initialisation failed: clean up? ('n' will leave the switch partially installed) [Y/n] y
+[NOTE] Opam has been initialised, but the initial switch creation failed.
+       Use opam switch create default 'fail-compiler=1' to get started.
+# Return code 31 #
+### :IV:3: complex formula
+### rm -rf $OPAMROOT
+### <opamrc>
+opam-version: "2.0"
+default-compiler: "fail-compiler"
+default-invariant: "fail-compiler" {= "1"} | "ocaml" {>= "4.10"}
+### opam init --no-setup --bypass-checks default REPO/ --config opamrc | grep -v Cygwin
+Configuring from ${BASEDIR}/opamrc and then from built-in defaults.
+
+<><> Fetching repository information ><><><><><><><><><><><><><><><><><><><><><>
+[default] Initialised
+
+<><> Creating initial switch 'default' (invariant ["fail-compiler" {= "1"} | "ocaml" {>= "4.10"}] - initially with fail-compiler)
+
+<><> Installing new switch packages <><><><><><><><><><><><><><><><><><><><><><>
+Switch invariant: ["fail-compiler" {= "1"} | "ocaml" {>= "4.10"}]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[ERROR] The compilation of fail-compiler.1 failed at "false".
+
+
+
+
+<><> Error report <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
++- The following actions failed
+| - build fail-compiler 1
++- 
+- No changes have been performed
+Switch initialisation failed: clean up? ('n' will leave the switch partially installed) [Y/n] y
+[NOTE] Opam has been initialised, but the initial switch creation failed.
+       Use opam switch create default --formula '["fail-compiler" {= "1"} | "ocaml" {>= "4.10"}]' to get started.
+# Return code 31 #
+### :V: Reinit fixing switches list, and internal state of switch
+### rm -rf $OPAMROOT
+### <pkg:pina.1>
+opam-version: "2.0"
+### <pkg:ta.1>
+opam-version: "2.0"
+### opam init --no-setup --bypass-checks default REPO/ --bare | grep -v Cygwin
+No configuration file found, using built-in defaults.
+
+<><> Fetching repository information ><><><><><><><><><><><><><><><><><><><><><>
+[default] Initialised
+### # create some switches
+### opam switch create normal --empty
+### opam switch create ./real-local --empty
+### opam switch create corrupted --empty
+### opam install pina ta
+The following actions will be performed:
+=== install 2 packages
+  - install pina 1
+  - install ta   1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed pina.1
+-> installed ta.1
+Done.
+### opam sw normal
+### # corrupt installed opams cache
+### cp REPO/repo OPAM/corrupted/.opam-switch/packages/cache
+### # add in config file non existing local switches
+### mkdir -p empty-dir/_opam
+### <new-config.sh>
+basedir=$(printf '%s' "$BASEDIR" | sed 's/\\/\\\\/g')
+cat > OPAM/config << EOF
+opam-version: "2.0"
+opam-root-version: "$OPAMROOTVERSION"
+repositories: "default"
+installed-switches: [
+  "normal"
+  "corrupted"
+  "${basedir}/real-local"
+  "${basedir}/woosh"
+  "${basedir}/empty-dir"
+]
+switch: "normal"
+EOF
+### sh new-config.sh
+### # corrupt switch-config by removing synopsis
+### sed -i.bak '/synopsis/d' OPAM/corrupted/.opam-switch/switch-config
+### # remove ta.1 definition from switch
+### rm -r OPAM/corrupted/.opam-switch/packages/ta.1
+### OPAMDEBUG=-5 OPAMDEBUGSECTIONS="CACHE(installed) FILE(switch-config) STATE GSTATE FILE(config)"
+### opam init --reinit --no-setup --bypass-checks | 'Bad installed cache: .*' -> 'Bad installed cache: ...'
+No configuration file found, using built-in defaults.
+FILE(config)                    Read ${BASEDIR}/OPAM/config in 0.000s
+FILE(config)                    Read ${BASEDIR}/OPAM/config in 0.000s
+FILE(config)                    Wrote ${BASEDIR}/OPAM/config atomically in 0.000s
+GSTATE                          LOAD-GLOBAL-STATE @ ${BASEDIR}/OPAM
+FILE(config)                    Read ${BASEDIR}/OPAM/config in 0.000s
+GSTATE                          Cleaning switch list: removed ${BASEDIR}/woosh
+
+<><> Updating repositories ><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[default] no changes from file://${BASEDIR}/REPO
+FILE(switch-config)             Read ${BASEDIR}/real-local/_opam/.opam-switch/switch-config in 0.000s
+GSTATE                          Fixing switch list: removed ${BASEDIR}/empty-dir
+FILE(config)                    Wrote ${BASEDIR}/OPAM/config atomically in 0.000s
+STATE                           LOAD-SWITCH-STATE @ normal
+FILE(switch-config)             Read ${BASEDIR}/real-local/_opam/.opam-switch/switch-config in 0.000s
+FILE(switch-config)             Read ${BASEDIR}/OPAM/normal/.opam-switch/switch-config in 0.000s
+CACHE(installed)                Loaded ${BASEDIR}/OPAM/normal/.opam-switch/packages/cache in 0.000s
+STATE                           Inferred invariant: from base packages {}, (roots {}) => []
+FILE(switch-config)             Wrote ${BASEDIR}/OPAM/normal/.opam-switch/switch-config atomically in 0.000s
+STATE                           Switch state loaded in 0.000s
+STATE                           LOAD-SWITCH-STATE @ corrupted
+FILE(switch-config)             Read ${BASEDIR}/real-local/_opam/.opam-switch/switch-config in 0.000s
+FILE(switch-config)             Read ${BASEDIR}/OPAM/corrupted/.opam-switch/switch-config in 0.000s
+CACHE(installed)                Bad installed cache: ...
+CACHE(installed)                Invalid installed cache, removing
+CACHE(installed)                Writing the installed cache to ${BASEDIR}/OPAM/corrupted/.opam-switch/packages/cache ...
+CACHE(installed)                ${BASEDIR}/OPAM/corrupted/.opam-switch/packages/cache written in 0.000s
+STATE                           Definition missing for installed package ta.1, copying from repo
+STATE                           Inferred invariant: from base packages {}, (roots {}) => []
+FILE(switch-config)             Wrote ${BASEDIR}/OPAM/corrupted/.opam-switch/switch-config atomically in 0.000s
+FILE(switch-config)             Wrote ${BASEDIR}/OPAM/corrupted/.opam-switch/switch-config atomically in 0.000s
+STATE                           Switch state loaded in 0.000s
+STATE                           LOAD-SWITCH-STATE @ ${BASEDIR}/real-local
+FILE(switch-config)             Read ${BASEDIR}/real-local/_opam/.opam-switch/switch-config in 0.000s
+FILE(switch-config)             Read ${BASEDIR}/real-local/_opam/.opam-switch/switch-config in 0.000s
+FILE(switch-config)             Read ${BASEDIR}/real-local/_opam/.opam-switch/switch-config in 0.000s
+CACHE(installed)                Loaded ${BASEDIR}/real-local/_opam/.opam-switch/packages/cache in 0.000s
+STATE                           Inferred invariant: from base packages {}, (roots {}) => []
+FILE(switch-config)             Wrote ${BASEDIR}/real-local/_opam/.opam-switch/switch-config atomically in 0.000s
+STATE                           Switch state loaded in 0.000s
+### # check that everything was fixed
+### head OPAM/config | '"${OPAMROOTVERSION}"' -> "current"
+opam-version: "2.0"
+opam-root-version: current
+repositories: "default"
+installed-switches: [
+  "normal"
+  "corrupted"
+  "${BASEDIR}/real-local"
+]
+switch: "normal"
+download-jobs: 3
+### grep synopsis OPAM/corrupted/.opam-switch/switch-config
+synopsis: "corrupted"
+### test -f OPAM/corrupted/.opam-switch/packages/ta.1/opam
+### opam-cache installed corrupted
+=> pina.1 <=
+opam-version: "2.0"
+name: "pina"
+version: "1"

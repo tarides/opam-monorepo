@@ -1,0 +1,73 @@
+
+(* The type of tokens. *)
+
+type token = 
+  | TIMES
+  | RPAREN
+  | PLUS
+  | MINUS
+  | LPAREN
+  | INT of (int)
+  | EOL
+  | DIV
+
+(* This exception is raised by the monolithic API functions. *)
+
+exception Error
+
+(* The monolithic API. *)
+
+val main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (int)
+
+module MenhirInterpreter : sig
+  
+  (* The incremental API. *)
+  
+  include MenhirLib.IncrementalEngine.INCREMENTAL_ENGINE
+    with type token = token
+  
+  (* The indexed type of terminal symbols. *)
+  
+  type _ terminal = 
+    | T_error : unit terminal
+    | T_TIMES : unit terminal
+    | T_RPAREN : unit terminal
+    | T_PLUS : unit terminal
+    | T_MINUS : unit terminal
+    | T_LPAREN : unit terminal
+    | T_INT : (int) terminal
+    | T_EOL : unit terminal
+    | T_DIV : unit terminal
+  
+  (* The indexed type of nonterminal symbols. *)
+  
+  type _ nonterminal = 
+    | N_main : (int) nonterminal
+    | N_expr : (int) nonterminal
+  
+  (* The inspection API. *)
+  
+  include MenhirLib.IncrementalEngine.INSPECTION
+    with type 'a lr1state := 'a lr1state
+    with type production := production
+    with type 'a terminal := 'a terminal
+    with type 'a nonterminal := 'a nonterminal
+    with type 'a env := 'a env
+  
+end
+
+(* The entry point(s) to the incremental API. *)
+
+module Incremental : sig
+  
+  val main: Lexing.position -> (int) MenhirInterpreter.checkpoint
+  
+end
+
+(* The parse tables. *)
+
+(* Warning: this submodule is undocumented. In the future,
+   its type could change, or it could disappear altogether. *)
+
+module Tables : MenhirLib.TableFormat.TABLES
+  with type token = token

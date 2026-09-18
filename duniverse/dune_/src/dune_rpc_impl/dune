@@ -1,0 +1,16 @@
+(library
+ (name dune_rpc_impl)
+ (libraries
+  dune_engine
+  dune_lang
+  dune_scheduler
+  rpc
+  dune_rpc
+  source
+  memo
+  dune_util
+  dune_trace
+  fiber
+  stdune
+  unix)
+ (synopsis "Dune's rpc server + a usable client"))

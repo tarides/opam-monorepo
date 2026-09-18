@@ -1,0 +1,3 @@
+File "calc04.in", line 1, characters 1-2:
+Syntax error at '+'.
+After an opening parenthesis, an expression is expected.

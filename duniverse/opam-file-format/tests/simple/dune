@@ -1,0 +1,6 @@
+(copy_files ../../opam-file-format.opam)
+
+(test
+ (name simple)
+ (deps opam-file-format.opam)
+ (libraries opam-file-format))

@@ -1,0 +1,3 @@
+(documentation
+ (package swhid_core)
+ (mld_files index))

@@ -1,0 +1,6 @@
+--- crowbar1.old
++++ crowbar1.new
+@@ -1,2 +1 @@
+ 
+-x
+\ No newline at end of file

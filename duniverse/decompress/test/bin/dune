@@ -1,0 +1,3 @@
+(cram
+ (package decompress)
+ (deps ../corpus/news ../corpus/bib zpipe.c %{bin:decompress}))

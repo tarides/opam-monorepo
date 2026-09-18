@@ -1,0 +1,4 @@
+Error: File "int_expansion_error.cppo", line 2, characters 4-7
+Error: Variable FOO found in cppo boolean expression must expand
+into an int literal, into a tuple of int literals,
+or into a variable with the same properties.

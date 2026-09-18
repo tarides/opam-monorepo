@@ -1,0 +1,7 @@
+(library
+ (name logs_cli)
+ (public_name logs.cli)
+ (libraries logs cmdliner)
+ (modules logs_cli)
+ (flags :standard -w -27 -safe-string)
+ (wrapped false))

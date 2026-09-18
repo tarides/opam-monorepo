@@ -1,0 +1,38 @@
+name: Main workflow
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Esy support
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        ocaml-compiler:
+          - 4.12.x
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Create esy wrapper
+        run: |
+          echo '{
+                  "name": "esy-checkseum",
+                  "dependencies": {
+                    "ocaml": "${{ matrix.ocaml-compiler }}",
+                    "checkseum": "./checkseum.opam",
+                    "@opam/alcotest": "*"
+                  }
+                }' > esy.json
+      - uses: actions/setup-node@v1
+        with:
+                node-version: 14
+      - name: Install esy
+        run: npm install -g esy
+      - uses: esy/github-action@v1
+      - name: Install dependencies
+        run: esy install
+      - name: Build
+        run: esy b dune build

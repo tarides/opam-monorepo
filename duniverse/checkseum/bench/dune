@@ -1,0 +1,24 @@
+(executable
+ (name main)
+ (enabled_if
+  (= %{profile} benchmark))
+ (libraries tcpip.checksum checkseum.c checkseum cstruct base64 bechamel
+   bechamel-js))
+
+(rule
+ (targets main.json)
+ (enabled_if
+  (= %{profile} benchmark))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run ./main.exe))))
+
+(rule
+ (alias bench)
+ (enabled_if
+  (= %{profile} benchmark))
+ (targets main.html)
+ (mode promote)
+ (action
+  (system "%{bin:bechamel-html} < %{dep:main.json} > %{targets}")))

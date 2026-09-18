@@ -1,0 +1,4 @@
+(test
+ (name sexp_tests)
+ (modules sexp_tests)
+ (libraries stdune dune_lang))

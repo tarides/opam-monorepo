@@ -1,0 +1,85 @@
+(* This example shows that the definition of FOO that is nested inside
+   the (multi-line) definition of BAR affects only the body of the
+   definition of BAR. It does not affect the text that follows a call
+   to BAR. So, a multi-line macro definition acts as a scope delimiter. *)
+
+#def BAR
+  #define FOO "definition of FOO inside BAR"
+  FOO (* expands to "definition of FOO inside BAR" *)
+#enddef
+#define FOO "definition of FOO at the top level"
+FOO (* expands to "definition of FOO at the top level" *)
+BAR
+FOO (* expands to "definition of FOO at the top level" *)
+
+(* If one wishes to delimit a scope, without actually defining a macro,
+   one can use #scope ... #endscope. *)
+
+#scope
+  #define HELLO "first definition of HELLO"
+  HELLO (* expands to "first definition of HELLO" *)
+#endscope
+#scope
+  #define HELLO "second definition of HELLO"
+  HELLO (* expands to "second definition of HELLO" *)
+#endscope
+HELLO (* this does not expand *)
+
+(* The effect of #scope ... #endscope can be simulated by writing
+   #def DUMMY ... #enddef DUMMY #undef DUMMY
+   but this is a bit unnatural. *)
+
+#def DUMMY
+  #define HELLO "definition of HELLO inside the scope"
+  HELLO (* expands to "definition of HELLO inside the scope" *)
+#enddef
+DUMMY
+#undef DUMMY
+HELLO (* this does not expand *)
+
+(* Another simple example. *)
+
+#scope
+#define HI "I am defined"
+let x = HI (* expands to "I am defined" *)
+#endscope
+#define HI 42
+let y = HI (* expands to 42 *)
+
+(* Check that the effect of #undef is also local.
+   This example relies on the above definition of HI. *)
+
+#scope
+#undef HI
+let qwd = HI (* HI is not recognized as a macro and expands to itself *)
+#endscope
+let z = HI (* expands to 42 *)
+
+(* Scopes can be nested. *)
+
+#define LEVEL 0
+let x = LEVEL (* expands to 0 *)
+#scope
+  #undef LEVEL
+  #define LEVEL 1
+  let y = LEVEL (* expands to 1 *)
+  #scope
+    #undef LEVEL
+    #define LEVEL 2
+    let z = LEVEL (* expands to 2 *)
+  #endscope
+  let _ = LEVEL (* expands to 1 *)
+#endscope
+let _ = LEVEL (* expands to 0 *)
+
+(* Another example of nesting. *)
+
+#scope
+  #define HELLO "Hello, "
+  #scope
+    #define MAN "man"
+    let message1 = HELLO ^ MAN
+  #endscope
+  (* Here, MAN is no longer defined, but HELLO still is. *)
+  let message2 = HELLO ^ "world"
+#endscope

@@ -1,0 +1,369 @@
+
+module MenhirBasics = struct
+  
+  exception Error
+  
+  let _eRR =
+    fun _s ->
+      raise Error
+  
+  type token = 
+    | TIMES
+    | RPAREN
+    | PLUS
+    | LPAREN
+    | INT of 
+# 1 "demos/calc-mini/parser.mly"
+       (int)
+# 19 "demos/calc-mini/parser.ml"
+  
+    | EOL
+  
+end
+
+include MenhirBasics
+
+type ('s, 'r) _menhir_state = 
+  | MenhirState00 : ('s, _menhir_box_main) _menhir_state
+    (** State 00.
+        Stack shape : <empty>.
+        Start symbol: main. *)
+
+  | MenhirState01 : (('s, _menhir_box_main) _menhir_cell1_LPAREN, _menhir_box_main) _menhir_state
+    (** State 01.
+        Stack shape : LPAREN.
+        Start symbol: main. *)
+
+  | MenhirState04 : (('s, _menhir_box_main) _menhir_cell1_expr, _menhir_box_main) _menhir_state
+    (** State 04.
+        Stack shape : expr.
+        Start symbol: main. *)
+
+  | MenhirState07 : (('s, _menhir_box_main) _menhir_cell1_expr, _menhir_box_main) _menhir_state
+    (** State 07.
+        Stack shape : expr.
+        Start symbol: main. *)
+
+
+and ('s, 'r) _menhir_cell1_expr = 
+  | MenhirCell1_expr of 's * ('s, 'r) _menhir_state * (int)
+
+and ('s, 'r) _menhir_cell1_LPAREN = 
+  | MenhirCell1_LPAREN of 's * ('s, 'r) _menhir_state
+
+and _menhir_box_main = 
+  | MenhirBox_main of (int) [@@unboxed]
+
+let _menhir_action_1 =
+  fun i ->
+    (* expr -> INT *)
+    (
+# 19 "demos/calc-mini/parser.mly"
+    ( i )
+# 64 "demos/calc-mini/parser.ml"
+     : (int))
+
+let _menhir_action_2 =
+  fun e ->
+    (* expr -> LPAREN expr RPAREN *)
+    (
+# 21 "demos/calc-mini/parser.mly"
+    ( e )
+# 73 "demos/calc-mini/parser.ml"
+     : (int))
+
+let _menhir_action_3 =
+  fun e1 e2 ->
+    (* expr -> expr PLUS expr *)
+    (
+# 23 "demos/calc-mini/parser.mly"
+    ( e1 + e2 )
+# 82 "demos/calc-mini/parser.ml"
+     : (int))
+
+let _menhir_action_4 =
+  fun e1 e2 ->
+    (* expr -> expr TIMES expr *)
+    (
+# 25 "demos/calc-mini/parser.mly"
+    ( e1 * e2 )
+# 91 "demos/calc-mini/parser.ml"
+     : (int))
+
+let _menhir_action_5 =
+  fun e ->
+    (* main -> expr EOL *)
+    (
+# 15 "demos/calc-mini/parser.mly"
+    ( e )
+# 100 "demos/calc-mini/parser.ml"
+     : (int))
+
+let _menhir_print_token : token -> string =
+  fun _tok ->
+    match _tok with
+    | TIMES ->
+        "TIMES"
+    | RPAREN ->
+        "RPAREN"
+    | PLUS ->
+        "PLUS"
+    | LPAREN ->
+        "LPAREN"
+    | INT _ ->
+        "INT"
+    | EOL ->
+        "EOL"
+
+let _menhir_fail : unit -> 'a =
+  fun () ->
+    Printf.eprintf "Internal failure -- please contact the parser generator's developers.\n%!";
+    assert false
+
+include struct
+  
+  [@@@ocaml.warning "-4-37"]
+  
+  let _menhir_run_09 : type  ttv_stack. ttv_stack -> _ -> _menhir_box_main =
+    fun _menhir_stack _v ->
+      (* State 9: *)
+      (* Accepting *)
+      MenhirBox_main _v
+  
+  let _menhir_goto_main : type  ttv_stack. ttv_stack -> _ -> _menhir_box_main =
+    fun _menhir_stack _v ->
+      _menhir_run_09 _menhir_stack _v
+  
+  let _menhir_reduce_5 : type  ttv_stack. (ttv_stack, _menhir_box_main) _menhir_cell1_expr -> _menhir_box_main =
+    fun _menhir_stack ->
+      let MenhirCell1_expr (_menhir_stack, _, e) = _menhir_stack in
+      (* Reducing production main -> expr EOL *)
+      let _v = _menhir_action_5 e in
+      _menhir_goto_main _menhir_stack _v
+  
+  let _menhir_run_11 : type  ttv_stack. (ttv_stack, _menhir_box_main) _menhir_cell1_expr -> _menhir_box_main =
+    fun _menhir_stack ->
+      (* State 11: *)
+      _menhir_reduce_5 _menhir_stack
+  
+  let rec _menhir_run_01 : type  ttv_stack. ttv_stack -> _ -> _ -> (ttv_stack, _menhir_box_main) _menhir_state -> _menhir_box_main =
+    fun _menhir_stack _menhir_lexbuf _menhir_lexer _menhir_s ->
+      (* State 1: *)
+      let _menhir_stack = MenhirCell1_LPAREN (_menhir_stack, _menhir_s) in
+      let _tok = _menhir_lexer _menhir_lexbuf in
+      match (_tok : MenhirBasics.token) with
+      | LPAREN ->
+          (* Shifting (LPAREN) to state 1 *)
+          _menhir_run_01 _menhir_stack _menhir_lexbuf _menhir_lexer MenhirState01
+      | INT _v ->
+          (* Shifting (INT) to state 2 *)
+          _menhir_run_02_spec_01 _menhir_stack _menhir_lexbuf _menhir_lexer _v
+      | _ ->
+          (* Initiating error handling *)
+          _eRR ()
+  
+  and _menhir_run_02_spec_01 : type  ttv_stack. (ttv_stack, _menhir_box_main) _menhir_cell1_LPAREN -> _ -> _ -> _ -> _menhir_box_main =
+    fun _menhir_stack _menhir_lexbuf _menhir_lexer _v ->
+      (* State 2: *)
+      let _tok = _menhir_lexer _menhir_lexbuf in
+      (* Reducing production expr -> INT *)
+      let i = _v in
+      let _v = _menhir_action_1 i in
+      _menhir_run_03 _menhir_stack _menhir_lexbuf _menhir_lexer _v MenhirState01 _tok
+  
+  and _menhir_run_03 : type  ttv_stack. ((ttv_stack, _menhir_box_main) _menhir_cell1_LPAREN as 'stack) -> _ -> _ -> _ -> ('stack, _menhir_box_main) _menhir_state -> _ -> _menhir_box_main =
+    fun _menhir_stack _menhir_lexbuf _menhir_lexer _v _menhir_s _tok ->
+      (* State 3: *)
+      let _menhir_stack = MenhirCell1_expr (_menhir_stack, _menhir_s, _v) in
+      match (_tok : MenhirBasics.token) with
+      | TIMES ->
+          (* Shifting (TIMES) to state 4 *)
+          _menhir_run_04 _menhir_stack _menhir_lexbuf _menhir_lexer
+      | RPAREN ->
+          (* Shifting (RPAREN) to state 6 *)
+          _menhir_run_06 _menhir_stack _menhir_lexbuf _menhir_lexer
+      | PLUS ->
+          (* Shifting (PLUS) to state 7 *)
+          _menhir_run_07 _menhir_stack _menhir_lexbuf _menhir_lexer
+      | _ ->
+          (* Initiating error handling *)
+          _eRR ()
+  
+  and _menhir_run_04 : type  ttv_stack. (ttv_stack, _menhir_box_main) _menhir_cell1_expr -> _ -> _ -> _menhir_box_main =
+    fun _menhir_stack _menhir_lexbuf _menhir_lexer ->
+      (* State 4: *)
+      let _tok = _menhir_lexer _menhir_lexbuf in
+      match (_tok : MenhirBasics.token) with
+      | LPAREN ->
+          (* Shifting (LPAREN) to state 1 *)
+          _menhir_run_01 _menhir_stack _menhir_lexbuf _menhir_lexer MenhirState04
+      | INT _v ->
+          (* Shifting (INT) to state 2 *)
+          _menhir_run_02_spec_04 _menhir_stack _menhir_lexbuf _menhir_lexer _v
+      | _ ->
+          (* Initiating error handling *)
+          _eRR ()
+  
+  and _menhir_run_02_spec_04 : type  ttv_stack. (ttv_stack, _menhir_box_main) _menhir_cell1_expr -> _ -> _ -> _ -> _menhir_box_main =
+    fun _menhir_stack _menhir_lexbuf _menhir_lexer _v ->
+      (* State 2: *)
+      let _tok = _menhir_lexer _menhir_lexbuf in
+      (* Reducing production expr -> INT *)
+      let i = _v in
+      let _v = _menhir_action_1 i in
+      _menhir_run_05 _menhir_stack _menhir_lexbuf _menhir_lexer _v _tok
+  
+  and _menhir_run_05 : type  ttv_stack. (ttv_stack, _menhir_box_main) _menhir_cell1_expr -> _ -> _ -> _ -> _ -> _menhir_box_main =
+    fun _menhir_stack _menhir_lexbuf _menhir_lexer _v _tok ->
+      (* State 5: *)
+      let MenhirCell1_expr (_menhir_stack, _menhir_s, e1) = _menhir_stack in
+      (* Reducing production expr -> expr TIMES expr *)
+      let e2 = _v in
+      let _v = _menhir_action_4 e1 e2 in
+      _menhir_goto_expr _menhir_stack _menhir_lexbuf _menhir_lexer _v _menhir_s _tok
+  
+  and _menhir_goto_expr : type  ttv_stack. ttv_stack -> _ -> _ -> _ -> (ttv_stack, _menhir_box_main) _menhir_state -> _ -> _menhir_box_main =
+    fun _menhir_stack _menhir_lexbuf _menhir_lexer _v _menhir_s _tok ->
+      match _menhir_s with
+      | MenhirState01 ->
+          _menhir_run_03 _menhir_stack _menhir_lexbuf _menhir_lexer _v _menhir_s _tok
+      | MenhirState04 ->
+          _menhir_run_05 _menhir_stack _menhir_lexbuf _menhir_lexer _v _tok
+      | MenhirState07 ->
+          _menhir_run_08 _menhir_stack _menhir_lexbuf _menhir_lexer _v _menhir_s _tok
+      | MenhirState00 ->
+          _menhir_run_10 _menhir_stack _menhir_lexbuf _menhir_lexer _v _menhir_s _tok
+  
+  and _menhir_run_08 : type  ttv_stack. ((ttv_stack, _menhir_box_main) _menhir_cell1_expr as 'stack) -> _ -> _ -> _ -> ('stack, _menhir_box_main) _menhir_state -> _ -> _menhir_box_main =
+    fun _menhir_stack _menhir_lexbuf _menhir_lexer _v _menhir_s _tok ->
+      (* State 8: *)
+      match (_tok : MenhirBasics.token) with
+      | TIMES ->
+          let _menhir_stack = MenhirCell1_expr (_menhir_stack, _menhir_s, _v) in
+          (* Shifting (TIMES) to state 4 *)
+          _menhir_run_04 _menhir_stack _menhir_lexbuf _menhir_lexer
+      | EOL | PLUS | RPAREN ->
+          let MenhirCell1_expr (_menhir_stack, _menhir_s, e1) = _menhir_stack in
+          (* Reducing production expr -> expr PLUS expr *)
+          let e2 = _v in
+          let _v = _menhir_action_3 e1 e2 in
+          _menhir_goto_expr _menhir_stack _menhir_lexbuf _menhir_lexer _v _menhir_s _tok
+      | _ ->
+          (* Initiating error handling *)
+          _eRR ()
+  
+  and _menhir_run_10 : type  ttv_stack. ttv_stack -> _ -> _ -> _ -> (ttv_stack, _menhir_box_main) _menhir_state -> _ -> _menhir_box_main =
+    fun _menhir_stack _menhir_lexbuf _menhir_lexer _v _menhir_s _tok ->
+      (* State 10: *)
+      let _menhir_stack = MenhirCell1_expr (_menhir_stack, _menhir_s, _v) in
+      match (_tok : MenhirBasics.token) with
+      | TIMES ->
+          (* Shifting (TIMES) to state 4 *)
+          _menhir_run_04 _menhir_stack _menhir_lexbuf _menhir_lexer
+      | PLUS ->
+          (* Shifting (PLUS) to state 7 *)
+          _menhir_run_07 _menhir_stack _menhir_lexbuf _menhir_lexer
+      | EOL ->
+          (* Shifting (EOL) to state 11 *)
+          _menhir_run_11 _menhir_stack
+      | _ ->
+          (* Initiating error handling *)
+          _eRR ()
+  
+  and _menhir_run_07 : type  ttv_stack. (ttv_stack, _menhir_box_main) _menhir_cell1_expr -> _ -> _ -> _menhir_box_main =
+    fun _menhir_stack _menhir_lexbuf _menhir_lexer ->
+      (* State 7: *)
+      let _tok = _menhir_lexer _menhir_lexbuf in
+      match (_tok : MenhirBasics.token) with
+      | LPAREN ->
+          (* Shifting (LPAREN) to state 1 *)
+          _menhir_run_01 _menhir_stack _menhir_lexbuf _menhir_lexer MenhirState07
+      | INT _v ->
+          (* Shifting (INT) to state 2 *)
+          _menhir_run_02_spec_07 _menhir_stack _menhir_lexbuf _menhir_lexer _v
+      | _ ->
+          (* Initiating error handling *)
+          _eRR ()
+  
+  and _menhir_run_02_spec_07 : type  ttv_stack. (ttv_stack, _menhir_box_main) _menhir_cell1_expr -> _ -> _ -> _ -> _menhir_box_main =
+    fun _menhir_stack _menhir_lexbuf _menhir_lexer _v ->
+      (* State 2: *)
+      let _tok = _menhir_lexer _menhir_lexbuf in
+      (* Reducing production expr -> INT *)
+      let i = _v in
+      let _v = _menhir_action_1 i in
+      _menhir_run_08 _menhir_stack _menhir_lexbuf _menhir_lexer _v MenhirState07 _tok
+  
+  and _menhir_run_06 : type  ttv_stack. ((ttv_stack, _menhir_box_main) _menhir_cell1_LPAREN, _menhir_box_main) _menhir_cell1_expr -> _ -> _ -> _menhir_box_main =
+    fun _menhir_stack _menhir_lexbuf _menhir_lexer ->
+      (* State 6: *)
+      let _tok = _menhir_lexer _menhir_lexbuf in
+      _menhir_reduce_2 _menhir_stack _menhir_lexbuf _menhir_lexer _tok
+  
+  and _menhir_reduce_2 : type  ttv_stack. ((ttv_stack, _menhir_box_main) _menhir_cell1_LPAREN, _menhir_box_main) _menhir_cell1_expr -> _ -> _ -> _ -> _menhir_box_main =
+    fun _menhir_stack _menhir_lexbuf _menhir_lexer _tok ->
+      let MenhirCell1_expr (_menhir_stack, _, e) = _menhir_stack in
+      let MenhirCell1_LPAREN (_menhir_stack, _menhir_s) = _menhir_stack in
+      (* Reducing production expr -> LPAREN expr RPAREN *)
+      let _v = _menhir_action_2 e in
+      _menhir_goto_expr _menhir_stack _menhir_lexbuf _menhir_lexer _v _menhir_s _tok
+  
+  let _menhir_run_02_spec_00 : type  ttv_stack. ttv_stack -> _ -> _ -> _ -> _menhir_box_main =
+    fun _menhir_stack _menhir_lexbuf _menhir_lexer _v ->
+      (* State 2: *)
+      let _tok = _menhir_lexer _menhir_lexbuf in
+      (* Reducing production expr -> INT *)
+      let i = _v in
+      let _v = _menhir_action_1 i in
+      _menhir_run_10 _menhir_stack _menhir_lexbuf _menhir_lexer _v MenhirState00 _tok
+  
+  let _menhir_run_00 : type  ttv_stack. ttv_stack -> _ -> _ -> _menhir_box_main =
+    fun _menhir_stack _menhir_lexbuf _menhir_lexer ->
+      (* State 0: *)
+      let _tok = _menhir_lexer _menhir_lexbuf in
+      match (_tok : MenhirBasics.token) with
+      | LPAREN ->
+          (* Shifting (LPAREN) to state 1 *)
+          _menhir_run_01 _menhir_stack _menhir_lexbuf _menhir_lexer MenhirState00
+      | INT _v ->
+          (* Shifting (INT) to state 2 *)
+          _menhir_run_02_spec_00 _menhir_stack _menhir_lexbuf _menhir_lexer _v
+      | _ ->
+          (* Initiating error handling *)
+          _eRR ()
+  
+  let _menhir_stop_00 : type  ttv_stack. ttv_stack -> _menhir_box_main =
+    fun _menhir_stack ->
+      _eRR ()
+  
+  let _menhir_stop_01 : type  ttv_stack. ttv_stack -> _menhir_box_main =
+    fun _menhir_stack ->
+      _eRR ()
+  
+  let _menhir_stop_03 : type  ttv_stack. ttv_stack -> _menhir_box_main =
+    fun _menhir_stack ->
+      _eRR ()
+  
+  let _menhir_stop_04 : type  ttv_stack. ttv_stack -> _menhir_box_main =
+    fun _menhir_stack ->
+      _eRR ()
+  
+  let _menhir_stop_07 : type  ttv_stack. ttv_stack -> _menhir_box_main =
+    fun _menhir_stack ->
+      _eRR ()
+  
+  let _menhir_stop_08 : type  ttv_stack. ttv_stack -> _menhir_box_main =
+    fun _menhir_stack ->
+      _eRR ()
+  
+  let _menhir_stop_10 : type  ttv_stack. ttv_stack -> _menhir_box_main =
+    fun _menhir_stack ->
+      _eRR ()
+  
+end
+
+let main =
+  fun _menhir_lexer _menhir_lexbuf ->
+    let _menhir_stack = () in
+    let MenhirBox_main v = _menhir_run_00 _menhir_stack _menhir_lexbuf _menhir_lexer in
+    v

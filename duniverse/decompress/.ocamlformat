@@ -1,0 +1,17 @@
+version=0.29.0
+profile=conventional
+break-struct=natural
+break-infix=fit-or-vertical
+break-sequences=false
+break-collection-expressions=wrap
+break-separators=before
+exp-grouping=preserve
+parens-tuple=multi-line-only
+space-around-lists=false
+space-around-records=false
+space-around-arrays=false
+break-fun-decl=smart
+cases-exp-indent=2
+sequence-style=before
+field-space=tight
+break-before-in=auto

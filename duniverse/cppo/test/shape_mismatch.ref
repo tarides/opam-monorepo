@@ -1,0 +1,3 @@
+Error: File "shape_mismatch.cppo", line 3, characters 6-9
+Error: A macro of type [.] was expected, but
+       a macro of type . was provided

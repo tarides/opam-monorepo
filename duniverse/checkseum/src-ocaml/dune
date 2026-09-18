@@ -1,0 +1,7 @@
+(library
+ (name checkseum_ocaml)
+ (public_name checkseum.ocaml)
+ (libraries optint)
+ (implements checkseum)
+ (ocamlopt_flags -O3 -unbox-closures -unbox-closures-factor 20)
+ (private_modules gin_adler32 gin_crc32 gin_crc32c gin_crc24))

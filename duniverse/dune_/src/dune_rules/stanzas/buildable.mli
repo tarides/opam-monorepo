@@ -1,0 +1,56 @@
+open Import
+module Ocaml_flags := Dune_lang.Ocaml_flags
+
+type for_ =
+  | Executable
+  | Library of Wrapped.t option
+
+type t =
+  { loc : Loc.t
+  ; modules : Modules_settings.t
+  ; melange_modules : Ordered_set_lang.Unexpanded.t option
+  ; empty_module_interface_if_absent : bool
+  ; libraries : Lib_dep.t list
+  ; foreign_archives : (Loc.t * Foreign.Archive.t) list
+  ; extra_objects : Foreign.Objects.t
+  ; foreign_stubs : Foreign.Stubs.t list
+  ; preprocess : Preprocess.preprocess
+  ; melange_preprocess : Preprocess.preprocess
+  ; lint : Lint.t
+  ; flags : Ocaml_flags.Spec.t
+  ; js_of_ocaml : Js_of_ocaml.In_buildable.t Js_of_ocaml.Mode.Pair.t
+  ; allow_overlapping_dependencies : bool
+  ; allow_unused_libraries : (Loc.t * Lib_name.t) list
+  ; ctypes : Ctypes_field.t option
+  }
+
+(** Check if the buildable has any foreign stubs or archives. *)
+val has_foreign : t -> bool
+
+(** Check if the buildable has any c++ foreign stubs. *)
+val has_foreign_cxx : t -> bool
+
+val has_mode_dependent_foreign_stubs : t -> bool
+val decode : for_ -> t Dune_lang.Decoder.fields_parser
+val has_foreign_stubs : t -> bool
+
+(** Parser for the libraries fields *)
+val decode_libraries : allow_re_export:bool -> Lib_dep.L.t Dune_lang.Decoder.fields_parser
+
+(** Parser for the preprocesss *)
+val decode_preprocess
+  : (Preprocess.preprocess, Dune_lang.Decoder.fields) Dune_lang.Decoder.parser
+
+(** Parser for the ocaml flags *)
+val decode_ocaml_flags : Ocaml_flags.Spec.t Dune_lang.Decoder.fields_parser
+
+(* Parser for the modules field *)
+val decode_modules : Modules_settings.t Dune_lang.Decoder.fields_parser
+
+(* Parser for the lint field *)
+val decode_lint
+  : Preprocess.Without_instrumentation.t Preprocess.t Module_name.Per_item.t
+      Dune_lang.Decoder.fields_parser
+
+(* Parser for allow_overlapping_dependencies *)
+val decode_allow_overlapping : bool Dune_lang.Decoder.fields_parser

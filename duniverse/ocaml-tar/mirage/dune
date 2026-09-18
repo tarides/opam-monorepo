@@ -1,0 +1,5 @@
+(library
+ (name tar_mirage)
+ (public_name tar-mirage)
+ (libraries tar lwt mirage-kv mirage-block ptime mirage-ptime optint)
+ (wrapped false))

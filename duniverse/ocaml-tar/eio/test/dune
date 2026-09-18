@@ -1,0 +1,4 @@
+(test
+  (name test_eio)
+  (package tar-eio)
+  (libraries tar-eio tar.gz eio_main alcotest))

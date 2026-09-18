@@ -1,0 +1,8 @@
+--- no-newline2.old	2019-04-19 23:31:27.578096000 +0200
++++ no-newline2.new	2019-04-19 23:31:33.404503000 +0200
+@@ -1 +1,2 @@
+-aaa
+\ No newline at end of file
++aaa
++bbb
+\ No newline at end of file

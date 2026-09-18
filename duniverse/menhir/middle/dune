@@ -1,0 +1,16 @@
+;; The library Middle is built here.
+
+;; This library is internal; a user of Menhir should not be aware of
+;; its existence. It collects the modules that form Menhir's middle-end.
+
+(library
+  (name middle)
+  (libraries
+    base
+    front
+    menhirLib
+    menhirGLR
+    menhirSdk
+  )
+  (flags :standard -open Base -open Front -open MenhirSdk)
+)

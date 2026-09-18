@@ -1,0 +1,1273 @@
+open Import
+open Dune_lang.Decoder
+
+include struct
+  open Dune_lang
+  module Dune_env = Dune_env
+  module File_binding = File_binding
+  module Package_variable_name = Package_variable_name
+  module Lib_name = Lib_name
+end
+
+module Pin_stanza = Dune_lang.Pin_stanza
+module Repository = Dune_pkg.Pkg_workspace.Repository
+module Solver_env = Dune_pkg.Solver_env
+
+let default_repositories =
+  [ Repository.overlay; Repository.relocatable; Repository.upstream ]
+;;
+
+module Lock_dir = struct
+  type t =
+    { loc : Loc.t
+    ; path : Path.Source.t
+    ; version_preference : Dune_pkg.Version_preference.t option
+    ; solver_env : Solver_env.t option
+    ; unset_solver_vars : Package_variable_name.Set.t option
+    ; repositories : (Loc.t * Dune_pkg.Pkg_workspace.Repository.Name.t) list
+    ; constraints : Dune_lang.Package_dependency.t list
+    ; pins : (Loc.t * string) list
+    ; depopts : (Loc.t * Package.Name.t) list
+    ; solve_for_platforms : Solver_env.t list
+    }
+
+  let to_dyn
+        { loc
+        ; path
+        ; version_preference
+        ; solver_env
+        ; unset_solver_vars
+        ; repositories
+        ; constraints
+        ; pins
+        ; depopts
+        ; solve_for_platforms
+        }
+    =
+    Dyn.record
+      [ "loc", Loc.to_dyn loc
+      ; "path", Path.Source.to_dyn path
+      ; ( "version_preference"
+        , Dyn.option Dune_pkg.Version_preference.to_dyn version_preference )
+      ; "solver_env", Dyn.option Solver_env.to_dyn solver_env
+      ; "unset_solver_vars", Dyn.option Package_variable_name.Set.to_dyn unset_solver_vars
+      ; ( "repositories"
+        , Dyn.list
+            Dune_pkg.Pkg_workspace.Repository.Name.to_dyn
+            (List.map repositories ~f:snd) )
+      ; "constraints", Dyn.list Dune_lang.Package_dependency.to_dyn constraints
+      ; "pins", (Dyn.list Dyn.string) (List.map pins ~f:snd)
+      ; "depopts", (Dyn.list Package.Name.to_dyn) (List.map ~f:snd depopts)
+      ; "solve_for_platforms", (Dyn.list Solver_env.to_dyn) solve_for_platforms
+      ]
+  ;;
+
+  let hash
+        { loc
+        ; path
+        ; version_preference
+        ; solver_env
+        ; unset_solver_vars
+        ; repositories
+        ; constraints
+        ; pins
+        ; depopts
+        ; solve_for_platforms
+        }
+    =
+    Poly.hash
+      ( loc
+      , path
+      , version_preference
+      , solver_env
+      , unset_solver_vars
+      , repositories
+      , constraints
+      , pins
+      , depopts
+      , solve_for_platforms )
+  ;;
+
+  let equal
+        { loc
+        ; path
+        ; version_preference
+        ; solver_env
+        ; unset_solver_vars
+        ; repositories
+        ; constraints
+        ; pins
+        ; depopts
+        ; solve_for_platforms
+        }
+        t
+    =
+    Loc.equal loc t.loc
+    && Path.Source.equal path t.path
+    && Option.equal
+         Dune_pkg.Version_preference.equal
+         version_preference
+         t.version_preference
+    && Option.equal Solver_env.equal solver_env t.solver_env
+    && Option.equal Package_variable_name.Set.equal unset_solver_vars t.unset_solver_vars
+    && List.equal
+         (Tuple.T2.equal Loc.equal Dune_pkg.Pkg_workspace.Repository.Name.equal)
+         repositories
+         t.repositories
+    && List.equal Dune_lang.Package_dependency.equal constraints t.constraints
+    && List.equal (Tuple.T2.equal Loc.equal String.equal) pins t.pins
+    && List.equal (Tuple.T2.equal Loc.equal Package.Name.equal) depopts t.depopts
+    && List.equal Solver_env.equal solve_for_platforms t.solve_for_platforms
+  ;;
+
+  let decode ~dir =
+    let repositories_of_ordered_set ordered_set =
+      Dune_lang.Ordered_set_lang.eval
+        ordered_set
+        ~parse:(fun ~loc string ->
+          loc, Dune_pkg.Pkg_workspace.Repository.Name.parse_string_exn (loc, string))
+        ~eq:(fun (_, x) (_, y) -> Dune_pkg.Pkg_workspace.Repository.Name.equal x y)
+        ~standard:
+          (List.map default_repositories ~f:(fun d -> Loc.none, Repository.name d))
+    in
+    let decode =
+      let+ loc = loc
+      and+ path =
+        let+ path = field ~default:"dune.lock" "path" string in
+        Path.Source.relative dir path
+      and+ solver_env = field_o "solver_env" Solver_env.decode
+      and+ unset_solver_vars =
+        field_o "unset_solver_vars" (repeat (located Package_variable_name.decode))
+      and+ version_preference =
+        field_o "version_preference" Dune_pkg.Version_preference.decode
+      and+ repositories = Dune_lang.Ordered_set_lang.field "repositories"
+      and+ constraints =
+        field ~default:[] "constraints" (repeat Dune_lang.Package_dependency.decode)
+      and+ depopts = field ~default:[] "depopts" (repeat (located Package.Name.decode))
+      and+ pins = field ~default:[] "pins" (repeat (located string))
+      and+ solve_for_platforms =
+        let+ loc, solve_for_platforms =
+          located
+          @@ field
+               ~default:Solver_env.popular_platform_envs
+               "solve_for_platforms"
+               (repeat @@ enter Solver_env.decode)
+        in
+        if List.is_empty solve_for_platforms
+        then
+          User_error.raise
+            ~loc
+            [ Pp.text "No platforms were specified for solving dependencies." ]
+            ~hints:
+              [ Pp.text
+                  "Specify at least one platform here, or remove this field to solve for \
+                   the default platforms."
+              ];
+        solve_for_platforms
+      in
+      Option.iter solver_env ~f:(fun solver_env ->
+        Option.iter
+          unset_solver_vars
+          ~f:
+            (List.iter ~f:(fun (loc, variable) ->
+               if Option.is_some (Solver_env.get solver_env variable)
+               then
+                 User_error.raise
+                   ~loc
+                   [ Pp.textf
+                       "Variable %S appears in both 'solver_env' and 'unset_solver_vars' \
+                        which is not allowed."
+                       (Package_variable_name.to_string variable)
+                   ])));
+      let unset_solver_vars =
+        Option.map unset_solver_vars ~f:(fun x ->
+          List.map x ~f:snd |> Package_variable_name.Set.of_list)
+      in
+      { loc
+      ; path
+      ; solver_env
+      ; unset_solver_vars
+      ; version_preference
+      ; repositories = repositories_of_ordered_set repositories
+      ; constraints
+      ; pins
+      ; depopts
+      ; solve_for_platforms
+      }
+    in
+    fields decode
+  ;;
+end
+
+(* workspace files use the same version numbers as dune-project files for
+   simplicity *)
+let syntax = Stanza.syntax
+
+let env_field, env_field_lazy =
+  let make f g =
+    field "env" ~default:(f None)
+    @@ g
+    @@ let+ () = Dune_lang.Syntax.since syntax (1, 1)
+       and+ version = Dune_lang.Syntax.get_exn syntax
+       and+ loc = loc
+       and+ s = Dune_env.decode in
+       let s =
+         let minimum_version = 3, 2 in
+         if version >= minimum_version
+         then s
+         else (
+           match List.find_map s.rules ~f:(fun (_, config) -> config.binaries) with
+           | None -> s
+           | Some _ (* CR-someday rgrinberg: the location should come from this field *)
+             ->
+             let message =
+               User_message.make
+                 ~loc
+                 [ Pp.text
+                     (Dune_lang.Syntax.Error_msg.since
+                        syntax
+                        minimum_version
+                        ~what:"\"binaries\" in an \"env\" stanza in a dune-workspace file")
+                 ]
+             in
+             Dune_env.add_warning ~message s |> Dune_env.add_error ~message)
+       in
+       match
+         List.find_map s.rules ~f:(fun (_, config) ->
+           Option.bind config.binaries ~f:File_binding.Unexpanded.L.find_pform)
+       with
+       | None -> Some s
+       | Some loc ->
+         (* CR-someday rgrinberg: why do we forbid variables here?. *)
+         User_error.raise
+           ~loc
+           [ Pp.text
+               "Variables are not supported in \"binaries\" in an \"env\" stanza in a \
+                dune-workspace file."
+           ]
+  in
+  make Fun.id Fun.id, make Lazy.from_val lazy_
+;;
+
+module Lock_dir_selection = struct
+  type t =
+    | Name of string
+    | Cond of Dune_lang.Cond.t
+
+  let to_dyn = function
+    | Name name -> Dyn.variant "Name" [ Dyn.string name ]
+    | Cond cond -> Dyn.variant "Cond" [ Dune_lang.Cond.to_dyn cond ]
+  ;;
+
+  let decode =
+    enter
+      (let+ () = keyword "cond"
+       and+ cond = Dune_lang.Cond.decode in
+       Cond cond)
+    <|> let+ name = string in
+        Name name
+  ;;
+
+  let equal a b =
+    match a, b with
+    | Name a, Name b -> String.equal a b
+    | Cond a, Cond b -> Dune_lang.Cond.equal a b
+    | _ -> false
+  ;;
+
+  let eval t ~dir ~f =
+    let open Memo.O in
+    match t with
+    | Name name -> Path.Source.relative dir name |> Memo.return
+    | Cond cond ->
+      let+ value = Cond_expand.eval cond ~dir:(Path.source dir) ~f in
+      (match (value : Value.t option) with
+       | None ->
+         User_error.raise
+           ~loc:cond.loc
+           [ Pp.text "None of the conditions matched so no lockdir could be chosen." ]
+       | Some (String s) -> Path.Source.relative dir s
+       | Some (Dir p | Path p) ->
+         Path.reach ~from:(Path.source dir) p |> Path.Source.of_string)
+  ;;
+end
+
+module Context = struct
+  module Target = struct
+    type named =
+      { name : Context_name.t
+      ; target_exec : (string * string list) option
+      }
+
+    type t =
+      | Native
+      | Named of named
+
+    let equal x y =
+      match x, y with
+      | Native, Native -> true
+      | Native, _ | _, Native -> false
+      | Named x, Named y -> Context_name.equal x.name y.name
+    ;;
+
+    let t =
+      let open Dune_lang.Decoder in
+      peek
+      >>= function
+      | Some (List _) ->
+        enter
+          (fields
+             (let+ name = field "name" Context_name.decode
+              and+ target_exec =
+                field_o
+                  "target_exec"
+                  (Dune_lang.Syntax.since Stanza.syntax (3, 22)
+                   >>>
+                   let+ prog = string
+                   and+ args = repeat string in
+                   prog, args)
+              in
+              match Context_name.to_string name, target_exec with
+              | "native", Some _ ->
+                User_error.raise
+                  [ Pp.text "Native target cannot have target_exec specified" ]
+              | "native", None -> Native
+              | _ -> Named { name; target_exec }))
+      | _ ->
+        let+ context_name = Context_name.decode in
+        (match Context_name.to_string context_name with
+         | "native" -> Native
+         | _ -> Named { name = context_name; target_exec = None })
+    ;;
+
+    let to_dyn =
+      let open Dyn in
+      function
+      | Native -> variant "Native" []
+      | Named ({ name; target_exec } : named) ->
+        variant
+          "Named"
+          [ record
+              [ "name", Context_name.to_dyn name
+              ; ( "target_exec"
+                , option (fun (prog, args) -> list string (prog :: args)) target_exec )
+              ]
+          ]
+    ;;
+
+    let add ts x =
+      match x with
+      | None -> ts
+      | Some t -> if List.mem ts t ~equal then ts else ts @ [ t ]
+    ;;
+  end
+
+  module Merlin = struct
+    type t =
+      | Selected
+      | Rules_only
+      | Not_selected
+
+    let equal x y =
+      match x, y with
+      | Selected, Selected | Rules_only, Rules_only | Not_selected, Not_selected -> true
+      | Selected, (Rules_only | Not_selected)
+      | (Rules_only | Not_selected), Selected
+      | Rules_only, Not_selected
+      | Not_selected, Rules_only -> false
+    ;;
+
+    let to_dyn : t -> Dyn.t = function
+      | Selected -> String "selected"
+      | Rules_only -> String "rules_only"
+      | Not_selected -> String "not_selected"
+    ;;
+  end
+
+  module Cms_cmt_dependency = struct
+    type t =
+      | No_dependency
+      | Depends_on_cms
+      | Depends_on_cmt
+
+    let equal x y =
+      match x, y with
+      | No_dependency, No_dependency
+      | Depends_on_cms, Depends_on_cms
+      | Depends_on_cmt, Depends_on_cmt -> true
+      | (No_dependency | Depends_on_cms | Depends_on_cmt), _ -> false
+    ;;
+
+    let to_dyn : t -> Dyn.t = function
+      | No_dependency -> String "none"
+      | Depends_on_cms -> String "cms"
+      | Depends_on_cmt -> String "cmt"
+    ;;
+
+    let decode =
+      enum [ "none", No_dependency; "cms", Depends_on_cms; "cmt", Depends_on_cmt ]
+    ;;
+  end
+
+  module Common = struct
+    type t =
+      { loc : Loc.t
+      ; profile : Profile.t
+      ; targets : Target.t list
+      ; env : Dune_env.t option
+      ; toolchain : Context_name.t option
+      ; name : Context_name.t
+      ; host_context : Context_name.t option
+      ; paths : (string * Ordered_set_lang.t) list
+      ; fdo_target_exe : Path.t option
+      ; dynamically_linked_foreign_archives : bool
+      ; instrument_with : Lib_name.t list
+      ; merlin : Merlin.t
+      ; cms_cmt_dependency : Cms_cmt_dependency.t
+      }
+
+    let to_dyn { name; targets; host_context; _ } =
+      Dyn.record
+        [ "name", Context_name.to_dyn name
+        ; "targets", Dyn.list Target.to_dyn targets
+        ; "host_context", Dyn.option Context_name.to_dyn host_context
+        ]
+    ;;
+
+    let equal
+          { loc = _
+          ; profile
+          ; targets
+          ; env
+          ; toolchain
+          ; name
+          ; host_context
+          ; paths
+          ; fdo_target_exe
+          ; dynamically_linked_foreign_archives
+          ; instrument_with
+          ; merlin
+          ; cms_cmt_dependency
+          }
+          t
+      =
+      Profile.equal profile t.profile
+      && List.equal Target.equal targets t.targets
+      && Option.equal Dune_env.equal env t.env
+      && Option.equal Context_name.equal toolchain t.toolchain
+      && Context_name.equal name t.name
+      && Option.equal Context_name.equal host_context t.host_context
+      && List.equal (Tuple.T2.equal String.equal Ordered_set_lang.equal) paths t.paths
+      && Option.equal Path.equal fdo_target_exe t.fdo_target_exe
+      && Bool.equal
+           dynamically_linked_foreign_archives
+           t.dynamically_linked_foreign_archives
+      && List.equal Lib_name.equal instrument_with t.instrument_with
+      && Merlin.equal merlin t.merlin
+      && Cms_cmt_dependency.equal cms_cmt_dependency t.cms_cmt_dependency
+    ;;
+
+    let fdo_suffix t =
+      match t.fdo_target_exe with
+      | None -> ""
+      | Some file ->
+        let name, _ = Path.split_extension file in
+        "-fdo-" ^ (Path.basename name |> Filename.to_string)
+    ;;
+
+    let decode =
+      let+ env = env_field
+      and+ targets = field "targets" (repeat Target.t) ~default:[ Target.Native ]
+      and+ profile = field_o "profile" Profile.decode
+      and+ host_context =
+        field_o "host" (Dune_lang.Syntax.since syntax (1, 10) >>> Context_name.decode)
+      and+ toolchain =
+        field_o "toolchain" (Dune_lang.Syntax.since syntax (1, 5) >>> Context_name.decode)
+      and+ dynamically_linked_foreign_archives =
+        let+ disable =
+          field
+            ~default:false
+            "disable_dynamically_linked_foreign_archives"
+            (Dune_lang.Syntax.since syntax (2, 0) >>> bool)
+        in
+        not disable
+      and+ fdo_target_exe =
+        let f file =
+          let ext =
+            Stdlib.Filename.extension file |> Filename.Extension.Or_empty.of_string_exn
+          in
+          if Filename.Extension.Or_empty.check ext Filename.Extension.exe
+          then Path.relative Path.root file
+          else
+            User_error.raise
+              [ Pp.concat
+                  ~sep:Pp.space
+                  [ User_message.command (sprintf "fdo %s" file)
+                  ; Pp.textf
+                      "expects executable filename ending with .exe extension, not %s. \n\
+                       Please specify the name of the executable to optimize, including \
+                       path from <root>."
+                      (Filename.Extension.Or_empty.to_string ext)
+                  ]
+                |> Pp.hovbox
+              ]
+        in
+        field_o "fdo" (Dune_lang.Syntax.since syntax (2, 0) >>> map string ~f)
+      and+ paths =
+        let f l =
+          match Env.Map.of_list (List.map ~f:(fun ((loc, s), _) -> s, loc) l) with
+          | Ok _ -> List.map ~f:(fun ((_, s), x) -> s, x) l
+          | Error (var, _, loc) ->
+            User_error.raise
+              ~loc
+              [ Pp.textf "the variable %S can appear at most once in this stanza." var ]
+        in
+        field
+          "paths"
+          ~default:[]
+          (Dune_lang.Syntax.since Stanza.syntax (1, 12)
+           >>> map ~f (repeat (pair (located string) Ordered_set_lang.decode)))
+      and+ instrument_with =
+        field_o
+          "instrument_with"
+          (Dune_lang.Syntax.since syntax (2, 7) >>> repeat Lib_name.decode)
+      and+ loc = loc
+      and+ merlin = field_b "merlin"
+      and+ generate_merlin_rules =
+        field_b
+          ~check:(Dune_lang.Syntax.since Stanza.syntax (3, 16))
+          "generate_merlin_rules"
+      and+ cms_cmt_dependency =
+        field
+          "cms_cmt_dependency"
+          ~default:Cms_cmt_dependency.No_dependency
+          (Dune_lang.Syntax.since Dune_lang.Oxcaml.syntax (0, 1)
+           >>> Cms_cmt_dependency.decode)
+      in
+      fun ~profile_default ~instrument_with_default ->
+        let profile = Option.value profile ~default:profile_default in
+        let instrument_with =
+          Option.value instrument_with ~default:instrument_with_default
+        in
+        Option.iter host_context ~f:(fun _ ->
+          match targets with
+          | [ Target.Native ] -> ()
+          | _ ->
+            User_error.raise
+              ~loc
+              [ Pp.text "`targets` and `host` options cannot be used in the same context."
+              ]);
+        { targets
+        ; profile
+        ; loc
+        ; env
+        ; name = Context_name.default
+        ; host_context
+        ; toolchain
+        ; paths
+        ; fdo_target_exe
+        ; dynamically_linked_foreign_archives
+        ; instrument_with
+        ; merlin =
+            (match merlin with
+             | true -> Selected
+             | false ->
+               (match generate_merlin_rules with
+                | true -> Rules_only
+                | false -> Not_selected))
+        ; cms_cmt_dependency
+        }
+    ;;
+  end
+
+  module Opam = struct
+    type t =
+      { base : Common.t
+      ; switch : Opam_switch.t
+      }
+
+    let to_dyn { base; switch } =
+      let open Dyn in
+      record [ "base", Common.to_dyn base; "switch", Opam_switch.to_dyn switch ]
+    ;;
+
+    let equal { base; switch } t =
+      Common.equal base t.base && Opam_switch.equal switch t.switch
+    ;;
+
+    let name_hint_opt name =
+      if String.starts_with ~prefix:"/" name
+      then (
+        let context_name = Filename.basename name in
+        Some [ Pp.textf "(name %s) would be a valid context name" context_name ])
+      else None
+    ;;
+
+    let decode =
+      let+ loc_switch, switch = field "switch" (located string)
+      and+ name = field_o "name" Context_name.decode
+      and+ root = field_o "root" string
+      and+ base = Common.decode in
+      fun ~profile_default ~instrument_with_default ~x ->
+        let base = base ~profile_default ~instrument_with_default in
+        let name =
+          match name with
+          | Some s -> s
+          | None ->
+            let name = switch ^ Common.fdo_suffix base in
+            (match Context_name.of_string_opt name with
+             | Some s -> s
+             | None ->
+               User_error.raise
+                 ~loc:loc_switch
+                 ?hints:(name_hint_opt name)
+                 [ Pp.textf
+                     "The name generated from this switch can not be used as a context \
+                      name. Please use (name) to disambiguate."
+                 ])
+        in
+        let base = { base with targets = Target.add base.targets x; name } in
+        let switch = { Opam_switch.switch; root } in
+        { base; switch }
+    ;;
+  end
+
+  module Default = struct
+    type t =
+      { base : Common.t
+      ; lock_dir : Lock_dir_selection.t option
+      }
+
+    let to_dyn { base; lock_dir } =
+      Dyn.record
+        [ "base", Common.to_dyn base
+        ; "lock_dir", Dyn.(option Lock_dir_selection.to_dyn) lock_dir
+        ]
+    ;;
+
+    let decode =
+      let+ common = Common.decode
+      and+ name =
+        field_o "name" (Dune_lang.Syntax.since syntax (1, 10) >>> Context_name.decode)
+      and+ lock_dir =
+        (* TODO
+           1. guard before version check before releasing
+           2. allow external paths
+        *)
+        field_o "lock_dir" Lock_dir_selection.decode
+      in
+      fun ~profile_default ~instrument_with_default ~x ->
+        let common = common ~profile_default ~instrument_with_default in
+        let default =
+          (* TODO proper error handling with locs *)
+          let name = Context_name.to_string common.name ^ Common.fdo_suffix common in
+          Context_name.parse_string_exn (Loc.none, name)
+        in
+        let name = Option.value ~default name in
+        let base = { common with targets = Target.add common.targets x; name } in
+        { base; lock_dir }
+    ;;
+
+    let equal { base; lock_dir } t =
+      Common.equal base t.base
+      && Option.equal Lock_dir_selection.equal lock_dir t.lock_dir
+    ;;
+  end
+
+  type t =
+    | Default of Default.t
+    | Opam of Opam.t
+
+  let hash = Poly.hash
+
+  let to_dyn =
+    let open Dyn in
+    function
+    | Default d -> variant "Default" [ Default.to_dyn d ]
+    | Opam o -> variant "Opam" [ Opam.to_dyn o ]
+  ;;
+
+  let equal x y =
+    match x, y with
+    | Default x, Default y -> Default.equal x y
+    | Opam x, Opam y -> Opam.equal x y
+    | _, _ -> false
+  ;;
+
+  let base = function
+    | Default x -> x.base
+    | Opam x -> x.base
+  ;;
+
+  let loc t = (base t).loc
+
+  let host_context = function
+    | Default { base = { host_context; _ }; _ } | Opam { base = { host_context; _ }; _ }
+      -> host_context
+  ;;
+
+  let decode =
+    sum
+      [ ( "default"
+        , let+ f = fields Default.decode in
+          fun ~profile_default ~instrument_with_default ~x ->
+            Default (f ~profile_default ~instrument_with_default ~x) )
+      ; ( "opam"
+        , let+ f = fields Opam.decode in
+          fun ~profile_default ~instrument_with_default ~x ->
+            Opam (f ~profile_default ~instrument_with_default ~x) )
+      ]
+  ;;
+
+  let env t = (base t).env
+  let name t = (base t).name
+  let targets t = (base t).targets
+
+  let all_names t =
+    let n = name t in
+    n
+    :: List.filter_map (targets t) ~f:(function
+      | Native -> None
+      | Named { name; _ } -> Some (Context_name.target n ~toolchain:name))
+  ;;
+
+  let default ~x ~profile ~instrument_with =
+    Default
+      { lock_dir = None
+      ; base =
+          { loc = Loc.of_pos __POS__
+          ; targets = [ Option.value x ~default:Target.Native ]
+          ; profile = Option.value profile ~default:Profile.default
+          ; name = Context_name.default
+          ; host_context = None
+          ; env = None
+          ; toolchain = None
+          ; paths = []
+          ; fdo_target_exe = None
+          ; dynamically_linked_foreign_archives = true
+          ; instrument_with = Option.value instrument_with ~default:[]
+          ; merlin = Not_selected
+          ; cms_cmt_dependency = Cms_cmt_dependency.No_dependency
+          }
+      }
+  ;;
+
+  let build_contexts t =
+    let name = name t in
+    let native = Build_context.create ~name in
+    native
+    :: List.filter_map (targets t) ~f:(function
+      | Native -> None
+      | Named { name = toolchain; _ } ->
+        let name = Context_name.target name ~toolchain in
+        Some (Build_context.create ~name))
+  ;;
+end
+
+type t =
+  { merlin_context : Context_name.t option
+  ; contexts : Context.t list
+  ; env : Dune_env.t option
+  ; config : Dune_config.t
+  ; repos : Dune_pkg.Pkg_workspace.Repository.t list
+  ; lock_dirs : Lock_dir.t list
+  ; dir : Path.Source.t
+  ; pins : Pin_stanza.Workspace.t
+  }
+
+let to_dyn { merlin_context; contexts; env; config; repos; lock_dirs; pins; dir } =
+  let open Dyn in
+  record
+    [ "merlin_context", option Context_name.to_dyn merlin_context
+    ; "contexts", list Context.to_dyn contexts
+    ; "env", option Dune_env.to_dyn env
+    ; "config", Dune_config.to_dyn config
+    ; "repos", list Repository.to_dyn repos
+    ; "solver", (list Lock_dir.to_dyn) lock_dirs
+    ; "dir", Path.Source.to_dyn dir
+    ; "pins", Pin_stanza.Workspace.to_dyn pins
+    ]
+;;
+
+let equal { merlin_context; contexts; env; config; repos; lock_dirs; dir; pins } w =
+  Option.equal Context_name.equal merlin_context w.merlin_context
+  && List.equal Context.equal contexts w.contexts
+  && Option.equal Dune_env.equal env w.env
+  && Dune_config.equal config w.config
+  && List.equal Repository.equal repos w.repos
+  && List.equal Lock_dir.equal lock_dirs w.lock_dirs
+  && Path.Source.equal dir w.dir
+  && Pin_stanza.Workspace.equal pins w.pins
+;;
+
+let hash { merlin_context; contexts; env; config; repos; lock_dirs; dir; pins } =
+  Poly.hash
+    ( Option.hash Context_name.hash merlin_context
+    , List.hash Context.hash contexts
+    , Option.hash Dune_env.hash env
+    , Dune_config.hash config
+    , List.hash Repository.hash repos
+    , List.hash Lock_dir.hash lock_dirs
+    , Path.Source.hash dir
+    , Pin_stanza.Workspace.hash pins )
+;;
+
+let source_path_of_lock_dir_path path =
+  match (path : Path.t) with
+  | In_source_tree s -> s
+  | In_build_dir b ->
+    (match Path.Build.explode b |> Filename.L.to_string with
+     | _ :: _ :: ".lock" :: (_ :: _ as lock_dir_segs) ->
+       Path.Source.L.relative Path.Source.root lock_dir_segs
+     | [ ".dev-tools.locks"; dev_tool ] ->
+       Path.Source.L.relative Path.Source.root [ "_build"; ".dev-tools.locks"; dev_tool ]
+     | components ->
+       Code_error.raise
+         "Unsupported build path"
+         [ "dir", Path.Build.to_dyn b; "components", Dyn.(list string) components ])
+  | External e -> Dune_pkg.Pkg_workspace.dev_tool_path_to_source_dir e
+;;
+
+let find_lock_dir t path =
+  let path = source_path_of_lock_dir_path path in
+  List.find t.lock_dirs ~f:(fun lock_dir -> Path.Source.equal lock_dir.path path)
+;;
+
+let add_repo t repo = { t with repos = repo :: t.repos }
+
+(* Why do we even have a separate versioned file here if we're using the same
+   syntax as the dune project? *)
+include Dune_lang.Versioned_file.Make (struct
+    type t = unit
+  end)
+
+let () = Lang.register syntax ()
+
+module Clflags = struct
+  type t =
+    { x : Context_name.t option
+    ; profile : Profile.t option
+    ; instrument_with : Lib_name.t list option
+    ; workspace_file : Path.Outside_build_dir.t option
+    ; config_from_command_line : Dune_config.Partial.t
+    ; config_from_config_file : Dune_config.Partial.t
+    }
+
+  let equal
+        t
+        { x
+        ; profile
+        ; instrument_with
+        ; workspace_file
+        ; config_from_command_line
+        ; config_from_config_file
+        }
+    =
+    Option.equal Context_name.equal t.x x
+    && Option.equal Profile.equal t.profile profile
+    && Option.equal (List.equal Lib_name.equal) t.instrument_with instrument_with
+    && Option.equal Path.Outside_build_dir.equal t.workspace_file workspace_file
+    && Dune_config.Partial.equal t.config_from_command_line config_from_command_line
+    && Dune_config.Partial.equal t.config_from_config_file config_from_config_file
+  ;;
+
+  let to_dyn
+        { x
+        ; profile
+        ; instrument_with
+        ; workspace_file
+        ; config_from_command_line
+        ; config_from_config_file
+        }
+    =
+    let open Dyn in
+    record
+      [ "x", option Context_name.to_dyn x
+      ; "profile", option Profile.to_dyn profile
+      ; "instrument_with", option (list Lib_name.to_dyn) instrument_with
+      ; "workspace_file", option Path.Outside_build_dir.to_dyn workspace_file
+      ; "config_from_command_line", Dune_config.Partial.to_dyn config_from_command_line
+      ; "config_from_config_file", Dune_config.Partial.to_dyn config_from_config_file
+      ]
+  ;;
+
+  let t = Fdecl.create to_dyn
+  let set v = Fdecl.set t v
+  let t () = Fdecl.get t
+end
+
+let bad_configuration_check map =
+  let find_exn loc name host =
+    match Context_name.Map.find map host with
+    | Some host_ctx -> host_ctx
+    | None ->
+      User_error.raise
+        ~loc
+        [ Pp.textf
+            "Undefined host context '%s' for '%s'."
+            (Context_name.to_string host)
+            (Context_name.to_string name)
+        ]
+  in
+  let check elt =
+    Context.host_context elt
+    |> Option.iter ~f:(fun host ->
+      let name = Context.name elt in
+      let loc = Context.loc elt in
+      let host_elt = find_exn loc name host in
+      Context.host_context host_elt
+      |> Option.iter ~f:(fun host_of_host ->
+        User_error.raise
+          ~loc:(Context.loc host_elt)
+          [ Pp.textf
+              "Context '%s' is both a host (for '%s') and a target (for '%s')."
+              (Context_name.to_string host)
+              (Context_name.to_string name)
+              (Context_name.to_string host_of_host)
+          ]))
+  in
+  Context_name.Map.iter map ~f:check
+;;
+
+let top_sort contexts =
+  let key = Context.name in
+  let map = Context_name.Map.of_list_map_exn contexts ~f:(fun x -> key x, x) in
+  let deps def =
+    match Context.host_context def with
+    | None -> []
+    | Some ctx -> [ Context_name.Map.find_exn map ctx ]
+  in
+  bad_configuration_check map;
+  match Context_name.Top_closure.top_closure ~key ~deps contexts with
+  | Ok topo_contexts -> topo_contexts
+  | Error _ -> assert false
+;;
+
+let create_final_config
+      ~config_from_config_file
+      ~config_from_command_line
+      ~config_from_workspace_file
+  =
+  let ( ++ ) = Dune_config.superpose in
+  Dune_config.default
+  ++ config_from_config_file
+  ++ config_from_workspace_file
+  ++ config_from_command_line
+;;
+
+(* We load the configuration in two steps:
+
+   - step1: we eagerly interpret all the bits that are common to the workspace
+     file and the user configuration file. The other fields are left under a lazy
+
+   - step2: we force the interpretation of the rest of the fields
+
+   We do that so that we can load only the general configuration part at Dune's
+   initialisation time, and report errors that are more specific to OCaml later
+   on *)
+module Step1 = struct
+  type nonrec t =
+    { t : t Lazy.t
+    ; config : Dune_config.t
+    }
+end
+
+let check_repos_no_dupes repos =
+  match
+    Repository.Name.Map.of_list_map repos ~f:(fun repo -> Repository.name repo, repo)
+  with
+  | Ok _ -> ()
+  | Error (name, repo1, repo2) ->
+    let loc1, _ = Repository.opam_url repo1 in
+    let loc2, _ = Repository.opam_url repo2 in
+    User_error.raise
+      ~loc:loc2
+      [ Pp.textf
+          "Repository %S is defined multiple times:"
+          (Repository.Name.to_string name)
+      ; Pp.enumerate ~f:Loc.pp_file_colon_line [ loc1; loc2 ]
+      ]
+;;
+
+let check_no_default_repo_redefinition user_defined_repos =
+  let default_repo_names =
+    Repository.Name.Set.of_list_map default_repositories ~f:Repository.name
+  in
+  List.iter user_defined_repos ~f:(fun repo ->
+    let name = Repository.name repo in
+    if Repository.Name.Set.mem default_repo_names name
+    then (
+      let loc, _ = Repository.opam_url repo in
+      User_error.raise
+        ~loc
+        [ Pp.textf
+            "Repository %S is a default repository and cannot be redefined."
+            (Repository.Name.to_string name)
+        ]))
+;;
+
+let check_lock_dirs_no_dupes lock_dirs =
+  match
+    Path.Source.Map.of_list_map lock_dirs ~f:(fun ({ Lock_dir.path; _ } as ld) ->
+      path, ld)
+  with
+  | Ok _ -> ()
+  | Error (path, { Lock_dir.loc = loc1; _ }, { Lock_dir.loc = loc2; _ }) ->
+    User_error.raise
+      ~loc:loc2
+      [ Pp.textf
+          "Lock directory %S is defined multiple times:"
+          (Path.Source.to_string path)
+      ; Pp.enumerate ~f:Loc.pp_file_colon_line [ loc1; loc2 ]
+      ]
+;;
+
+let step1 ~(lang : Lang.Instance.t) clflags =
+  let { Clflags.x
+      ; profile = cl_profile
+      ; instrument_with = cl_instrument_with
+      ; workspace_file
+      ; config_from_command_line
+      ; config_from_config_file
+      }
+    =
+    clflags
+  in
+  let dir =
+    match workspace_file with
+    | None -> Path.Source.root
+    | Some file ->
+      (match Path.Outside_build_dir.parent file with
+       | None -> assert false
+       | Some (External _) ->
+         (* CR-someday rgrinberg: not really correct, but we don't support lock
+            directories outside the workspace (for now) *)
+         Path.Source.root
+       | Some (In_source_dir s) -> s)
+  in
+  let x =
+    Option.map x ~f:(fun s -> Context.Target.Named { name = s; target_exec = None })
+  in
+  let superpose_with_command_line cl field =
+    let+ x = field in
+    lazy (Option.value cl ~default:(Lazy.force x))
+  in
+  (* This is all dodgy but we get away with it because we don't really allow
+     extensions to inject their own stanza into the workspace. *)
+  let* parsing_context, _stanza_parser, _extension_args =
+    let+ _, explicit_extensions =
+      Dune_project.Extension.parse_extensions ~lang_version:lang.version
+    in
+    let lang =
+      Dune_project.workspace_instance ~syntax:lang.syntax ~version:lang.version
+    in
+    Dune_lang.Dune_project.interpret_lang_and_extensions ~lang ~explicit_extensions
+  in
+  Dune_lang.Decoder.set_many parsing_context
+  @@
+  let* () = Dune_lang.Versioned_file.no_more_lang
+  and+ env = env_field_lazy
+  and+ profile =
+    superpose_with_command_line
+      cl_profile
+      (field "profile" (lazy_ Profile.decode) ~default:(lazy Profile.default))
+  and+ repos = multi_field "repository" (lazy_ Repository.decode)
+  and+ instrument_with =
+    superpose_with_command_line
+      cl_instrument_with
+      (field
+         "instrument_with"
+         (lazy_ (Dune_lang.Syntax.since Stanza.syntax (2, 7) >>> repeat Lib_name.decode))
+         ~default:(lazy []))
+  and+ config_from_workspace_file = Dune_config.decode_fields_of_workspace_file
+  and+ lock_dirs = multi_field "lock_dir" (Lock_dir.decode ~dir)
+  and+ pins = Pin_stanza.Workspace.decode in
+  let+ contexts = multi_field "context" (lazy_ Context.decode) in
+  let config =
+    create_final_config
+      ~config_from_workspace_file
+      ~config_from_config_file
+      ~config_from_command_line
+  in
+  let t =
+    lazy
+      (let profile = Lazy.force profile in
+       let instrument_with = Lazy.force instrument_with in
+       let contexts =
+         List.map contexts ~f:(fun f ->
+           Lazy.force
+             f
+             ~profile_default:profile
+             ~instrument_with_default:instrument_with
+             ~x)
+       in
+       let defined_names = ref Context_name.Set.empty in
+       let env = Lazy.force env in
+       let repos =
+         let user_defined_repos = List.map ~f:Lazy.force repos in
+         check_no_default_repo_redefinition user_defined_repos;
+         check_repos_no_dupes user_defined_repos;
+         default_repositories @ user_defined_repos
+       in
+       let merlin_context =
+         List.fold_left contexts ~init:None ~f:(fun acc ctx ->
+           let name = Context.name ctx in
+           if Context_name.Set.mem !defined_names name
+           then
+             User_error.raise
+               ~loc:(Context.loc ctx)
+               [ Pp.textf
+                   "second definition of build context %S"
+                   (Context_name.to_string name)
+               ];
+           defined_names
+           := Context_name.Set.union
+                !defined_names
+                (Context_name.Set.of_list (Context.all_names ctx));
+           match Context.base ctx, acc with
+           | { merlin = Selected; _ }, Some _ ->
+             User_error.raise
+               ~loc:(Context.loc ctx)
+               [ Pp.text "you can only have one context for merlin" ]
+           | { merlin = Selected; _ }, None -> Some name
+           | _ -> acc)
+       in
+       let contexts =
+         match contexts with
+         | [] ->
+           [ Context.default
+               ~x
+               ~profile:(Some profile)
+               ~instrument_with:(Some instrument_with)
+           ]
+         | _ -> contexts
+       in
+       let merlin_context =
+         match merlin_context with
+         | Some _ -> merlin_context
+         | None ->
+           if
+             List.exists contexts ~f:(function
+               | Context.Default _ -> true
+               | _ -> false)
+           then Some Context_name.default
+           else None
+       in
+       check_lock_dirs_no_dupes lock_dirs;
+       { merlin_context
+       ; contexts = top_sort (List.rev contexts)
+       ; env
+       ; config
+       ; repos
+       ; lock_dirs
+       ; dir
+       ; pins
+       })
+  in
+  { Step1.t; config }
+;;
+
+let step1 ~lang clflags = fields (step1 ~lang clflags)
+
+let default clflags =
+  let { Clflags.x
+      ; profile
+      ; instrument_with
+      ; workspace_file = _
+      ; config_from_command_line
+      ; config_from_config_file
+      }
+    =
+    clflags
+  in
+  let x =
+    Option.map x ~f:(fun s -> Context.Target.Named { name = s; target_exec = None })
+  in
+  let config =
+    create_final_config
+      ~config_from_config_file
+      ~config_from_command_line
+      ~config_from_workspace_file:Dune_config.Partial.empty
+  in
+  { merlin_context = Some Context_name.default
+  ; contexts = [ Context.default ~x ~profile ~instrument_with ]
+  ; env = None
+  ; config
+  ; repos = default_repositories
+  ; lock_dirs = []
+  ; dir = Path.Source.root
+  ; pins = Pin_stanza.Workspace.empty
+  }
+;;
+
+let default_step1 clflags =
+  let t = default clflags in
+  { Step1.t = lazy t; config = t.config }
+;;
+
+let load_step1 clflags p =
+  Fs_memo.with_lexbuf_from_file p ~f:(fun lb ->
+    if Dune_lang.Dune_file_script.eof_reached lb
+    then default_step1 clflags
+    else
+      parse_contents lb ~f:(fun lang ->
+        String_with_vars.set_decoding_env
+          (Pform.Env.initial ~stanza:lang.version ~extensions:[])
+          (step1 ~lang clflags)))
+;;
+
+let filename = Filename.dune_workspace
+
+let workspace_step1 =
+  let open Memo.O in
+  let f () =
+    let clflags = Clflags.t () in
+    let* workspace_file =
+      match clflags.workspace_file with
+      | None ->
+        let p = Path.Outside_build_dir.of_string (Filename.to_string filename) in
+        let+ exists = Fs_memo.file_exists p in
+        Option.some_if exists p
+      | Some p ->
+        Fs_memo.file_exists p
+        >>| (function
+         | true -> Some p
+         | false ->
+           User_error.raise
+             [ Pp.textf
+                 "Workspace file %s does not exist"
+                 (Path.Outside_build_dir.to_string_maybe_quoted p)
+             ])
+    in
+    let clflags = { clflags with workspace_file } in
+    match workspace_file with
+    | None -> Memo.return (default_step1 clflags)
+    | Some p -> load_step1 clflags p
+  in
+  let memo = Memo.lazy_ ~name:"workspaces-internal" f in
+  fun () -> Memo.Lazy.force memo
+;;
+
+let workspace_config () =
+  let open Memo.O in
+  let+ step1 = workspace_step1 () in
+  step1.config
+;;
+
+let workspace =
+  let open Memo.O in
+  let f () =
+    let+ step1 = workspace_step1 () in
+    Lazy.force step1.t
+  in
+  let memo = Memo.lazy_ ~cutoff:equal ~name:"workspace" f in
+  fun () -> Memo.Lazy.force memo
+;;
+
+let update_execution_parameters t ep =
+  ep
+  |> Execution_parameters.set_action_stdout_on_success t.config.action_stdout_on_success
+  |> Execution_parameters.set_action_stderr_on_success t.config.action_stderr_on_success
+;;
+
+let build_contexts t = List.concat_map t.contexts ~f:Context.build_contexts

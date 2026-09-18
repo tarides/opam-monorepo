@@ -1,0 +1,11 @@
+(cram
+ (alias check-lang-dune)
+ (deps
+  (package dune)
+  %{bin:grep}
+  (glob_files ../*.rst)))
+
+(alias
+ (name runtest)
+ (deps
+  (alias check-lang-dune)))

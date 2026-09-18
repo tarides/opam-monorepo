@@ -1,0 +1,123 @@
+open Import
+
+let () = Inline_tests.linkme
+
+type build_system =
+  { contexts : Context.t list
+  ; scontexts : Super_context.t Context_name.Map.t
+  }
+
+let implicit_default_alias dir =
+  match Path.Build.drop_build_context dir with
+  | None -> Memo.return None
+  | Some src_dir ->
+    let open Memo.O in
+    Source_tree.find_dir src_dir
+    >>| (function
+     | None -> None
+     | Some src_dir ->
+       let default_alias =
+         let dune_version =
+           Source_tree.Dir.project src_dir |> Dune_project.dune_version
+         in
+         if dune_version >= (2, 0) then Alias0.all else Alias0.install
+       in
+       Some (Action_builder.ignore (Alias_rec.dep_on_alias_rec default_alias dir)))
+;;
+
+let execution_parameters =
+  let source_backed_dir path =
+    match Dpath.Target_dir.of_target path with
+    | Regular (With_context (context, source))
+    | Anonymous_action (With_context (context, source)) ->
+      (match Install.Context.analyze_path context source with
+       | Normal (_, source) -> Some source
+       | Install _ | Invalid -> None)
+    | Regular Root | Anonymous_action Root | Invalid _ -> None
+  in
+  let f context path =
+    let open Memo.O in
+    let* ep = Execution_parameters.default in
+    if
+      Context_name.equal context Private_context.t.name
+      || Context_name.equal context Fetch_rules.context.name
+    then Memo.return ep
+    else (
+      match source_backed_dir path with
+      | None -> Memo.return ep
+      | Some path ->
+        let+ dir = Source_tree.nearest_dir path in
+        Dune_project.update_execution_parameters (Source_tree.Dir.project dir) ep)
+  in
+  let memo =
+    let module Input = struct
+      type t = Context_name.t * Path.Build.t
+
+      let hash = Tuple.T2.hash Context_name.hash Path.Build.hash
+      let equal = Tuple.T2.equal Context_name.equal Path.Build.equal
+      let to_dyn = Tuple.T2.to_dyn Context_name.to_dyn Path.Build.to_dyn
+    end
+    in
+    Memo.create
+      "execution-parameters-of-dir"
+      ~input:(module Input)
+      ~cutoff:Execution_parameters.equal
+      (fun (ctx, path) -> f ctx path)
+  in
+  fun context ~dir -> Memo.exec memo (context, dir)
+;;
+
+let init ~sandboxing_preference () : unit =
+  let promote_source ~chmod ~delete_dst_if_it_is_a_directory ~src ~dst =
+    let open Fiber.O in
+    let* ctx = Path.Build.parent_exn src |> Context.DB.by_dir |> Memo.run in
+    let conf = Artifact_substitution.Conf.of_context ctx in
+    let src = Path.build src in
+    let dst = Path.source dst in
+    Artifact_substitution.copy_file
+      ~chmod
+      ~delete_dst_if_it_is_a_directory
+      ~src
+      ~dst
+      ~conf
+      ()
+  in
+  Build_config.set
+    ~sandboxing_preference
+    ~promote_source
+    ~contexts:
+      (Memo.lazy_ (fun () ->
+         let open Memo.O in
+         let+ contexts = Workspace.workspace () >>| Workspace.build_contexts in
+         let open Dune_engine.Build_config.Context_type in
+         (Private_context.t, Empty)
+         :: (Install.Context.install_context, Empty)
+         :: (Fetch_rules.context, Empty)
+         :: List.map contexts ~f:(fun ctx -> ctx, With_sources)))
+    ~rule_generator:(module Gen_rules)
+    ~implicit_default_alias
+    ~execution_parameters
+    ~source_tree:(module Source_tree)
+;;
+
+let get () =
+  let open Memo.O in
+  let* contexts = Context.DB.all () in
+  let* scontexts = Memo.Lazy.force Super_context.all in
+  let* () = Super_context.all_init_deferred () in
+  Memo.return { contexts; scontexts }
+;;
+
+let find_context_exn t ~name =
+  match List.find t.contexts ~f:(fun c -> Context_name.equal (Context.name c) name) with
+  | Some ctx -> ctx
+  | None ->
+    User_error.raise [ Pp.textf "Context %S not found!" (Context_name.to_string name) ]
+;;
+
+let find_scontext_exn t ~name =
+  match Context_name.Map.find t.scontexts name with
+  | Some ctx -> ctx
+  | None ->
+    User_error.raise [ Pp.textf "Context %S not found!" (Context_name.to_string name) ]
+;;

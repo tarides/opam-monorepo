@@ -1,0 +1,44 @@
+;; The library Front is built here.
+
+;; This library is internal; a user of Menhir should not be aware of
+;; its existence. It collects the modules that form Menhir's front-end.
+
+(library
+  (name front)
+  (libraries
+    base
+    menhirSdk
+  )
+  (flags :standard -open Base -open MenhirSdk)
+)
+
+;; The following lexers are built by ocamllex.
+
+(ocamllex
+  Lex
+  Lexdep
+  Lexmli
+  Lexpointfree
+  RawSentenceLexer
+  Segment
+)
+
+;; The following parsers are built by ocamlyacc.
+
+(ocamlyacc
+  RawSentenceParser
+)
+
+;; The Menhir standard library "standard.mly" is embedded in the source code of
+;; Menhir using the following rule. It generates a file "standard_mly.ml" with
+;; contents "let contents = {|<contents of standard.mly>|}".
+
+(rule
+  (with-stdout-to standard_mly.ml
+    (progn
+      (echo "let contents = {|")
+      (cat standard.mly)
+      (echo "|}")
+    )
+  )
+)

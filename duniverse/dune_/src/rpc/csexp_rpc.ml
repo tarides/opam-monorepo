@@ -1,0 +1,617 @@
+open Stdune
+open Fiber.O
+open Dune_scheduler
+
+module Socket = struct
+  module type Unix_socket = sig
+    val connect : Fd.t -> socket:string -> unit
+    val bind : Fd.t -> socket:string -> unit
+  end
+
+  module U = struct
+    type sockaddr = Unix.sockaddr
+
+    let connect fd sock = Unix.connect (Fd.unsafe_to_unix_file_descr fd) sock
+    let bind fd sock = Unix.bind (Fd.unsafe_to_unix_file_descr fd) sock
+  end
+
+  module Mac = struct
+    external pthread_chdir : string -> unit = "dune_pthread_chdir" [@@noalloc]
+    external set_nosigpipe : Unix.file_descr -> unit = "dune_set_nosigpipe"
+
+    let with_chdir fd ~socket ~f =
+      let old = Sys.getcwd () in
+      let dir = Filename.dirname socket in
+      let sock = Filename.basename socket in
+      pthread_chdir dir;
+      Exn.protectx (Unix.ADDR_UNIX sock) ~f:(f fd) ~finally:(fun _ -> pthread_chdir old)
+    ;;
+
+    let connect fd ~socket : unit =
+      with_chdir fd ~socket ~f:(fun fd sockaddr ->
+        Unix.connect (Fd.unsafe_to_unix_file_descr fd) sockaddr)
+    ;;
+
+    let bind fd ~socket : unit =
+      with_chdir fd ~socket ~f:(fun fd sockaddr ->
+        Unix.bind (Fd.unsafe_to_unix_file_descr fd) sockaddr)
+    ;;
+  end
+
+  module Unix : Unix_socket = struct
+    let addr socket =
+      Unix.ADDR_UNIX
+        (match
+           let cwd = Sys.getcwd () in
+           String.drop_prefix socket ~prefix:(cwd ^ "/")
+         with
+         | Some s -> "./" ^ s
+         | None -> socket)
+    ;;
+
+    let connect fd ~socket = U.connect fd (addr socket)
+    let bind fd ~socket = U.bind fd (addr socket)
+  end
+
+  module Fail : Unix_socket = struct
+    let connect _ ~socket:_ = Code_error.raise "Fail.connect" []
+    let bind _ ~socket:_ = Code_error.raise "Fail.bind" []
+  end
+
+  external is_osx : unit -> bool = "dune_pthread_chdir_is_osx" [@@noalloc]
+
+  module Sel =
+    (val if is_osx ()
+         then (module Mac)
+         else if Sys.unix
+         then (module Unix)
+         else (module Fail)
+      : Unix_socket)
+
+  let max_len = 104 (* 108 on some systems but we keep it conservative *)
+
+  let make ~original ~backup fd (sa : U.sockaddr) =
+    match sa with
+    | ADDR_UNIX socket when String.length socket > max_len -> backup fd ~socket
+    | _ -> original fd sa
+  ;;
+
+  let bind = make ~original:U.bind ~backup:Sel.bind
+  let connect = make ~original:U.connect ~backup:Sel.connect
+
+  let maybe_set_nosigpipe fd =
+    if is_osx () then Mac.set_nosigpipe (Fd.unsafe_to_unix_file_descr fd)
+  ;;
+
+  let prepare_fd fd =
+    match maybe_set_nosigpipe fd with
+    | exception exn ->
+      Fd.close fd;
+      Error exn
+    | () ->
+      Fd.set_nonblock fd;
+      Ok ()
+  ;;
+end
+
+let unlink_socket_path (addr : Unix.sockaddr) =
+  match addr with
+  | ADDR_UNIX path -> Fpath.unlink_no_err path
+  | _ -> ()
+;;
+
+let close_bound_socket_sync (addr, fd) =
+  Fd.close fd;
+  unlink_socket_path addr
+;;
+
+let close_bound_socket (addr, fd) =
+  let+ () = Async_io.close fd in
+  unlink_socket_path addr
+;;
+
+module Session = struct
+  module Session_id = Id.Make ()
+  module Id = Session_id
+
+  module State = struct
+    type t =
+      | Closed
+      | Open of
+          { out_buf : Io_buffer.t
+          ; in_buf : Io_buffer.t
+          ; fd : Fd.t
+          ; mutable read_eof : bool
+          ; write_mutex : Fiber.Mutex.t
+          ; read_mutex : Fiber.Mutex.t
+          }
+  end
+
+  open State
+
+  type t =
+    { id : Id.t
+    ; mutable state : State.t
+    }
+
+  let create fd =
+    let id = Id.gen () in
+    Dune_trace.emit Rpc (fun () -> Dune_trace.Event.Rpc.session ~id:(Id.to_int id) `Start);
+    let state =
+      let size = 8192 in
+      Open
+        { fd
+        ; in_buf = Io_buffer.create ~size
+        ; out_buf = Io_buffer.create ~size
+        ; read_eof = false
+        ; write_mutex = Fiber.Mutex.create ()
+        ; read_mutex = Fiber.Mutex.create ()
+        }
+    in
+    { id; state }
+  ;;
+
+  let close_fd t =
+    let* () = Fiber.return () in
+    match t.state with
+    | Closed -> Fiber.return ()
+    | Open { fd; _ } ->
+      t.state <- Closed;
+      Async_io.close fd
+  ;;
+
+  module Lexer = Csexp.Parser.Lexer
+  module Stack = Csexp.Parser.Stack
+
+  let min_read = 8192
+
+  let read =
+    fun t ->
+    let* () = Fiber.return () in
+    match t.state with
+    | Closed ->
+      Dune_trace.emit Rpc (fun () ->
+        Dune_trace.Event.Rpc.packet_read ~id:(Id.to_int t.id) ~success:true ~error:None);
+      Fiber.return None
+    | Open ({ fd; in_buf; read_mutex; _ } as open_) ->
+      let lexer = Lexer.create () in
+      let buf = Buffer.create 16 in
+      let eof parser =
+        match parser with
+        | Stack.Empty ->
+          (match Lexer.feed_eoi lexer with
+           | () -> Ok None
+           | exception exn -> Error exn)
+        | _ -> Error (Csexp.Parser.Parse_error Csexp.Parser.premature_end_of_input)
+      in
+      let rec refill () =
+        if Io_buffer.length in_buf > 0
+        then Fiber.return (Ok `Continue)
+        else if open_.read_eof
+        then Fiber.return (Ok `Eof)
+        else (
+          let task =
+            Async_io.ready fd `Read ~f:(fun () ->
+              let () = Io_buffer.maybe_resize_to_fit in_buf min_read in
+              let pos = Io_buffer.write_pos in_buf in
+              let len = Io_buffer.max_write_len in_buf in
+              match
+                Unix.read
+                  (Fd.unsafe_to_unix_file_descr fd)
+                  (Io_buffer.bytes in_buf)
+                  pos
+                  len
+              with
+              | exception Unix.Unix_error ((EAGAIN | EINTR | EWOULDBLOCK), _, _) ->
+                `Refill
+              | (exception Unix.Unix_error (ECONNRESET, _, _)) | 0 ->
+                open_.read_eof <- true;
+                `Eof
+              | len ->
+                Io_buffer.commit_write in_buf ~len;
+                `Continue)
+          in
+          Async_io.Task.await task
+          >>= function
+          | Error (`Exn e) -> Fiber.return (Error e)
+          | Error `Cancelled | Ok `Eof -> Fiber.return @@ Ok `Eof
+          | Ok `Continue -> Fiber.return @@ Ok `Continue
+          | Ok `Refill -> refill ())
+      and read parser =
+        let* res = refill () in
+        match res with
+        | Error _ as e -> Fiber.return e
+        | Ok `Eof -> Fiber.return (eof parser)
+        | Ok `Continue ->
+          let char = Io_buffer.read_char_exn in_buf in
+          let token = Lexer.feed lexer char in
+          (match token with
+           | Atom n ->
+             Buffer.clear buf;
+             atom parser n
+           | (Lparen | Rparen | Await) as token ->
+             let parser = Stack.add_token token parser in
+             (match parser with
+              | Sexp (sexp, Empty) -> Fiber.return (Ok (Some sexp))
+              | parser -> read parser))
+      and atom parser n =
+        if n = 0
+        then (
+          let atom = Buffer.contents buf in
+          match Stack.add_atom atom parser with
+          | Sexp (sexp, Empty) -> Fiber.return (Ok (Some sexp))
+          | parser -> read parser)
+        else
+          refill ()
+          >>= function
+          | Error _ as e -> Fiber.return e
+          | Ok `Eof ->
+            Fiber.return
+              (Error (Csexp.Parser.Parse_error Csexp.Parser.premature_end_of_input))
+          | Ok `Continue ->
+            let n' = Io_buffer.read_into_buffer in_buf buf ~max_len:n in
+            atom parser (n - n')
+      in
+      let+ res =
+        let* res = Fiber.Mutex.with_lock read_mutex ~f:(fun () -> read Stack.Empty) in
+        match res with
+        | Error exn ->
+          let error = Printexc.to_string exn in
+          Dune_trace.emit Rpc (fun () ->
+            Dune_trace.Event.Rpc.packet_read
+              ~id:(Id.to_int t.id)
+              ~success:false
+              ~error:(Some error));
+          (match exn with
+           | Csexp.Parser.Parse_error _ ->
+             Log.warn
+               "malformed csexp rpc packet"
+               [ "id", Dyn.int (Id.to_int t.id); "error", Dyn.string error ]
+           | _ -> Dune_util.Report_error.report_exception exn);
+          let+ () = close_fd t in
+          None
+        | Ok None ->
+          Dune_trace.emit Rpc (fun () ->
+            Dune_trace.Event.Rpc.packet_read
+              ~id:(Id.to_int t.id)
+              ~success:true
+              ~error:None);
+          let+ () = close_fd t in
+          None
+        | Ok (Some sexp) ->
+          Dune_trace.emit Rpc (fun () ->
+            Dune_trace.Event.Rpc.packet_read
+              ~id:(Id.to_int t.id)
+              ~success:true
+              ~error:None);
+          Fiber.return @@ Some sexp
+      in
+      res
+  ;;
+
+  external send : Unix.file_descr -> Bytes.t -> int -> int -> int = "dune_send"
+
+  let write fd bytes pos len =
+    let fd = Fd.unsafe_to_unix_file_descr fd in
+    match Platform.OS.value with
+    | Linux -> send fd bytes pos len
+    | _ -> Unix.single_write fd bytes pos len
+  ;;
+
+  let rec csexp_write_loop fd out_buf token =
+    if Io_buffer.flushed out_buf token
+    then Fiber.return (Ok ())
+    else
+      (* We always make sure to try and write the entire buffer.
+         This should minimize the amount of [write] calls we need
+         to do *)
+      let* task =
+        let task =
+          Async_io.ready fd `Write ~f:(fun () ->
+            let bytes = Io_buffer.bytes out_buf in
+            let pos = Io_buffer.pos out_buf in
+            let len = Io_buffer.length out_buf in
+            match write fd bytes pos len with
+            | exception Unix.Unix_error ((EAGAIN | EINTR | EWOULDBLOCK), _, _) ->
+              `Continue
+            | exception Unix.Unix_error (EPIPE, _, _) -> `Cancelled
+            | exception exn -> `Exn exn
+            | written ->
+              Io_buffer.read out_buf written;
+              `Continue)
+        in
+        Async_io.Task.await task
+      in
+      match task with
+      | Error _ as e -> Fiber.return e
+      | Ok (`Exn exn) -> Fiber.return (Error (`Exn exn))
+      | Ok `Cancelled -> Fiber.return (Error `Cancelled)
+      | Ok `Continue -> csexp_write_loop fd out_buf token
+  ;;
+
+  let write t sexps =
+    let* () = Fiber.return () in
+    Dune_trace.emit Rpc (fun () ->
+      Dune_trace.Event.Rpc.packet_write ~id:(Id.to_int t.id) ~count:(List.length sexps));
+    match t.state with
+    | Closed -> Fiber.return (Error `Closed)
+    | Open { fd; out_buf; write_mutex; _ } ->
+      let* res =
+        Fiber.Mutex.with_lock write_mutex ~f:(fun () ->
+          Io_buffer.write_csexps out_buf sexps;
+          let flush_token = Io_buffer.flush_token out_buf in
+          csexp_write_loop fd out_buf flush_token)
+      in
+      (match res with
+       | Ok () -> Fiber.return (Ok ())
+       | Error error ->
+         (match error with
+          | `Cancelled -> ()
+          | `Exn exn ->
+            Dune_trace.emit Rpc (fun () ->
+              Dune_trace.Event.Rpc.dropped_write_client_disconnect exn));
+         let+ () = close_fd t in
+         Error `Closed)
+  ;;
+
+  let close t =
+    let* () = Fiber.return () in
+    Dune_trace.emit Rpc (fun () -> Dune_trace.Event.Rpc.close ~id:(Id.to_int t.id));
+    match t.state with
+    | Closed -> Fiber.return ()
+    | Open { fd; _ } ->
+      (try
+         (* TODO this hack is temporary until we get rid of dune rpc init *)
+         Unix.shutdown (Fd.unsafe_to_unix_file_descr fd) Unix.SHUTDOWN_ALL
+       with
+       | Unix.Unix_error (_, _, _) -> ());
+      close_fd t
+  ;;
+end
+
+module Server = struct
+  module Server_id = Id.Make ()
+  module Id = Server_id
+
+  module Transport = struct
+    type t =
+      { sockets : (Unix.sockaddr * Fd.t) list
+      ; mutable task : (Fd.t * Unix.sockaddr) Async_io.Task.t option
+      ; mutable running : bool
+      ; closed : unit Fiber.Ivar.t
+      }
+
+    let create sockets ~backlog =
+      List.iter sockets ~f:(fun (_, fd) ->
+        Unix.listen (Fd.unsafe_to_unix_file_descr fd) backlog);
+      { sockets; task = None; running = true; closed = Fiber.Ivar.create () }
+    ;;
+
+    let stop t =
+      let* () = Fiber.return () in
+      match t.running with
+      | false -> Fiber.Ivar.read t.closed
+      | true ->
+        t.running <- false;
+        let* () =
+          match t.task with
+          | None -> Fiber.return ()
+          | Some task ->
+            t.task <- None;
+            let* () = Async_io.Task.cancel task in
+            let+ (_ : (Fd.t * Unix.sockaddr, [ `Cancelled | `Exn of exn ]) result) =
+              Async_io.Task.await task
+            in
+            ()
+        in
+        let* () = Fiber.parallel_iter t.sockets ~f:close_bound_socket in
+        Fiber.Ivar.fill t.closed ()
+    ;;
+
+    let rec accept t =
+      let* () = Fiber.return () in
+      match t.running with
+      | false -> Fiber.return (Ok None)
+      | true ->
+        let task =
+          Async_io.ready_one t.sockets `Read ~f:(fun _ fd ->
+            let fd, sockaddr =
+              Unix.accept ~cloexec:true (Fd.unsafe_to_unix_file_descr fd)
+            in
+            let fd = Fd.unsafe_of_unix_file_descr fd in
+            let () = Result.ok_exn (Socket.prepare_fd fd) in
+            fd, sockaddr)
+        in
+        t.task <- Some task;
+        let* res = Async_io.Task.await task in
+        t.task <- None;
+        (match res with
+         | Error (`Exn (Unix.Unix_error (Unix.EAGAIN, _, _))) -> accept t
+         | Error (`Exn (Unix.Unix_error (Unix.EINVAL, _, _)))
+           when Platform.OS.(value = Darwin) -> accept t
+         | Error (`Exn exn) ->
+           let+ () = stop t in
+           Error (Exn_with_backtrace.capture exn)
+         | Error `Cancelled ->
+           let+ () = stop t in
+           Ok None
+         | Ok (fd, _) -> Fiber.return (Ok (Some fd)))
+    ;;
+  end
+
+  type t =
+    { id : Id.t
+    ; mutable state : [ `Init of Fd.t list | `Running of Transport.t | `Closed ]
+    ; backlog : int
+    ; sockaddrs : Unix.sockaddr list
+    ; ready : unit Fiber.Ivar.t
+    }
+
+  let create sockaddrs ~backlog =
+    let bound = ref [] in
+    let cleanup () =
+      List.iter !bound ~f:close_bound_socket_sync;
+      bound := []
+    in
+    let bind_socket sockaddr =
+      let fd =
+        Unix.socket ~cloexec:true (Unix.domain_of_sockaddr sockaddr) Unix.SOCK_STREAM 0
+        |> Fd.unsafe_of_unix_file_descr
+      in
+      let in_bound = ref false in
+      Exn.protect
+        ~finally:(fun () -> if not !in_bound then Fd.close fd)
+        ~f:(fun () ->
+          Fd.set_nonblock fd;
+          (match (sockaddr : Unix.sockaddr) with
+           | ADDR_UNIX _ -> ()
+           | ADDR_INET _ ->
+             Unix.setsockopt (Fd.unsafe_to_unix_file_descr fd) Unix.SO_REUSEADDR true);
+          Socket.bind fd sockaddr;
+          bound := (sockaddr, fd) :: !bound;
+          in_bound := true;
+          fd)
+    in
+    try
+      Exn.protect ~finally:cleanup ~f:(fun () ->
+        let fds = List.map sockaddrs ~f:bind_socket in
+        bound := [];
+        Ok
+          { id = Id.gen ()
+          ; sockaddrs
+          ; backlog
+          ; state = `Init fds
+          ; ready = Fiber.Ivar.create ()
+          })
+    with
+    | Unix.Unix_error (EADDRINUSE, _, _) -> Error `Already_in_use
+  ;;
+
+  let ready t = Fiber.Ivar.read t.ready
+
+  let serve (t : t) =
+    match t.state with
+    | `Closed -> Code_error.raise "already closed" []
+    | `Running _ -> Code_error.raise "already running" []
+    | `Init fds ->
+      let transport =
+        Transport.create (List.combine t.sockaddrs fds) ~backlog:t.backlog
+      in
+      t.state <- `Running transport;
+      let+ () = Fiber.Ivar.fill t.ready () in
+      let loop () =
+        Dune_trace.emit Rpc (fun () ->
+          Dune_trace.Event.Rpc.accept ~id:(Id.to_int t.id) `Start None);
+        let+ accept = Transport.accept transport in
+        Dune_trace.emit Rpc (fun () ->
+          let res =
+            match accept with
+            | Error exn -> `Error exn
+            | Ok None -> `Close
+            | Ok (Some _) -> `Accept
+          in
+          Dune_trace.Event.Rpc.accept ~id:(Id.to_int t.id) `Stop (Some res));
+        match accept with
+        | Error _ | Ok None -> None
+        | Ok (Some fd) -> Some (Session.create fd)
+      in
+      Fiber.Stream.In.create loop
+  ;;
+
+  let stop t =
+    let* () = Fiber.return () in
+    match t.state with
+    | `Closed -> Fiber.return ()
+    | `Running _ | `Init _ ->
+      Dune_trace.emit Rpc (fun () ->
+        Dune_trace.Event.Rpc.shutdown ~id:(Id.to_int t.id) `Start);
+      let* () =
+        match t.state with
+        | `Closed -> Fiber.return ()
+        | `Running transport -> Transport.stop transport
+        | `Init fds ->
+          Fiber.parallel_iter (List.combine t.sockaddrs fds) ~f:close_bound_socket
+      in
+      let+ () = Fiber.return () in
+      t.state <- `Closed;
+      Dune_trace.emit Rpc (fun () ->
+        Dune_trace.Event.Rpc.shutdown ~id:(Id.to_int t.id) `Stop)
+  ;;
+
+  let socket_name ((addr, fd) : Unix.sockaddr * Fd.t) =
+    match addr with
+    | ADDR_UNIX _ -> addr
+    | ADDR_INET _ -> Unix.getsockname (Fd.unsafe_to_unix_file_descr fd)
+  ;;
+
+  let listening_address t =
+    match t.state with
+    | `Init fds -> List.map ~f:socket_name (List.combine t.sockaddrs fds)
+    | `Running { Transport.sockets; _ } -> List.map ~f:socket_name sockets
+    | `Closed -> Code_error.raise "server is already closed" []
+  ;;
+end
+
+module Client = struct
+  module Transport = struct
+    type t = { fd : Fd.t }
+
+    let close t = Fd.close t.fd
+
+    let create sockaddr =
+      let fd =
+        Unix.socket ~cloexec:true (Unix.domain_of_sockaddr sockaddr) Unix.SOCK_STREAM 0
+        |> Fd.unsafe_of_unix_file_descr
+      in
+      match Socket.prepare_fd fd with
+      | Ok () -> Ok { fd }
+      | Error exn -> Error exn
+    ;;
+  end
+
+  type t =
+    { mutable transport : Transport.t option
+    ; sockaddr : Unix.sockaddr
+    }
+
+  let create sockaddr = { sockaddr; transport = None }
+
+  let connect t =
+    let* () = Fiber.return () in
+    let backtrace = Printexc.get_callstack 10 in
+    match Transport.create t.sockaddr with
+    | Error exn -> Fiber.return (Error { Exn_with_backtrace.exn; backtrace })
+    | Ok transport ->
+      let fd = transport.fd in
+      t.transport <- Some transport;
+      Async_io.connect Socket.connect fd t.sockaddr
+      >>| (function
+       | Ok () ->
+         t.transport <- None;
+         Ok (Session.create fd)
+       | Error `Cancelled ->
+         Transport.close transport;
+         t.transport <- None;
+         let exn = Failure "connect cancelled" in
+         Error { Exn_with_backtrace.exn; backtrace }
+       | Error (`Exn exn) ->
+         Transport.close transport;
+         t.transport <- None;
+         Error { Exn_with_backtrace.exn; backtrace })
+  ;;
+
+  let connect_exn t =
+    connect t
+    >>| function
+    | Ok s -> s
+    | Error e -> Exn_with_backtrace.reraise e
+  ;;
+
+  let stop t =
+    match t.transport with
+    | None -> ()
+    | Some transport ->
+      t.transport <- None;
+      Transport.close transport
+  ;;
+end

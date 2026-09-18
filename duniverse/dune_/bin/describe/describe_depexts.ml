@@ -1,0 +1,26 @@
+open Import
+
+let print_depexts context_name =
+  let open Fiber.O in
+  let+ depexts =
+    Build.build_memo_exn (fun () ->
+      Dune_rules.Pkg_rules.all_filtered_depexts context_name)
+  in
+  List.iter depexts ~f:print_endline
+;;
+
+let term =
+  let+ builder = Common.Builder.term
+  and+ context_name = Common.context_arg ~doc:(Some "Build context to use.") in
+  let builder = Common.Builder.forbid_builds builder in
+  let common, config = Common.init builder in
+  Scheduler_setup.go_with_rpc_server ~common ~config (fun () ->
+    print_depexts context_name)
+;;
+
+let info =
+  let doc = "Print the list of all the available depexts" in
+  Cmd.info "depexts" ~doc
+;;
+
+let command = Cmd.v info term

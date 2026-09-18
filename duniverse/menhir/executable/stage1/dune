@@ -1,0 +1,14 @@
+;; The stage 1 version of Menhir is built here.
+
+(executable
+  (name main)
+  (libraries
+    unix
+    base
+    menhirSdk
+    front
+    middle
+    driver_stage1 ;; use the stage 1 parser
+    body
+  )
+)

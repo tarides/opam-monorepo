@@ -1,0 +1,3 @@
+(* A non-parameterized macro is given actual arguments. *)
+#define FOO "foo"
+1 + FOO(42)

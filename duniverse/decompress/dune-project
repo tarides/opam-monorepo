@@ -1,0 +1,4 @@
+(lang dune 2.8)
+(name decompress)
+(version v1.6.0)
+(cram enable)

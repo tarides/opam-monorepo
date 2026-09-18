@@ -1,0 +1,43 @@
+name: Windows
+
+on: [push, pull_request]
+
+jobs:
+  winbuild:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ocaml.5.0.0,ocaml-option-mingw
+          opam-local-packages: bechamel.opam
+          opam-repositories: |
+            dra27: https://github.com/dra27/opam-repository.git#windows-5.0
+            opam-repository-mingw: https://github.com/ocaml-opam/opam-repository-mingw.git#sunset
+            default: https://github.com/ocaml/opam-repository.git
+
+      - run: opam pin add . -n
+      - run: opam install bechamel --with-test -v
+
+  winbuild4:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: 4.14.1
+          opam-local-packages: bechamel.opam
+          opam-repositories: |
+            opam-repository-mingw: https://github.com/ocaml-opam/opam-repository-mingw.git#sunset
+            default: https://github.com/ocaml/opam-repository.git
+
+      - run: opam pin add . -n
+      - run: opam install bechamel --with-test -v

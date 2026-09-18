@@ -1,0 +1,13 @@
+(library
+ (name ocamlc_loc_tests)
+ (libraries
+  ocamlc_loc
+  stdune
+  ;; deps below required because (implicit_transitive_deps false)
+  ppx_expect.config
+  ppx_expect.config_types
+  base
+  ppx_inline_test.config)
+ (preprocess
+  (pps ppx_expect))
+ (inline_tests))

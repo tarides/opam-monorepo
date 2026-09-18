@@ -1,0 +1,39 @@
+We create two libraries where one depends on the other. The dependency library
+also has more than one src dir.
+
+  $ echo "(lang dune 2.0)" > dune-project
+  $ mkdir -p lib1/sub
+  $ cat >lib1/dune <<EOF
+  > (include_subdirs unqualified)
+  > (library (name lib1))
+  > EOF
+  $ touch lib1/sub/foo.ml
+  $ touch lib1/bar.ml
+  $ mkdir lib2
+  $ cat >lib2/dune <<EOF
+  > (library
+  >  (name lib2)
+  >  (libraries lib1)
+  >  (modules ()))
+  > EOF
+
+  $ opam_prefix="$(ocamlc -where)"
+  $ export BUILD_PATH_PREFIX_MAP="/OPAM_PREFIX=$opam_prefix:$BUILD_PATH_PREFIX_MAP"
+
+  $ dune build lib2/.merlin-conf/lib-lib2
+  $ dune ocaml merlin dump-config --format=json $PWD/lib2 | jq -r '
+  >   include "dune";
+  >   merlinEntry("Lib2")
+  >   | merlinJsonEntryWithConfigNames(["STDLIB", "S", "UNIT_NAME"])'
+  Lib2: _build/default/lib2/lib2
+  ["STDLIB","/OPAM_PREFIX"]
+  ["S","$TESTCASE_ROOT/lib1"]
+  ["S","$TESTCASE_ROOT/lib1/sub"]
+  ["S","$TESTCASE_ROOT/lib2"]
+  ["UNIT_NAME","lib2"]
+  Lib2: _build/default/lib2/lib2.ml-gen
+  ["STDLIB","/OPAM_PREFIX"]
+  ["S","$TESTCASE_ROOT/lib1"]
+  ["S","$TESTCASE_ROOT/lib1/sub"]
+  ["S","$TESTCASE_ROOT/lib2"]
+  ["UNIT_NAME","lib2"]

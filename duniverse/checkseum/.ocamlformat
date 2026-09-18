@@ -1,0 +1,8 @@
+version = 0.21.0
+break-infix = fit-or-vertical
+parse-docstrings = true
+indicate-multiline-delimiters=no
+nested-match=align
+sequence-style=separator
+break-before-in=auto
+if-then-else=keyword-first

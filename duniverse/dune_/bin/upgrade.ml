@@ -1,0 +1,23 @@
+open Import
+
+let doc = "Upgrade projects across major Dune versions."
+
+let man =
+  [ `S "DESCRIPTION"
+  ; `P
+      "$(b,dune upgrade) upgrades all the projects in the workspace to the latest major \
+       version of Dune"
+  ; `Blocks Common.help_secs
+  ]
+;;
+
+let info = Cmd.info "upgrade" ~doc ~man
+
+let term =
+  let+ builder = Common.Builder.term in
+  (* CR-soon rgrinberg: stop taking pointless args *)
+  let _common, config = Common.init builder in
+  Scheduler_setup.no_build_no_rpc ~config Dune_upgrader.upgrade
+;;
+
+let command = Cmd.v info term

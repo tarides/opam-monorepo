@@ -1,0 +1,114 @@
+;; -----------------------------------------------------------------------------
+
+;; Copy all of the files created by Rocq in the directory extraction/
+;; into the current directory.
+(copy_files# extraction/*.{ml,mli})
+
+;; Compile the lexer.
+(ocamllex
+  (modules lexer)
+)
+
+;; Compile the main program.
+(executable
+  (name calc)
+  (flags :standard -w -A) ;; All warnings disabled. We trust Rocq!
+  (libraries menhirLib)
+)
+
+;; -----------------------------------------------------------------------------
+
+;; Tests.
+
+;; The target is named "essai" instead of "test" because we do not
+;; want these tests to be viewed by dune as part of Menhir's ordinary
+;; test suite. Indeed, the code in this directory can be built only if
+;; coq-menhirlib has been installed.
+
+(rule
+  (with-outputs-to calc00.out
+  (with-accepted-exit-codes 0
+    (run ./calc.exe %{dep:calc00.in})
+)))
+
+(rule
+  (alias essai)
+  (action (diff calc00.exp calc00.out))
+)
+
+(rule
+  (with-outputs-to calc01.out
+  (with-accepted-exit-codes 1
+    (run ./calc.exe %{dep:calc01.in})
+)))
+
+(rule
+  (alias essai)
+  (action (diff calc01.exp calc01.out))
+)
+
+(rule
+  (with-outputs-to calc02.out
+  (with-accepted-exit-codes 1
+    (run ./calc.exe %{dep:calc02.in})
+)))
+
+(rule
+  (alias essai)
+  (action (diff calc02.exp calc02.out))
+)
+
+(rule
+  (with-outputs-to calc03.out
+  (with-accepted-exit-codes 1
+    (run ./calc.exe %{dep:calc03.in})
+)))
+
+(rule
+  (alias essai)
+  (action (diff calc03.exp calc03.out))
+)
+
+(rule
+  (with-outputs-to calc04.out
+  (with-accepted-exit-codes 1
+    (run ./calc.exe %{dep:calc04.in})
+)))
+
+(rule
+  (alias essai)
+  (action (diff calc04.exp calc04.out))
+)
+
+(rule
+  (with-outputs-to calc05.out
+  (with-accepted-exit-codes 1
+    (run ./calc.exe %{dep:calc05.in})
+)))
+
+(rule
+  (alias essai)
+  (action (diff calc05.exp calc05.out))
+)
+
+(rule
+  (with-outputs-to calc06.out
+  (with-accepted-exit-codes 1
+    (run ./calc.exe %{dep:calc06.in})
+)))
+
+(rule
+  (alias essai)
+  (action (diff calc06.exp calc06.out))
+)
+
+(rule
+  (with-outputs-to calc07.out
+  (with-accepted-exit-codes 1
+    (run ./calc.exe %{dep:calc07.in})
+)))
+
+(rule
+  (alias essai)
+  (action (diff calc07.exp calc07.out))
+)

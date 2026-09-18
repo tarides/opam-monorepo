@@ -1,0 +1,418 @@
+N0REP0
+### OPAMYES=1
+### mkdir dir
+### tar czf file.tar.gz dir
+### openssl md5 file.tar.gz | '.*= ' -> '' >$ ARCHIVE_MD5
+### <url.sh>
+#!/bin/sh
+
+set -eu
+
+basedir=$(printf '%s' "$BASEDIR" | sed 's/\\/\\\\/g')
+cat > "$1" << EOF
+src: "file://$basedir/file.tar.gz"
+checksum: "md5=$ARCHIVE_MD5"
+EOF
+### :I: with format upgrade from 1.2
+### opam switch create 1dot2-upgrade-sw --empty
+### :I:1: format upgrade a package in a repository
+### <REPO/repo>
+opam-version: "1.2"
+### <REPO/packages/ocaml/ocaml.1/opam>
+opam-version: "2.0"
+### <REPO/packages/pkg/pkg.1/opam>
+opam-version: "1.2"
+build: [
+  ["test" "!" "-f" "standalone-file"]
+  ["test" "-f" "some-extrafile"]
+  ["test" "-f" "dir/some-other-extrafile"]
+]
+### <REPO/packages/pkg/pkg.1/standalone-file>
+Some random unused file
+### <REPO/packages/pkg/pkg.1/files/some-extrafile>
+here is an extra file
+### <REPO/packages/pkg/pkg.1/files/dir/some-other-extrafile>
+here is another extra file
+### <REPO/packages/pkg/pkg.1/descr>
+Some descr
+More descr
+### sh url.sh REPO/packages/pkg/pkg.1/url
+### opam update
+
+<><> Updating package repositories ><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file://${BASEDIR}/REPO
+
+<><> Upgrading repositories from older opam format ><><><><><><><><><><><><><><>
+Upgrading repository "default"...
+Updated ${BASEDIR}/OPAM/repo/default/packages/pkg/pkg.1/opam
+Now run 'opam upgrade' to apply any package updates.
+### find REPO | sort
+REPO
+REPO/packages
+REPO/packages/ocaml
+REPO/packages/ocaml/ocaml.1
+REPO/packages/ocaml/ocaml.1/opam
+REPO/packages/pkg
+REPO/packages/pkg/pkg.1
+REPO/packages/pkg/pkg.1/descr
+REPO/packages/pkg/pkg.1/files
+REPO/packages/pkg/pkg.1/files/dir
+REPO/packages/pkg/pkg.1/files/dir/some-other-extrafile
+REPO/packages/pkg/pkg.1/files/some-extrafile
+REPO/packages/pkg/pkg.1/opam
+REPO/packages/pkg/pkg.1/standalone-file
+REPO/packages/pkg/pkg.1/url
+REPO/repo
+### opam show --no-lint --raw -f name,version,synopsis,description,build,extra-files,url.src,url.checksum pkg.1 | sed-hash $ARCHIVE_MD5 archive-md5
+name:         "pkg"
+version:      "1"
+synopsis:     "Some descr"
+description:  "More descr"
+build:        ["test" "!" "-f" "standalone-file"]
+              ["test" "-f" "some-extrafile"]
+              ["test" "-f" "dir/some-other-extrafile"]
+extra-files:  ["dir/some-other-extrafile" "md5=83818bf129403aba49ac140d109c03d5"]
+              ["some-extrafile" "md5=daa4f25318ffd269629acc4c5dd6af1f"]
+url.src:      "file://${BASEDIR}/file.tar.gz"
+url.checksum: "md5=+archive-md5+"
+### opam install --verbose-on pkg pkg | sed-cmd test
+The following actions will be performed:
+=== install 2 packages
+  - install ocaml 1 [required by pkg]
+  - install pkg   1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed ocaml.1
+-> retrieved pkg.1  (file://${BASEDIR}/file.tar.gz)
++ test "!" "-f" "standalone-file" (CWD=${BASEDIR}/OPAM/1dot2-upgrade-sw/.opam-switch/build/pkg.1)
++ test "-f" "some-extrafile" (CWD=${BASEDIR}/OPAM/1dot2-upgrade-sw/.opam-switch/build/pkg.1)
++ test "-f" "dir/some-other-extrafile" (CWD=${BASEDIR}/OPAM/1dot2-upgrade-sw/.opam-switch/build/pkg.1)
+-> compiled  pkg.1
+-> installed pkg.1
+Done.
+### opam remove pkg
+The following actions will be performed:
+=== remove 1 package
+  - remove pkg 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   pkg.1
+Done.
+### cat REPO/packages/pkg/pkg.1/opam
+opam-version: "1.2"
+build: [
+  ["test" "!" "-f" "standalone-file"]
+  ["test" "-f" "some-extrafile"]
+  ["test" "-f" "dir/some-other-extrafile"]
+]
+### :I:2: format upgrade a package in a local dir
+### <local-pkg/local-pkg.opam>
+opam-version: "1.2"
+build: [
+  ["test" "-f" "standalone-file"]
+  ["test" "!" "-f" "some-extrafile"]
+  ["test" "!" "-f" "dir/some-other-extrafile"]
+  ["test" "!" "-f" "file-in-opam-dir"]
+  ["test" "!" "-f" "file-in-opam-dir-slash-files"]
+]
+### <local-pkg/standalone-file>
+Some random unused file
+### <local-pkg/files/some-extrafile>
+here is an extra file
+### <local-pkg/files/dir/some-other-extrafile>
+here is another extra file
+### <local-pkg/descr>
+Some descr
+More descr
+### <local-pkg/opam/file-in-opam-dir>
+This shouldn't be an extrafile
+### <local-pkg/opam/files/file-in-opam-dir-slash-files>
+This shouldn't be an extrafile either
+### sh url.sh local-pkg/url
+### :I:2:a: via show
+### opam show --no-lint --raw -f name,version,synopsis,description,build,extra-files,url.src,url.checksum local-pkg/local-pkg.opam | sed-hash $ARCHIVE_MD5 archive-md5
+name:         "local-pkg"
+version:      "dev"
+synopsis:     "Some descr"
+description:  "More descr"
+build:        ["test" "-f" "standalone-file"]
+              ["test" "!" "-f" "some-extrafile"]
+              ["test" "!" "-f" "dir/some-other-extrafile"]
+              ["test" "!" "-f" "file-in-opam-dir"]
+              ["test" "!" "-f" "file-in-opam-dir-slash-files"]
+extra-files:
+url.src:      "file://${BASEDIR}/file.tar.gz"
+url.checksum: "md5=+archive-md5+"
+### :I:2:b: via pin
+### opam pin -n ./local-pkg
+[NOTE] Package local-pkg does not exist in opam repositories registered in the current switch.
+local-pkg is now pinned to file://${BASEDIR}/local-pkg (version dev)
+### opam show --no-lint --raw -f name,version,synopsis,description,build,extra-files,url.src,url.checksum local-pkg.dev
+name:         "local-pkg"
+version:      "dev"
+synopsis:
+description:
+build:        ["test" "-f" "standalone-file"]
+              ["test" "!" "-f" "some-extrafile"]
+              ["test" "!" "-f" "dir/some-other-extrafile"]
+              ["test" "!" "-f" "file-in-opam-dir"]
+              ["test" "!" "-f" "file-in-opam-dir-slash-files"]
+extra-files:
+url.src:      "file://${BASEDIR}/local-pkg"
+url.checksum:
+### opam install --verbose-on local-pkg local-pkg | sed-cmd test
+
+<><> Synchronising pinned packages ><><><><><><><><><><><><><><><><><><><><><><>
+[local-pkg.dev] synchronised (no changes)
+
+The following actions will be performed:
+=== install 1 package
+  - install local-pkg dev (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved local-pkg.dev  (file://${BASEDIR}/local-pkg)
++ test "-f" "standalone-file" (CWD=${BASEDIR}/OPAM/1dot2-upgrade-sw/.opam-switch/build/local-pkg.dev)
++ test "!" "-f" "some-extrafile" (CWD=${BASEDIR}/OPAM/1dot2-upgrade-sw/.opam-switch/build/local-pkg.dev)
++ test "!" "-f" "dir/some-other-extrafile" (CWD=${BASEDIR}/OPAM/1dot2-upgrade-sw/.opam-switch/build/local-pkg.dev)
++ test "!" "-f" "file-in-opam-dir" (CWD=${BASEDIR}/OPAM/1dot2-upgrade-sw/.opam-switch/build/local-pkg.dev)
++ test "!" "-f" "file-in-opam-dir-slash-files" (CWD=${BASEDIR}/OPAM/1dot2-upgrade-sw/.opam-switch/build/local-pkg.dev)
+-> compiled  local-pkg.dev
+-> installed local-pkg.dev
+Done.
+### opam unpin ./local-pkg
+Ok, local-pkg is no longer pinned to file://${BASEDIR}/local-pkg (version dev)
+The following actions will be performed:
+=== remove 1 package
+  - remove local-pkg dev
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   local-pkg.dev
+Done.
+### :I:2:c: via autopin
+### opam install --verbose-on local-pkg ./local-pkg | sed-cmd test
+[WARNING] Failed checks on local-pkg package definition from source at file://${BASEDIR}/local-pkg:
+             error 23: Missing field 'maintainer'
+           warning 25: Missing field 'authors'
+           warning 35: Missing field 'homepage'
+           warning 36: Missing field 'bug-reports'
+           warning 37: Missing field 'dev-repo'
+           warning 68: Missing field 'license'
+[NOTE] Package local-pkg does not exist in opam repositories registered in the current switch.
+local-pkg is now pinned to file://${BASEDIR}/local-pkg (version dev)
+The following actions will be performed:
+=== install 1 package
+  - install local-pkg dev (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved local-pkg.dev  (file://${BASEDIR}/local-pkg)
++ test "-f" "standalone-file" (CWD=${BASEDIR}/OPAM/1dot2-upgrade-sw/.opam-switch/build/local-pkg.dev)
++ test "!" "-f" "some-extrafile" (CWD=${BASEDIR}/OPAM/1dot2-upgrade-sw/.opam-switch/build/local-pkg.dev)
++ test "!" "-f" "dir/some-other-extrafile" (CWD=${BASEDIR}/OPAM/1dot2-upgrade-sw/.opam-switch/build/local-pkg.dev)
++ test "!" "-f" "file-in-opam-dir" (CWD=${BASEDIR}/OPAM/1dot2-upgrade-sw/.opam-switch/build/local-pkg.dev)
++ test "!" "-f" "file-in-opam-dir-slash-files" (CWD=${BASEDIR}/OPAM/1dot2-upgrade-sw/.opam-switch/build/local-pkg.dev)
+-> compiled  local-pkg.dev
+-> installed local-pkg.dev
+Done.
+### opam show --no-lint --raw -f name,version,synopsis,description,build,extra-files,url.src,url.checksum local-pkg.dev
+name:         "local-pkg"
+version:      "dev"
+synopsis:     "Some descr"
+description:  "More descr"
+build:        ["test" "-f" "standalone-file"]
+              ["test" "!" "-f" "some-extrafile"]
+              ["test" "!" "-f" "dir/some-other-extrafile"]
+              ["test" "!" "-f" "file-in-opam-dir"]
+              ["test" "!" "-f" "file-in-opam-dir-slash-files"]
+extra-files:
+url.src:      "file://${BASEDIR}/local-pkg"
+url.checksum:
+### opam unpin local-pkg
+Ok, local-pkg is no longer pinned to file://${BASEDIR}/local-pkg (version dev)
+The following actions will be performed:
+=== remove 1 package
+  - remove local-pkg dev
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   local-pkg.dev
+Done.
+### cat local-pkg/local-pkg.opam
+opam-version: "1.2"
+build: [
+  ["test" "-f" "standalone-file"]
+  ["test" "!" "-f" "some-extrafile"]
+  ["test" "!" "-f" "dir/some-other-extrafile"]
+  ["test" "!" "-f" "file-in-opam-dir"]
+  ["test" "!" "-f" "file-in-opam-dir-slash-files"]
+]
+### :II: with 2.0 format
+### opam switch create 2point0-upgrade-sw --empty
+### :II:1: package in a repository
+### rm -rf REPO
+### <REPO/repo>
+opam-version: "2.0"
+### <REPO/packages/pkg/pkg.1/opam>
+opam-version: "2.0"
+build: [
+  ["test" "!" "-f" "standalone-file"]
+  ["test" "!" "-f" "some-extrafile"]
+  ["test" "!" "-f" "dir/some-other-extrafile"]
+]
+### <REPO/packages/pkg/pkg.1/standalone-file>
+Some random unused file
+### <REPO/packages/pkg/pkg.1/files/some-extrafile>
+here is an extra file
+### <REPO/packages/pkg/pkg.1/files/dir/some-other-extrafile>
+here is another extra file
+### <REPO/packages/pkg/pkg.1/descr>
+Some descr
+More descr
+### sh url.sh REPO/packages/pkg/pkg.1/url
+### opam update
+
+<><> Updating package repositories ><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file://${BASEDIR}/REPO
+Now run 'opam upgrade' to apply any package updates.
+### find REPO | sort
+REPO
+REPO/packages
+REPO/packages/pkg
+REPO/packages/pkg/pkg.1
+REPO/packages/pkg/pkg.1/descr
+REPO/packages/pkg/pkg.1/files
+REPO/packages/pkg/pkg.1/files/dir
+REPO/packages/pkg/pkg.1/files/dir/some-other-extrafile
+REPO/packages/pkg/pkg.1/files/some-extrafile
+REPO/packages/pkg/pkg.1/opam
+REPO/packages/pkg/pkg.1/standalone-file
+REPO/packages/pkg/pkg.1/url
+REPO/repo
+### opam show --no-lint --raw -f name,version,synopsis,description,build,extra-files,url.src,url.checksum pkg.1 | sed-hash $ARCHIVE_MD5 archive-md5
+name:         "pkg"
+version:      "1"
+synopsis:     "Some descr"
+description:  "More descr"
+build:        ["test" "!" "-f" "standalone-file"]
+              ["test" "!" "-f" "some-extrafile"]
+              ["test" "!" "-f" "dir/some-other-extrafile"]
+extra-files:
+url.src:      "file://${BASEDIR}/file.tar.gz"
+url.checksum: "md5=+archive-md5+"
+### opam install --verbose-on pkg pkg | sed-cmd test
+The following actions will be performed:
+=== install 1 package
+  - install pkg 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved pkg.1  (cached)
++ test "!" "-f" "standalone-file" (CWD=${BASEDIR}/OPAM/2point0-upgrade-sw/.opam-switch/build/pkg.1)
++ test "!" "-f" "some-extrafile" (CWD=${BASEDIR}/OPAM/2point0-upgrade-sw/.opam-switch/build/pkg.1)
++ test "!" "-f" "dir/some-other-extrafile" (CWD=${BASEDIR}/OPAM/2point0-upgrade-sw/.opam-switch/build/pkg.1)
+-> compiled  pkg.1
+-> installed pkg.1
+Done.
+### :II:2: package in a local dir
+### rm -rf local-pkg
+### <local-pkg/opam>
+opam-version: "2.0"
+build: [
+  ["test" "-f" "standalone-file"]
+  ["test" "!" "-f" "some-extrafile"]
+  ["test" "!" "-f" "dir/some-other-extrafile"]
+]
+### <local-pkg/standalone-file>
+Some random unused file
+### <local-pkg/files/some-extrafile>
+here is an extra file
+### <local-pkg/files/dir/some-other-extrafile>
+here is another extra file
+### <local-pkg/descr>
+Some descr
+More descr
+### sh url.sh local-pkg/url
+### :II:2:a: via show
+### opam show --no-lint --raw -f name,version,synopsis,description,build,extra-files,url.src,url.checksum local-pkg/opam | sed-hash $ARCHIVE_MD5 archive-md5
+name:         "local-pkg"
+version:      "dev"
+synopsis:     "Some descr"
+description:  "More descr"
+build:        ["test" "-f" "standalone-file"]
+              ["test" "!" "-f" "some-extrafile"]
+              ["test" "!" "-f" "dir/some-other-extrafile"]
+extra-files:
+url.src:      "file://${BASEDIR}/file.tar.gz"
+url.checksum: "md5=+archive-md5+"
+### :II:2:b: via pin
+### opam pin -n ./local-pkg
+[NOTE] Package local-pkg does not exist in opam repositories registered in the current switch.
+local-pkg is now pinned to file://${BASEDIR}/local-pkg (version dev)
+### opam show --no-lint --raw -f name,version,synopsis,description,build,extra-files,url.src,url.checksum local-pkg.dev
+name:         "local-pkg"
+version:      "dev"
+synopsis:
+description:
+build:        ["test" "-f" "standalone-file"]
+              ["test" "!" "-f" "some-extrafile"]
+              ["test" "!" "-f" "dir/some-other-extrafile"]
+extra-files:
+url.src:      "file://${BASEDIR}/local-pkg"
+url.checksum:
+### opam install --verbose-on local-pkg local-pkg | sed-cmd test
+
+<><> Synchronising pinned packages ><><><><><><><><><><><><><><><><><><><><><><>
+[local-pkg.dev] synchronised (no changes)
+
+The following actions will be performed:
+=== install 1 package
+  - install local-pkg dev (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved local-pkg.dev  (file://${BASEDIR}/local-pkg)
++ test "-f" "standalone-file" (CWD=${BASEDIR}/OPAM/2point0-upgrade-sw/.opam-switch/build/local-pkg.dev)
++ test "!" "-f" "some-extrafile" (CWD=${BASEDIR}/OPAM/2point0-upgrade-sw/.opam-switch/build/local-pkg.dev)
++ test "!" "-f" "dir/some-other-extrafile" (CWD=${BASEDIR}/OPAM/2point0-upgrade-sw/.opam-switch/build/local-pkg.dev)
+-> compiled  local-pkg.dev
+-> installed local-pkg.dev
+Done.
+### opam unpin local-pkg
+Ok, local-pkg is no longer pinned to file://${BASEDIR}/local-pkg (version dev)
+The following actions will be performed:
+=== remove 1 package
+  - remove local-pkg dev
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   local-pkg.dev
+Done.
+### :II:2:c: via autopin
+### opam install --verbose-on local-pkg ./local-pkg | sed-cmd test
+[WARNING] Failed checks on local-pkg package definition from source at file://${BASEDIR}/local-pkg:
+             error 23: Missing field 'maintainer'
+           warning 25: Missing field 'authors'
+           warning 35: Missing field 'homepage'
+           warning 36: Missing field 'bug-reports'
+           warning 37: Missing field 'dev-repo'
+           warning 68: Missing field 'license'
+[NOTE] Package local-pkg does not exist in opam repositories registered in the current switch.
+local-pkg is now pinned to file://${BASEDIR}/local-pkg (version dev)
+The following actions will be performed:
+=== install 1 package
+  - install local-pkg dev (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved local-pkg.dev  (file://${BASEDIR}/local-pkg)
++ test "-f" "standalone-file" (CWD=${BASEDIR}/OPAM/2point0-upgrade-sw/.opam-switch/build/local-pkg.dev)
++ test "!" "-f" "some-extrafile" (CWD=${BASEDIR}/OPAM/2point0-upgrade-sw/.opam-switch/build/local-pkg.dev)
++ test "!" "-f" "dir/some-other-extrafile" (CWD=${BASEDIR}/OPAM/2point0-upgrade-sw/.opam-switch/build/local-pkg.dev)
+-> compiled  local-pkg.dev
+-> installed local-pkg.dev
+Done.
+### opam show --no-lint --raw -f name,version,synopsis,description,build,extra-files,url.src,url.checksum local-pkg.dev
+name:         "local-pkg"
+version:      "dev"
+synopsis:     "Some descr"
+description:  "More descr"
+build:        ["test" "-f" "standalone-file"]
+              ["test" "!" "-f" "some-extrafile"]
+              ["test" "!" "-f" "dir/some-other-extrafile"]
+extra-files:
+url.src:      "file://${BASEDIR}/local-pkg"
+url.checksum:

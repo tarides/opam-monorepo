@@ -1,0 +1,6 @@
+(lang dune 2.0)
+
+(name ocamlgraph)
+(version 2.1.0-33-g7100076)
+
+(formatting (enabled_for dune))

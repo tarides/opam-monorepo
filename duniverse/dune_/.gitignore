@@ -1,0 +1,43 @@
+_opam
+_build
+_build*
+_boot
+_boot*
+_test_boot
+_perf
+_coverage
+__pycache__
+*.install
+compile_commands.json
+
+# vim swap files
+*.swp
+*.swo
+nvim.log
+
+# emacs lock files
+.#*
+
+# vscode settings
+.vscode
+
+# git-ps hooks
+.git-ps
+
+.duneboot.*
+Makefile.dev
+src/dune_rules/setup.ml
+.DS_Store
+
+# nix
+nix/profiles/
+result
+result-*
+start/
+
+.claude/
+.codex
+
+perf.data
+perf.data.old
+profile.json.gz

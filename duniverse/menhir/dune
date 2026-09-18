@@ -1,0 +1,29 @@
+;; The following directories contain vendored libraries,
+;; that is, copies of external libraries.
+
+(vendored_dirs bitsets fix pprint)
+
+;; The following directories contain nothing of interest to Dune.
+
+(data_only_dirs analysis attic headers releases www)
+
+;; Compilation flags.
+
+;; Warnings are enabled (and fatal) during development,
+;; but are disabled in releases.
+
+;; Assertions are enabled during development and in releases.
+
+(env
+  (dev (flags
+    :standard
+    -safe-string
+    -g
+    -w @1..74-4-9-40-41-42-44-45-60-67-70
+  ))
+  (release (flags
+    :standard
+    -safe-string
+    -g
+  ))
+)

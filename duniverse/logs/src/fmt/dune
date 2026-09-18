@@ -1,0 +1,7 @@
+(library
+ (name logs_fmt)
+ (public_name logs.fmt)
+ (libraries fmt logs)
+ (modules logs_fmt)
+ (flags :standard -w -27 -safe-string)
+ (wrapped false))

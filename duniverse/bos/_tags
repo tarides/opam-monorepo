@@ -1,0 +1,8 @@
+true : bin_annot, safe_string, \
+       package(astring), package(fpath), package(fmt), package(logs), \
+       package(unix)
+
+<_b0> : -traverse
+<src> : include
+<src/top/bos_top*> : package(compiler-libs.toplevel)
+<src/setup/bos_setup*> : package(rresult), package(fmt.tty), package(logs.fmt)

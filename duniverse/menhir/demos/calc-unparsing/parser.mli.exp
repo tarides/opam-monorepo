@@ -1,0 +1,183 @@
+
+(* The type of tokens. *)
+
+type token = 
+  | TIMES
+  | RPAREN
+  | PLUS
+  | MINUS
+  | LPAREN
+  | INT of (int)
+  | EOL
+  | DIV
+
+(* This exception is raised by the monolithic API functions. *)
+
+exception Error
+
+(* The monolithic API. *)
+
+val main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (AST.main)
+
+module MenhirInterpreter : sig
+  
+  (* The incremental API. *)
+  
+  include MenhirLib.IncrementalEngine.INCREMENTAL_ENGINE
+    with type token = token
+  
+end
+
+(* The entry point(s) to the incremental API. *)
+
+module Incremental : sig
+  
+  val main: Lexing.position -> (AST.main) MenhirInterpreter.checkpoint
+  
+end
+
+(* The unparsing API. *)
+
+(* Constructing disjunctive concrete syntax trees (DCSTs). *)
+
+module DCST : sig
+  
+  (* The type of DCSTs for the nonterminal symbol [main]. *)
+  
+  type main
+  
+  (* The type of DCSTs for the nonterminal symbol [expr]. *)
+  
+  type expr
+  
+  (* The binary choice constructor at type [main]. *)
+  
+  val main_choice: main -> main -> main
+  
+  (* main -> expr EOL *)
+  
+  val eol: expr -> main
+  
+  (* The binary choice constructor at type [expr]. *)
+  
+  val expr_choice: expr -> expr -> expr
+  
+  (* expr -> INT *)
+  
+  val int: (int) -> expr
+  
+  (* expr -> LPAREN expr RPAREN *)
+  
+  val paren: expr -> expr
+  
+  (* expr -> MINUS expr *)
+  
+  val neg: expr -> expr
+  
+  (* expr -> expr PLUS expr *)
+  
+  val add: expr -> expr -> expr
+  
+  (* expr -> expr MINUS expr *)
+  
+  val sub: expr -> expr -> expr
+  
+  (* expr -> expr TIMES expr *)
+  
+  val mul: expr -> expr -> expr
+  
+  (* expr -> expr DIV expr *)
+  
+  val div: expr -> expr -> expr
+  
+end
+
+(* Deconstructing concrete syntax trees (CSTs). *)
+
+module CST : sig
+  
+  (* The type of CSTs for the nonterminal symbol [main]. *)
+  
+  type main
+  
+  (* The type of CSTs for the nonterminal symbol [expr]. *)
+  
+  type expr
+  
+  (* This visitor helps transform concrete syntax trees into something else. *)
+  
+  class virtual ['r] reduce : object
+    
+    (* [zero] is an empty piece of output. *)
+    
+    method virtual zero : 'r
+    
+    (* [cat] concatenates two pieces of output. *)
+    
+    method virtual cat : 'r -> 'r -> 'r
+    
+    (* [text] transforms a string into a piece of output. *)
+    
+    method virtual text : string -> 'r
+    
+    (* One method per terminal symbol. *)
+    
+    method visit_TIMES : 'r
+    
+    method visit_RPAREN : 'r
+    
+    method visit_PLUS : 'r
+    
+    method visit_MINUS : 'r
+    
+    method visit_LPAREN : 'r
+    
+    method virtual visit_INT : (int) -> 'r
+    
+    method virtual visit_EOL : 'r
+    
+    method visit_DIV : 'r
+    
+    (* One method per nonterminal symbol. *)
+    
+    method visit_main : main -> 'r
+    
+    method visit_expr : expr -> 'r
+    
+    (* One method per production. *)
+    
+    method case_eol : expr -> 'r
+    
+    method case_int : (int) -> 'r
+    
+    method case_paren : expr -> 'r
+    
+    method case_neg : expr -> 'r
+    
+    method case_add : expr -> expr -> 'r
+    
+    method case_sub : expr -> expr -> 'r
+    
+    method case_mul : expr -> expr -> 'r
+    
+    method case_div : expr -> expr -> 'r
+    
+  end
+  
+end
+
+(* Transforming DCSTs to CSTs. *)
+
+module Settle : sig
+  
+  val main: DCST.main -> CST.main option
+  
+end
+
+(* The parse tables. *)
+
+(* Warning: this submodule is undocumented. In the future,
+   its type could change, or it could disappear altogether. *)
+
+module Tables : MenhirLib.TableFormat.TABLES
+  with type token = token

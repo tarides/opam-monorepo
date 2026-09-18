@@ -1,0 +1,18 @@
+(library
+ (name checkseum_c)
+ (public_name checkseum.c)
+ (libraries optint)
+ (foreign_stubs
+  (language c)
+  (names stubs adler32 crc32c crc32 crc24)
+  (flags
+   (:include stddef.sexp)
+   (:standard -O3 -I./native/)))
+ (implements checkseum))
+
+(include_subdirs unqualified)
+
+(rule
+ (with-stdout-to
+  stddef.sexp
+  (run ../conf/check.exe)))

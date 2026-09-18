@@ -1,0 +1,12 @@
+(executable
+ (name b)
+ (modules b)
+ (libraries cmdliner bstr decompress.zl camlzip bytesrw.zlib))
+
+(rule
+ (alias runbench)
+ (deps
+  (source_tree ../test/corpus)
+  (:bench b.exe))
+ (action
+  (run %{bench} ../test/corpus)))

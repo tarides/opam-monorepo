@@ -1,0 +1,33 @@
+version: "3.1.2"
+opam-version: "2.0"
+synopsis: "Pure OCaml command-line tool to apply a patch"
+description:
+  "Command-line tool to apply a unified diff or git-diff to a directory"
+maintainer: ["Samuel Hym <samuel@tarides.com>"]
+authors: [
+  "Kate Deplaix <kit-ty-kate@exn.st>" "Samuel Hym <samuel@tarides.com>"
+]
+license: "ISC"
+homepage: "https://github.com/hannesm/patch"
+bug-reports: "https://github.com/hannesm/patch/issues"
+depends: [
+  "dune" {>= "3.0"}
+  "ocaml" {>= "4.14"}
+  "patch" {= version}
+  "odoc" {with-doc}
+]
+build: [
+  ["dune" "subst"] {dev}
+  [
+    "dune"
+    "build"
+    "-p"
+    name
+    "-j"
+    jobs
+    "@install"
+    "@doc" {with-doc}
+  ]
+]
+dev-repo: "git+https://github.com/hannesm/patch.git"
+x-maintenance-intent: [ "(latest)" ]

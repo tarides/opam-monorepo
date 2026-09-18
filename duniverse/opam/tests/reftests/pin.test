@@ -1,0 +1,1700 @@
+N0REP0
+### http-server
+HTTP SERVER launched
+### OPAMYES=1
+### <add-pin.sh>
+nv=$1
+n=${nv%.*}
+v=${nv#*.}
+if [ "x$n" = "x$nv" ]; then
+  nv=$n
+  v=ved
+  nv=$n.$v
+fi
+git=""
+if [ $# -eq 2 ]; then
+  git=$2
+fi
+mkdir -p "$n"
+cat << EOF > "$n/$n.opam"
+opam-version:"2.0"
+version: "$v"
+build: [ "test" "-f" "%{name}%.%{version}%.t" ]
+# bla
+synopsis: "A word"
+description: "Two words."
+authors: "the testing team"
+homepage: "egapemoh"
+maintainer: "maint@tain.er"
+license: "MIT"
+dev-repo: "hg+https://pkg@op.am"
+bug-reports: "https://nobug"
+EOF
+cat << EOF > "$n/$n.install"
+lib: ["$nv.t"]
+EOF
+echo piou >> "$n/$nv.t"
+if [ "x$git" = "xgit" ]; then
+  test -d "$n/.git" || git -C "./$n" init -q --initial-branch=master
+  git -C "./$n" config core.autocrlf false
+  git -C "./$n" add "$n.opam" "$nv.t" "$n.install"
+  git -C "./$n" commit -qm "add $nv package"
+fi
+### # local dir with git
+### sh add-pin.sh nip-git git
+### sh add-pin.sh nip-git2 git
+### sh add-pin.sh nip-git3 git
+### sh add-pin.sh nip-git4 git
+### # local dir with path
+### sh add-pin.sh nip-path
+### sh add-pin.sh nip-path2
+### sh add-pin.sh nip-path3
+### sh add-pin.sh nip-path4
+### # repo
+### <add-repo.sh>
+for nv in "$@" ; do
+  n=${nv%.*}
+  pre=REPO/packages/$n/$nv
+  mkdir -p "$pre/files"
+  cat << EOF > "$pre/files/$n.install"
+lib: ["$nv.t"]
+EOF
+  echo piou >> "$nv.t"
+  tar czf "$nv.tgz" "$nv.t"
+  MD5=$(openssl md5 "$nv.tgz" | cut -d' ' -f2)
+  XMD5=$(openssl md5 "$pre/files/$n.install" | cut -d' ' -f2)
+  basedir=$(printf '%s' "$BASEDIR" | sed 's/\\/\\\\/g')
+  cat << EOF > "$pre/opam"
+opam-version:"2.0"
+build: [ "test" "-f" "%{name}%.%{version}%.t" ]
+dev-repo: "file://$basedir/$n"
+extra-files:
+  [ "$n.install" "md5=$XMD5" ]
+url {
+  src: "$nv.tgz"
+  checksum: "md5=$MD5"
+}
+EOF
+  sh add-pin.sh "$n"
+done
+### sh add-repo.sh nip-v.1 nip-v.2 nip-v.3
+### sh add-repo.sh nip.1 nip2.1 nip3.1
+### sh add-repo.sh no-url.1 no-url2.1
+### opam update
+
+<><> Updating package repositories ><><><><><><><><><><><><><><><><><><><><><><>
+[default] synchronised from file://${BASEDIR}/REPO
+Now run 'opam upgrade' to apply any package updates.
+### :::::::::::::::::::::::
+### :I: Pin targets
+### :::::::::::::::::::::::
+### opam switch create targets --empty
+### : pin with url
+### opam pin add nip-git git+file://$BASEDIR/nip-git
+[NOTE] Package nip-git does not exist in opam repositories registered in the current switch.
+[nip-git.dev] synchronised (git+file://${BASEDIR}/nip-git#master)
+nip-git is now pinned to git+file://${BASEDIR}/nip-git#master (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-git ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-git.ved
+Done.
+### opam pin add git+file://$BASEDIR/nip-git2
+[NOTE] Package nip-git2 does not exist in opam repositories registered in the current switch.
+nip-git2 is now pinned to git+file://${BASEDIR}/nip-git2#master (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-git2 ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-git2.ved
+Done.
+### : pin add with a path
+### opam pin add nip-path ./nip-path
+[NOTE] Package nip-path does not exist in opam repositories registered in the current switch.
+[nip-path.dev] synchronised (file://${BASEDIR}/nip-path)
+nip-path is now pinned to file://${BASEDIR}/nip-path (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-path ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-path.ved
+Done.
+### opam pin add ./nip-path2
+[NOTE] Package nip-path2 does not exist in opam repositories registered in the current switch.
+nip-path2 is now pinned to file://${BASEDIR}/nip-path2 (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-path2 ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-path2.ved
+Done.
+### opam pin add $BASEDIR/nip-path3
+[NOTE] Package nip-path3 does not exist in opam repositories registered in the current switch.
+nip-path3 is now pinned to file://${BASEDIR}/nip-path3 (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-path3 ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-path3.ved
+Done.
+### : pin add with version
+### opam pin add nip-v 2
+nip-v is now pinned to version 2
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-v 2 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved nip-v.2  (file://${BASEDIR}/nip-v.2.tgz)
+-> installed nip-v.2
+Done.
+### : pin add with --dev
+### opam pin add nip2 --dev
+[nip2.1] synchronised (file://${BASEDIR}/nip2)
+nip2 is now pinned to file://${BASEDIR}/nip2 (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip2 ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip2.ved
+Done.
+### opam pin add no-url --dev
+[no-url.1] synchronised (file://${BASEDIR}/no-url)
+no-url is now pinned to file://${BASEDIR}/no-url (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install no-url ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed no-url.ved
+Done.
+### : list
+### opam pin list | '  \(at [0-9a-f]+\)$' -> '  (at HASH)'
+nip-git.ved      git      git+file://${BASEDIR}/nip-git#master   (at HASH)
+nip-git2.ved     git      git+file://${BASEDIR}/nip-git2#master  (at HASH)
+nip-path.ved     rsync    file://${BASEDIR}/nip-path
+nip-path2.ved    rsync    file://${BASEDIR}/nip-path2
+nip-path3.ved    rsync    file://${BASEDIR}/nip-path3
+nip-v.2          version  2
+nip2.ved         rsync    file://${BASEDIR}/nip2
+no-url.ved       rsync    file://${BASEDIR}/no-url
+### find OPAM/targets/lib -name '*.t' | sort
+OPAM/targets/lib/nip-git/nip-git.ved.t
+OPAM/targets/lib/nip-git2/nip-git2.ved.t
+OPAM/targets/lib/nip-path/nip-path.ved.t
+OPAM/targets/lib/nip-path2/nip-path2.ved.t
+OPAM/targets/lib/nip-path3/nip-path3.ved.t
+OPAM/targets/lib/nip-v/nip-v.2.t
+OPAM/targets/lib/nip2/nip2.ved.t
+OPAM/targets/lib/no-url/no-url.ved.t
+### : pin <url to archive>
+### <http-archive/file>
+hi, i'm a file, i exist
+### <http-archive/opam>
+opam-version: "2.0"
+name: "http-archive-test"
+build: ["cat" "file"]
+### tar czf http-archive.tar.gz http-archive
+### opam pin add http://localhost:$HTTPSERVERPORT/http-archive.tar.gz | "${HTTPSERVERPORT}" -> "port"
+[NOTE] Package http-archive-test does not exist in opam repositories registered in the current switch.
+http-archive-test is now pinned to http://localhost:port/http-archive.tar.gz (version dev)
+
+The following actions will be performed:
+=== install 1 package
+  - install http-archive-test dev (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved http-archive-test.dev  (http://localhost:port/http-archive.tar.gz)
+-> installed http-archive-test.dev
+Done.
+### :::::::::::::::::::::::
+### :II: Pin kinds
+### :::::::::::::::::::::::
+### :II:1: -kind option
+### opam switch create kinds --empty
+### : path
+### opam pin add ./nip-git --kind path
+[NOTE] Package nip-git does not exist in opam repositories registered in the current switch.
+nip-git is now pinned to file://${BASEDIR}/nip-git (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-git ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-git.ved
+Done.
+### opam pin add ./nip-path --kind path
+[NOTE] Package nip-path does not exist in opam repositories registered in the current switch.
+nip-path is now pinned to file://${BASEDIR}/nip-path (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-path ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-path.ved
+Done.
+### : vcs
+### opam pin add ./nip-git2 --kind git
+[NOTE] Package nip-git2 does not exist in opam repositories registered in the current switch.
+nip-git2 is now pinned to git+file://${BASEDIR}/nip-git2#master (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-git2 ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-git2.ved
+Done.
+### opam pin add ./nip-path2 --kind git | sed-cmd git | " 128.*" -> " 128"
+[ERROR] Command "git -C ${BASEDIR}/nip-path2 ls-files" failed:
+"git -C ${BASEDIR}/nip-path2 ls-files" exited with code 128
+# Return code 99 #
+### : auto
+### opam pin add ./nip-git3 --kind auto
+[NOTE] Package nip-git3 does not exist in opam repositories registered in the current switch.
+nip-git3 is now pinned to git+file://${BASEDIR}/nip-git3#master (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-git3 ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-git3.ved
+Done.
+### opam pin add ./nip-path3 --kind auto
+[NOTE] Package nip-path3 does not exist in opam repositories registered in the current switch.
+nip-path3 is now pinned to file://${BASEDIR}/nip-path3 (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-path3 ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-path3.ved
+Done.
+### : version
+### opam pin add nip 1 --kind version
+nip is now pinned to version 1
+
+The following actions will be performed:
+=== install 1 package
+  - install nip 1 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved nip.1  (file://${BASEDIR}/nip.1.tgz)
+-> installed nip.1
+Done.
+### opam pin add nip2 --kind version
+opam: Ambiguous argument "nip2", if it is the pinning target, you must specify a package name first
+Usage: opam pin [OPTION]… [COMMAND] [ARG]…
+Try 'opam pin --help' or 'opam --help' for more information.
+# Return code 2 #
+### opam pin add nip2 ./nip2 --kind version
+Fatal error: Invalid character '/' in package version "./nip2"
+# Return code 99 #
+### opam pin add nip-git4 nip-git4 --kind version
+[ERROR] Package nip-git4 has no known version nip-git4 in the repositories
+# Return code 5 #
+### : none - virtual
+### opam pin add no-url 1 --kind none
+no-url is now pinned locally (version 1)
+
+The following actions will be performed:
+=== install 1 package
+  - install no-url 1 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[ERROR] The compilation of no-url.1 failed at "test -f no-url.1.t".
+
+
+
+
+<><> Error report <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
++- The following actions failed
+| - build no-url 1
++- 
+- No changes have been performed
+[NOTE] Pinning command successful, but your installed packages may be out of sync.
+# Return code 31 #
+### opam pin add no-url2 1 --kind none
+no-url2 is now pinned locally (version 1)
+
+The following actions will be performed:
+=== install 1 package
+  - install no-url2 1 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[ERROR] The compilation of no-url2.1 failed at "test -f no-url2.1.t".
+
+
+
+
+<><> Error report <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
++- The following actions failed
+| - build no-url2 1
++- 
+- No changes have been performed
+[NOTE] Pinning command successful, but your installed packages may be out of sync.
+# Return code 31 #
+### : list
+### opam pin list | '  \(at [0-9a-f]+\)$' -> '  (at HASH)'
+nip.1                         version           1
+nip-git.ved                   rsync             file://${BASEDIR}/nip-git
+nip-git2.ved                  git               git+file://${BASEDIR}/nip-git2#master  (at HASH)
+nip-git3.ved                  git               git+file://${BASEDIR}/nip-git3#master  (at HASH)
+nip-path.ved                  rsync             file://${BASEDIR}/nip-path
+nip-path3.ved                 rsync             file://${BASEDIR}/nip-path3
+no-url.1       (uninstalled)  local definition
+no-url2.1      (uninstalled)  local definition
+### find OPAM/kinds/lib -name '*.t' | sort
+OPAM/kinds/lib/nip-git/nip-git.ved.t
+OPAM/kinds/lib/nip-git2/nip-git2.ved.t
+OPAM/kinds/lib/nip-git3/nip-git3.ved.t
+OPAM/kinds/lib/nip-path/nip-path.ved.t
+OPAM/kinds/lib/nip-path3/nip-path3.ved.t
+OPAM/kinds/lib/nip/nip.1.t
+### # absence of virtual ones
+### ls OPAM/kinds/.opam-switch/sources | sort
+nip
+nip-git
+nip-git2
+nip-git3
+nip-path
+nip-path3
+### :II:1: OPAMPINKINDAUTO environment variable
+### opam switch create env-kinds --empty
+### : auto
+### OPAMPINKINDAUTO=1
+### opam pin add ./nip-git
+[NOTE] Package nip-git does not exist in opam repositories registered in the current switch.
+nip-git is now pinned to git+file://${BASEDIR}/nip-git#master (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-git ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-git.ved
+Done.
+### opam pin add ./nip-path
+[NOTE] Package nip-path does not exist in opam repositories registered in the current switch.
+nip-path is now pinned to file://${BASEDIR}/nip-path (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-path ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-path.ved
+Done.
+### : disable auto
+### OPAMPINKINDAUTO=0
+### opam pin add ./nip-git2
+[NOTE] Package nip-git2 does not exist in opam repositories registered in the current switch.
+nip-git2 is now pinned to file://${BASEDIR}/nip-git2 (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-git2 ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-git2.ved
+Done.
+### opam pin add ./nip-path2
+[NOTE] Package nip-path2 does not exist in opam repositories registered in the current switch.
+nip-path2 is now pinned to file://${BASEDIR}/nip-path2 (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-path2 ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-path2.ved
+Done.
+### : list
+### opam pin list | '  \(at [0-9a-f]+\)$' -> '  (at HASH)'
+nip-git.ved      git    git+file://${BASEDIR}/nip-git#master  (at HASH)
+nip-git2.ved     rsync  file://${BASEDIR}/nip-git2
+nip-path.ved     rsync  file://${BASEDIR}/nip-path
+nip-path2.ved    rsync  file://${BASEDIR}/nip-path2
+### find OPAM/env-kinds/lib -name '*.t' | sort
+OPAM/env-kinds/lib/nip-git/nip-git.ved.t
+OPAM/env-kinds/lib/nip-git2/nip-git2.ved.t
+OPAM/env-kinds/lib/nip-path/nip-path.ved.t
+OPAM/env-kinds/lib/nip-path2/nip-path2.ved.t
+### OPAMPINKINDAUTO=1
+### :::::::::::::::::::::::
+### :III: Actions
+### :::::::::::::::::::::::
+### opam switch create actions --empty
+### opam pin add ./nip-git4 --no-action
+[NOTE] Package nip-git4 does not exist in opam repositories registered in the current switch.
+nip-git4 is now pinned to git+file://${BASEDIR}/nip-git4#master (version ved)
+### opam pin add ./nip-path
+[NOTE] Package nip-path does not exist in opam repositories registered in the current switch.
+nip-path is now pinned to file://${BASEDIR}/nip-path (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-path ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-path.ved
+Done.
+### opam pin add ./nip-path2
+[NOTE] Package nip-path2 does not exist in opam repositories registered in the current switch.
+nip-path2 is now pinned to file://${BASEDIR}/nip-path2 (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-path2 ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-path2.ved
+Done.
+### opam list
+# Packages matching: installed
+# Name    # Installed # Synopsis
+nip-path  ved         pinned to version ved at file://${BASEDIR}/nip-path
+nip-path2 ved         pinned to version ved at file://${BASEDIR}/nip-path2
+### opam pin list | '  \(at [0-9a-f]+\)$' -> '  (at HASH)'
+nip-git4.ved   (uninstalled)  git    git+file://${BASEDIR}/nip-git4#master  (at HASH)
+nip-path.ved                  rsync  file://${BASEDIR}/nip-path
+nip-path2.ved                 rsync  file://${BASEDIR}/nip-path2
+### find OPAM/actions/lib -name '*.t' | sort
+OPAM/actions/lib/nip-path/nip-path.ved.t
+OPAM/actions/lib/nip-path2/nip-path2.ved.t
+### opam pin remove ./nip-git4
+Ok, nip-git4 is no longer pinned to git+file://${BASEDIR}/nip-git4#master (version ved)
+### opam pin remove ./nip-path --no-action
+Ok, nip-path is no longer pinned to file://${BASEDIR}/nip-path (version ved)
+### opam pin remove ./nip-path2
+Ok, nip-path2 is no longer pinned to file://${BASEDIR}/nip-path2 (version ved)
+The following actions will be performed:
+=== remove 1 package
+  - remove nip-path2 ved
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   nip-path2.ved
+Done.
+### opam list
+# Packages matching: installed
+# Name   # Installed # Synopsis
+nip-path ved         A word
+### opam pin list
+### find OPAM/actions/lib -name '*.t' | sort
+OPAM/actions/lib/nip-path/nip-path.ved.t
+### :::::::::::::::::::::::
+### :IV: pin --recursive and --subpath are in rec-pin.test
+### :::::::::::::::::::::::
+### :::::::::::::::::::::::
+### :V: Edit
+### :::::::::::::::::::::::
+### opam switch create edits --empty
+### OPAMEDITOR='sed -i.bak "s/%{version}%/not-here/g" '
+### opam pin add ./nip-path
+[NOTE] Package nip-path does not exist in opam repositories registered in the current switch.
+nip-path is now pinned to file://${BASEDIR}/nip-path (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-path ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-path.ved
+Done.
+### opam pin edit nip-path
+You can edit this file again with "opam pin edit nip-path", export it with "opam show nip-path --raw"
+Save the new opam file back to "${BASEDIR}/nip-path/nip-path.opam"? [Y/n] y
+The following actions will be performed:
+=== recompile 1 package
+  - recompile nip-path ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[ERROR] The compilation of nip-path.ved failed at "test -f nip-path.not-here.t".
+
+
+
+
+<><> Error report <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
++- The following actions failed
+| - build nip-path ved
++- 
+- No changes have been performed
+[NOTE] Pinning command successful, but your installed packages may be out of sync.
+# Return code 31 #
+### opam pin add ./nip-path2 --edit
+[NOTE] Package nip-path2 does not exist in opam repositories registered in the current switch.
+You can edit this file again with "opam pin edit nip-path2", export it with "opam show nip-path2 --raw"
+nip-path2 is now pinned to file://${BASEDIR}/nip-path2 (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-path2 ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[ERROR] The compilation of nip-path2.ved failed at "test -f nip-path2.not-here.t".
+
+
+
+
+<><> Error report <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
++- The following actions failed
+| - build nip-path2 ved
++- 
+- No changes have been performed
+[NOTE] Pinning command successful, but your installed packages may be out of sync.
+# Return code 31 #
+### opam pin add ./nip-git --edit
+[NOTE] Package nip-git does not exist in opam repositories registered in the current switch.
+You can edit this file again with "opam pin edit nip-git", export it with "opam show nip-git --raw"
+nip-git is now pinned to git+file://${BASEDIR}/nip-git#master (version ved)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-git ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+[ERROR] The compilation of nip-git.ved failed at "test -f nip-git.not-here.t".
+
+
+
+
+<><> Error report <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
++- The following actions failed
+| - build nip-git ved
++- 
+- No changes have been performed
+[NOTE] Pinning command successful, but your installed packages may be out of sync.
+# Return code 31 #
+### sh add-pin.sh nip-git git
+### sh add-pin.sh nip-path
+### sh add-pin.sh nip-path2
+### :::::::::::::::::::::::
+### :VI: Listing
+### :::::::::::::::::::::::
+### opam switch kinds
+### : pin list
+### opam pin list | '  \(at [0-9a-f]+\)$' -> '  (at HASH)'
+nip.1                         version           1
+nip-git.ved                   rsync             file://${BASEDIR}/nip-git
+nip-git2.ved                  git               git+file://${BASEDIR}/nip-git2#master  (at HASH)
+nip-git3.ved                  git               git+file://${BASEDIR}/nip-git3#master  (at HASH)
+nip-path.ved                  rsync             file://${BASEDIR}/nip-path
+nip-path3.ved                 rsync             file://${BASEDIR}/nip-path3
+no-url.1       (uninstalled)  local definition
+no-url2.1      (uninstalled)  local definition
+### : pin list --short
+### opam pin list --short
+nip
+nip-git
+nip-git2
+nip-git3
+nip-path
+nip-path3
+no-url
+no-url2
+### :::::::::::::::::::::::
+### :V: Scanning
+### :::::::::::::::::::::::
+### : pin scan
+### opam switch create scans --empty
+### opam pin scan ./nip-git | grep -v '^#'
+nip-git  ved        git+file://${BASEDIR}/nip-git#master  -
+### opam pin scan ./nip-path | grep -v '^#'
+nip-path  ved        file://${BASEDIR}/nip-path  -
+### mkdir lot_of_pkgs
+### sh -c "cp ./nip-*2/* lot_of_pkgs/"
+### sh -c "cp ./nip-*3/* lot_of_pkgs/"
+### opam pin scan ./lot_of_pkgs | grep -v '^#'
+nip-path3  ved        file://${BASEDIR}/lot_of_pkgs  -
+nip-path2  ved        file://${BASEDIR}/lot_of_pkgs  -
+nip-git3   ved        file://${BASEDIR}/lot_of_pkgs  -
+nip-git2   ved        file://${BASEDIR}/lot_of_pkgs  -
+### opam pin scan ./lot_of_pkgs --normalise
+nip-path3.ved^file://${BASEDIR}/lot_of_pkgs
+nip-path2.ved^file://${BASEDIR}/lot_of_pkgs
+nip-git3.ved^file://${BASEDIR}/lot_of_pkgs
+nip-git2.ved^file://${BASEDIR}/lot_of_pkgs
+### opam pin add nip-git2.ved^file://${BASEDIR}/lot_of_pkgs nip-git3.ved^file://${BASEDIR}/lot_of_pkgs | unordered
+This will pin the following packages: nip-git2, nip-git3. Continue? [Y/n] y
+[NOTE] Package nip-git2 does not exist in opam repositories registered in the current switch.
+[NOTE] Package nip-git3 does not exist in opam repositories registered in the current switch.
+[nip-git2.ved] synchronised (no changes)
+nip-git2 is now pinned to file://${BASEDIR}/lot_of_pkgs (version ved)
+[nip-git3.ved] synchronised (no changes)
+nip-git3 is now pinned to file://${BASEDIR}/lot_of_pkgs (version ved)
+
+The following actions will be performed:
+=== install 2 packages
+  - install nip-git2 ved (pinned)
+  - install nip-git3 ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-git2.ved
+-> installed nip-git3.ved
+Done.
+### # shell on Cygwin ads a trialing `\r` in the middle of the string
+### sh -c 'opam pin add $(opam pin scan ./lot_of_pkgs --normalise | grep path | sed "s/\\r//g") ' | unordered
+This will pin the following packages: nip-path3, nip-path2. Continue? [Y/n] y
+[NOTE] Package nip-path3 does not exist in opam repositories registered in the current switch.
+[NOTE] Package nip-path2 does not exist in opam repositories registered in the current switch.
+[nip-path3.ved] synchronised (no changes)
+nip-path3 is now pinned to file://${BASEDIR}/lot_of_pkgs (version ved)
+[nip-path2.ved] synchronised (no changes)
+nip-path2 is now pinned to file://${BASEDIR}/lot_of_pkgs (version ved)
+
+The following actions will be performed:
+=== install 2 packages
+  - install nip-path2 ved (pinned)
+  - install nip-path3 ved (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-path2.ved
+-> installed nip-path3.ved
+Done.
+### opam pin list
+nip-git2.ved     rsync  file://${BASEDIR}/lot_of_pkgs
+nip-git3.ved     rsync  file://${BASEDIR}/lot_of_pkgs
+nip-path2.ved    rsync  file://${BASEDIR}/lot_of_pkgs
+nip-path3.ved    rsync  file://${BASEDIR}/lot_of_pkgs
+### find OPAM/scans/lib -name '*.t' | sort
+OPAM/scans/lib/nip-git2/nip-git2.ved.t
+OPAM/scans/lib/nip-git3/nip-git3.ved.t
+OPAM/scans/lib/nip-path2/nip-path2.ved.t
+OPAM/scans/lib/nip-path3/nip-path3.ved.t
+### :::::::::::::::::::::::
+### :VI: with-version
+### :::::::::::::::::::::::
+### opam switch create versions --empty
+### : pin url with version
+### cp nip-path/nip-path.ved.t nip-path/nip-path.42.t
+### opam pin add file://$BASEDIR/nip-path --with-version 42
+[NOTE] Package nip-path does not exist in opam repositories registered in the current switch.
+nip-path is now pinned to file://${BASEDIR}/nip-path (version 42)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-path 42 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved nip-path.42  (file://${BASEDIR}/nip-path)
+-> installed nip-path.42
+Done.
+### : pin version with version
+### opam pin add nip-v 1 --with-version 2 --no-action
+[nip-v.2] synchronised (file://${BASEDIR}/nip-v.1.tgz)
+nip-v is now pinned to file://${BASEDIR}/nip-v.1.tgz (version 2)
+### OPAMEDITOR=touch opam pin add nip 1 --with-version 42 --no-action --edit
+[nip.42] synchronised (file://${BASEDIR}/nip.1.tgz)
+[NOTE] No package definition found for nip.42: please complete the template
+[WARNING] The opam file didn't pass validation:
+             error 22: Some fields are present but empty; remove or fill them: "homepage", "license", "bug_reports"
+             error 57: Synopsis must not be empty
+           warning 59: url doesn't contain a checksum
+           warning 62: License doesn't adhere to the SPDX standard, see https://spdx.org/licenses/ : ""
+Proceed anyway ('no' will re-edit)? [Y/n] y
+You can edit this file again with "opam pin edit nip", export it with "opam show nip --raw"
+nip is now pinned to file://${BASEDIR}/nip.1.tgz (version 42)
+### opam pin list
+nip.42       (uninstalled)  rsync  file://${BASEDIR}/nip.1.tgz
+nip-path.42                 rsync  file://${BASEDIR}/nip-path
+nip-v.2      (uninstalled)  rsync  file://${BASEDIR}/nip-v.1.tgz
+### find OPAM/versions/lib -name '*.t' | sort
+OPAM/versions/lib/nip-path/nip-path.ved.t
+### :::::::::::::::::::::::
+### :VII: Linting
+### :::::::::::::::::::::::
+### <nip-empty/nip-empty.opam>
+opam-version: "2.0"
+### <nip-empty2/nip-empty2.opam>
+opam-version: "2.0"
+### opam pin add nip-empty ./nip-empty
+[NOTE] Package nip-empty does not exist in opam repositories registered in the current switch.
+[nip-empty.dev] synchronised (file://${BASEDIR}/nip-empty)
+[WARNING] Failed checks on nip-empty package definition from source at file://${BASEDIR}/nip-empty:
+             error 23: Missing field 'maintainer'
+           warning 25: Missing field 'authors'
+           warning 35: Missing field 'homepage'
+           warning 36: Missing field 'bug-reports'
+             error 57: Synopsis must not be empty
+           warning 68: Missing field 'license'
+nip-empty is now pinned to file://${BASEDIR}/nip-empty (version dev)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-empty dev (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved nip-empty.dev  (file://${BASEDIR}/nip-empty)
+-> installed nip-empty.dev
+Done.
+### opam pin add ./nip-empty2
+[NOTE] Package nip-empty2 does not exist in opam repositories registered in the current switch.
+nip-empty2 is now pinned to file://${BASEDIR}/nip-empty2 (version dev)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-empty2 dev (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved nip-empty2.dev  (file://${BASEDIR}/nip-empty2)
+-> installed nip-empty2.dev
+Done.
+### :::::::::::::::::::::::
+### :VIII: Updates
+### :::::::::::::::::::::::
+### opam switch create updates --empty
+### sh add-pin.sh nip-mixed.dev2
+### opam pin ./nip-mixed
+[NOTE] Package nip-mixed does not exist in opam repositories registered in the current switch.
+nip-mixed is now pinned to file://${BASEDIR}/nip-mixed (version dev2)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-mixed dev2 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed nip-mixed.dev2
+Done.
+### sh add-pin.sh nip-mixed.dev3
+### opam pin nip-mixed
+[NOTE] Package nip-mixed is already pinned to file://${BASEDIR}/nip-mixed (version dev2).
+nip-mixed is now pinned to file://${BASEDIR}/nip-mixed (version dev3)
+
+The following actions will be performed:
+=== upgrade 1 package
+  - upgrade nip-mixed dev2 to dev3 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   nip-mixed.dev2
+-> installed nip-mixed.dev3
+Done.
+### sh add-pin.sh nip-mixed.dev4 git
+### opam pin nip-mixed
+[NOTE] Package nip-mixed is currently pinned to file://${BASEDIR}/nip-mixed (version dev3).
+nip-mixed is now pinned to git+file://${BASEDIR}/nip-mixed#master (version dev4)
+
+The following actions will be performed:
+=== upgrade 1 package
+  - upgrade nip-mixed dev3 to dev4 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved nip-mixed.dev4  (git+file://${BASEDIR}/nip-mixed#master)
+-> removed   nip-mixed.dev3
+-> installed nip-mixed.dev4
+Done.
+### sh add-pin.sh nip-mixed.dev1 git
+### git -C ./nip-mixed log --format="%s"
+"add nip-mixed.dev1 package"
+"add nip-mixed.dev4 package"
+### opam pin nip-mixed
+[NOTE] Package nip-mixed is already pinned to git+file://${BASEDIR}/nip-mixed#master (version dev4).
+nip-mixed is now pinned to git+file://${BASEDIR}/nip-mixed#master (version dev1)
+
+The following actions will be performed:
+=== downgrade 1 package
+  - downgrade nip-mixed dev4 to dev1 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   nip-mixed.dev4
+-> installed nip-mixed.dev1
+Done.
+### :::::::::::::::::::::::
+### :IX: opam file not committed
+### :::::::::::::::::::::::
+### opam switch create opamfiles --empty
+### : only pins
+### sh add-pin.sh nip-of.dev1 git
+### git -C ./nip-of rm nip-of.opam --cached -q
+### git -C ./nip-of commit -qm "remove opam file"
+### opam pin ./nip-of
+[NOTE] Package nip-of does not exist in opam repositories registered in the current switch.
+nip-of is now pinned to git+file://${BASEDIR}/nip-of#master (version dev1)
+
+The following actions will be performed:
+=== install 1 package
+  - install nip-of dev1 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved nip-of.dev1  (no changes)
+-> installed nip-of.dev1
+Done.
+### opam show nip-of --field=version
+dev1
+### sh add-pin.sh nip-of.dev2 git
+### opam install ./nip-of
+nip-of is now pinned to git+file://${BASEDIR}/nip-of#master (version dev2)
+[nip-of.dev2] synchronised (git+file://${BASEDIR}/nip-of#master)
+The following actions will be performed:
+=== upgrade 1 package
+  - upgrade nip-of dev1 to dev2 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   nip-of.dev1
+-> installed nip-of.dev2
+Done.
+### opam show nip-of --field=version
+dev2
+### sh add-pin.sh nip-of.dev3
+### git -C ./nip-of add nip-of.dev3.t
+### git -C ./nip-of commit -qm "add install file"
+### opam pin ./nip-of
+[NOTE] Package nip-of is already pinned to git+file://${BASEDIR}/nip-of#master (version dev2).
+nip-of is now pinned to git+file://${BASEDIR}/nip-of#master (version dev3)
+
+The following actions will be performed:
+=== upgrade 1 package
+  - upgrade nip-of dev2 to dev3 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved nip-of.dev3  (no changes)
+-> removed   nip-of.dev2
+-> installed nip-of.dev3
+Done.
+### opam show nip-of --field=version
+dev3
+### : only installs
+### sh add-pin.sh nip-fo.dev1 git
+### git -C ./nip-fo rm nip-fo.opam --cached -q
+### git -C ./nip-fo commit -qm "remove opam file"
+### opam install ./nip-fo
+[NOTE] Package nip-fo does not exist in opam repositories registered in the current switch.
+nip-fo is now pinned to git+file://${BASEDIR}/nip-fo#master (version dev1)
+The following actions will be performed:
+=== install 1 package
+  - install nip-fo dev1 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved nip-fo.dev1  (git+file://${BASEDIR}/nip-fo#master)
+-> installed nip-fo.dev1
+Done.
+### opam show nip-fo --field=version
+dev1
+### sh add-pin.sh nip-fo.dev2 git
+### opam install ./nip-fo
+nip-fo is now pinned to git+file://${BASEDIR}/nip-fo#master (version dev2)
+[nip-fo.dev2] synchronised (git+file://${BASEDIR}/nip-fo#master)
+The following actions will be performed:
+=== upgrade 1 package
+  - upgrade nip-fo dev1 to dev2 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   nip-fo.dev1
+-> installed nip-fo.dev2
+Done.
+### opam show nip-fo --field=version
+dev2
+### sh add-pin.sh nip-fo.dev3
+### git -C ./nip-fo add nip-fo.dev3.t
+### git -C ./nip-fo commit -qm "add install file"
+### opam install ./nip-fo
+nip-fo is now pinned to git+file://${BASEDIR}/nip-fo#master (version dev3)
+[NOTE] Ignoring uncommitted changes in ${BASEDIR}/nip-fo (`--working-dir' not specified or specified with no argument).
+[nip-fo.dev3] synchronised (git+file://${BASEDIR}/nip-fo#master)
+The following actions will be performed:
+=== upgrade 1 package
+  - upgrade nip-fo dev2 to dev3 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved nip-fo.dev3  (no changes)
+-> removed   nip-fo.dev2
+-> installed nip-fo.dev3
+Done.
+### opam show nip-fo --field=version
+dev3
+### :::::::::::::::::::::::
+### :X: --current is in pin-legacy.test
+### :::::::::::::::::::::::
+### :::::::::::::::::::::::
+### :C: Specific tests
+### :::::::::::::::::::::::
+### : In pin-legacy, there is
+### :  - :2: check no repin in case of double 'install .'
+### :  - :3: depext update
+### :  - :4: Test opam pin remove <pkg>.<version>
+### :  - :5: Test opam pin remove --all
+### :  - :6: Error retrieving git pin :
+### :  - :7: Parse error with future opam version field on pin
+### :C:a: git pin first retrieved as local
+### opam switch create vcs-local --empty
+### <pin:vcs-local/vcs-local.opam>
+opam-version: "2.0"
+### git -C vcs-local init -q --initial-branch=master
+### git -C vcs-local config core.autocrlf false
+### git -C vcs-local add vcs-local.opam
+### git -C vcs-local commit -qm 'init'
+### git -C vcs-local ls-files
+vcs-local.opam
+### <vcs-local/untracked>
+i shouldn't be retrieved
+### <pin:vcs-local/vcs-local.opam>
+opam-version: "2.0"
+build: "false"
+### opam pin vcs-local ./vcs-local --no-action
+[NOTE] Package vcs-local does not exist in opam repositories registered in the current switch.
+[vcs-local.dev] synchronised (git+file://${BASEDIR}/vcs-local#master)
+vcs-local is now pinned to git+file://${BASEDIR}/vcs-local#master (version dev)
+### test -f OPAM/vcs-local/.opam-switch/sources/vcs-local/untracked
+# Return code 1 #
+### opam show vcs-local --field build:,url.src:
+build:   "false"
+url.src: "git+file://${BASEDIR}/vcs-local#master"
+### :C:b: double pinning when the opam file is opam/opam
+### <pin:double/opam/opam>
+opam-version: "2.0"
+name: "double"
+### opam pin -n double
+[NOTE] Package double does not exist in opam repositories registered in the current switch.
+double is now pinned to file://${BASEDIR}/double (version dev)
+### :C:c: pin depends and unpin dependency
+### opam switch create pin-depends --empty
+### <pin:dep1/dep1.opam>
+opam-version: "2.0"
+depends: [ "dep2" "dep3"]
+### <add-pin-depends.sh>
+basedir=$(printf '%s' "$BASEDIR" | sed 's/\\/\\\\/g')
+cat >> dep1/dep1.opam << EOF
+pin-depends: [
+  [ "dep2.2" "file://$basedir/dep2" ]
+  [ "dep3.2" "file://$basedir/dep3" ]
+]
+EOF
+### sh add-pin-depends.sh
+### <pkg:dep2.1>
+opam-version: "2.0"
+### <pin:dep2/dep2.opam>
+opam-version: "2.0"
+### <pin:dep3/dep3.opam>
+opam-version: "2.0"
+### <pin:other/other.opam>
+opam-version: "2.0"
+### opam pin ./dep1
+[NOTE] Package dep1 does not exist in opam repositories registered in the current switch.
+The following additional pinnings are required by dep1.dev:
+  - dep2.2 at file://${BASEDIR}/dep2
+  - dep3.2 at file://${BASEDIR}/dep3
+Pin and install them? [Y/n] y
+[dep2.2] synchronised (no changes)
+dep2 is now pinned to file://${BASEDIR}/dep2 (version 2)
+[NOTE] Package dep3 does not exist in opam repositories registered in the current switch.
+[dep3.2] synchronised (no changes)
+dep3 is now pinned to file://${BASEDIR}/dep3 (version 2)
+dep1 is now pinned to file://${BASEDIR}/dep1 (version dev)
+
+The following actions will be performed:
+=== install 3 packages
+  - install dep1 dev (pinned)
+  - install dep2 2 (pinned)
+  - install dep3 2 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved dep1.dev  (file://${BASEDIR}/dep1)
+-> retrieved dep2.2  (file://${BASEDIR}/dep2)
+-> installed dep2.2
+-> retrieved dep3.2  (file://${BASEDIR}/dep3)
+-> installed dep3.2
+-> installed dep1.dev
+Done.
+### opam pin -s
+dep1
+dep2
+dep3
+### opam unpin dep2
+Ok, dep2 is no longer pinned to file://${BASEDIR}/dep2 (version 2)
+The following actions will be performed:
+=== recompile 1 package
+  - recompile dep1 dev (pinned) [uses dep2]
+=== downgrade 1 package
+  - downgrade dep2 2 to 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved dep1.dev  (no changes)
+-> removed   dep1.dev
+-> removed   dep2.2
+-> installed dep2.1
+-> installed dep1.dev
+Done.
+### opam pin ./dep1
+[NOTE] Package dep1 is already pinned to file://${BASEDIR}/dep1 (version dev).
+The following additional pinnings are required by dep1.dev:
+  - dep2.2 at file://${BASEDIR}/dep2
+Pin and install them? [Y/n] y
+[dep2.2] synchronised (no changes)
+dep2 is now pinned to file://${BASEDIR}/dep2 (version 2)
+dep1 is now pinned to file://${BASEDIR}/dep1 (version dev)
+
+The following actions will be performed:
+=== recompile 1 package
+  - recompile dep1 dev (pinned)
+=== upgrade 1 package
+  - upgrade   dep2 1 to 2 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved dep1.dev  (no changes)
+-> retrieved dep2.2  (file://${BASEDIR}/dep2)
+-> removed   dep1.dev
+-> removed   dep2.1
+-> installed dep2.2
+-> installed dep1.dev
+Done.
+### :C:d: opam install . --deps-only not selecting the good version
+### <pkg:simcomp.1>
+opam-version: "2.0"
+flags: compiler
+### opam switch create simulate-pin simcomp
+
+<><> Installing new switch packages <><><><><><><><><><><><><><><><><><><><><><>
+Switch invariant: ["simcomp"]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed simcomp.1
+Done.
+### <pin:sim/sim.opam>
+opam-version: "2.0"
+version: "2.0"
+depends: "deps-sim" { = "2" }
+conflicts: "simcomp"
+### <pkg:sim.1>
+opam-version: "2.0"
+depends: "deps-sim" { = "1" }
+### <pkg:deps-sim.1>
+opam-version: "2.0"
+### <pkg:deps-sim.2>
+opam-version: "2.0"
+### opam install ./sim --deps-only
+[ERROR] Package conflict!
+  * Incompatible packages:
+    - (invariant) -> simcomp
+    - deps-of-sim
+    You can temporarily relax the switch invariant with `--update-invariant'
+
+No solution found, exiting
+# Return code 20 #
+### :C:e: Make sure opam install works when the opam file changes and the package is pinned
+### opam switch create --empty local-pin-pinned-packages
+### <pkg:dependency.1>
+opam-version: "2.0"
+### <pkg:dependency.2>
+opam-version: "2.0"
+### <pkg:dependency.3>
+opam-version: "2.0"
+### mkdir pin-change
+### git -C pin-change init -q --initial-branch=master
+### git -C pin-change config core.autocrlf false
+### <pin:pin-change/opam>
+opam-version: "2.0"
+### git -C pin-change add opam
+### git -C pin-change commit -qm first-commit
+### :C:e:1: behaviour when the package is not pinned
+### opam install --deps-only --show ./pin-change
+Nothing to do.
+### <pin:pin-change/opam>
+opam-version: "2.0"
+depends: "dependency" {= "1"}
+### opam install --deps-only --show ./pin-change
+The following actions would be performed:
+=== install 1 package
+  - install dependency 1 [required by pin-change]
+### :C:e:2: behaviour when the package is pinned
+### <pin:pin-change/opam>
+opam-version: "2.0"
+### opam install ./pin-change
+[NOTE] Package pin-change does not exist in opam repositories registered in the current switch.
+pin-change is now pinned to git+file://${BASEDIR}/pin-change#master (version dev)
+The following actions will be performed:
+=== install 1 package
+  - install pin-change dev (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved pin-change.dev  (git+file://${BASEDIR}/pin-change#master)
+-> installed pin-change.dev
+Done.
+### <pin:pin-change/opam>
+opam-version: "2.0"
+depends: "dependency" {= "1"}
+### :C:e:3: behaviour when the package is not pinned
+### opam install ./pin-change
+pin-change is now pinned to git+file://${BASEDIR}/pin-change#master (version dev)
+[NOTE] Ignoring uncommitted changes in ${BASEDIR}/pin-change (`--working-dir' not specified or specified with no argument).
+[pin-change.dev] synchronised (no changes)
+The following actions will be performed:
+=== recompile 1 package
+  - recompile pin-change dev (pinned)
+=== install 1 package
+  - install   dependency 1            [required by pin-change]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed dependency.1
+-> retrieved pin-change.dev  (no changes)
+-> removed   pin-change.dev
+-> installed pin-change.dev
+Done.
+### <pin:pin-change/opam>
+opam-version: "2.0"
+depends: "dependency" {= "2"}
+### opam install --deps-only ./pin-change
+The following actions will be performed:
+=== upgrade 1 package
+  - upgrade dependency 1 to 2       [required by pin-change]
+=== remove 1 package
+  - remove  pin-change dev (pinned) [conflicts with dependency]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   pin-change.dev
+-> removed   dependency.1
+-> installed dependency.2
+Done.
+### <pin:pin-change/opam>
+opam-version: "2.0"
+depends: "dependency" {= "3"}
+### opam install --deps-only ./pin-change/opam
+The following actions will be performed:
+=== upgrade 1 package
+  - upgrade dependency 2 to 3 [required by pin-change]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   dependency.2
+-> installed dependency.3
+Done.
+### opam pin | '\(at [a-f0-9]+\)' -> '(at HASH)'
+pin-change.dev  (uninstalled)  git  git+file://${BASEDIR}/pin-change#master  (at HASH)
+### :C:f: stored overlay opam file
+### opam switch create --empty overlays
+### :C:f:1: Common case
+### <pkg:dep-over.1>
+opam-version: "2.0"
+### <pin:over/over.opam>
+opam-version: "2.0"
+depends: "dep-over"
+### opam pin ./over
+[NOTE] Package over does not exist in opam repositories registered in the current switch.
+over is now pinned to file://${BASEDIR}/over (version dev)
+
+The following actions will be performed:
+=== install 2 packages
+  - install dep-over 1            [required by over]
+  - install over     dev (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed dep-over.1
+-> retrieved over.dev  (file://${BASEDIR}/over)
+-> installed over.dev
+Done.
+### opam-cat OPAM/overlays/.opam-switch/overlay/over/opam
+authors: "the testing team"
+bug-reports: "https://nobug"
+depends: "dep-over"
+description: "Two words."
+dev-repo: "hg+https://pkg@op.am"
+homepage: "egapemoh"
+license: "MIT"
+maintainer: "maint@tain.er"
+name: "over"
+opam-version: "2.0"
+synopsis: "A word"
+version: "dev"
+url {
+src: "file://${BASEDIR}/over"
+}
+### :C:f:2: Locked
+### <pkg:dep-over-locked.1>
+opam-version: "2.0"
+### <pkg:dep-over-locked.2>
+opam-version: "2.0"
+### <pin:over-locked/over-locked.opam>
+opam-version: "2.0"
+depends: "dep-over-locked"
+### opam install ./over-locked dep-over-locked.1
+[NOTE] Package over-locked does not exist in opam repositories registered in the current switch.
+over-locked is now pinned to file://${BASEDIR}/over-locked (version dev)
+The following actions will be performed:
+=== install 2 packages
+  - install dep-over-locked 1
+  - install over-locked     dev (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed dep-over-locked.1
+-> retrieved over-locked.dev  (file://${BASEDIR}/over-locked)
+-> installed over-locked.dev
+Done.
+### opam lock over-locked
+Generated lock files for:
+  - over-locked.dev: ${BASEDIR}/over-locked.opam.locked
+### mv over-locked.opam.locked over-locked/over-locked.opam.locked
+### opam remove over-locked
+The following actions will be performed:
+=== remove 1 package
+  - remove over-locked dev (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   over-locked.dev
+Done.
+### opam install dep-over-locked.2
+The following actions will be performed:
+=== upgrade 1 package
+  - upgrade dep-over-locked 1 to 2
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   dep-over-locked.1
+-> installed dep-over-locked.2
+Done.
+### opam install over-locked --locked
+
+<><> Synchronising pinned packages ><><><><><><><><><><><><><><><><><><><><><><>
+[over-locked.dev] synchronised (file://${BASEDIR}/over-locked)
+[over-locked] Installing new package description from upstream file://${BASEDIR}/over-locked
+
+The following actions will be performed:
+=== install 1 package
+  - install   over-locked     dev (pinned)
+=== downgrade 1 package
+  - downgrade dep-over-locked 2 to 1       [required by over-locked]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   dep-over-locked.2
+-> installed dep-over-locked.1
+-> installed over-locked.dev
+Done.
+### opam-cat OPAM/overlays/.opam-switch/overlay/over-locked/opam
+authors: "the testing team"
+bug-reports: "https://nobug"
+depends: ["dep-over-locked" {= "1"}]
+description: "Two words."
+dev-repo: "hg+https://pkg@op.am"
+homepage: "egapemoh"
+license: "MIT"
+maintainer: "maint@tain.er"
+name: "over-locked"
+opam-version: "2.0"
+synopsis: "A word"
+version: "dev"
+x-locked: "locked"
+url {
+src: "file://${BASEDIR}/over-locked"
+}
+### :C:f:3: Subpath
+### <pkg:dep-over-subpath.1>
+opam-version: "2.0"
+### <pin:over-subpath/inner/over-subpath.opam>
+opam-version: "2.0"
+depends: "dep-over-subpath"
+### opam pin ./over-subpath --subpath inner
+[NOTE] Package over-subpath does not exist in opam repositories registered in the current switch.
+over-subpath is now subpath-pinned to directory /inner in file://${BASEDIR}/over-subpath (version dev)
+
+The following actions will be performed:
+=== install 2 packages
+  - install dep-over-subpath 1            [required by over-subpath]
+  - install over-subpath     dev (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed dep-over-subpath.1
+-> retrieved over-subpath.dev  (directory /inner in file://${BASEDIR}/over-subpath)
+-> installed over-subpath.dev
+Done.
+### opam-cat OPAM/overlays/.opam-switch/overlay/over-subpath/opam
+authors: "the testing team"
+bug-reports: "https://nobug"
+depends: "dep-over-subpath"
+description: "Two words."
+dev-repo: "hg+https://pkg@op.am"
+homepage: "egapemoh"
+license: "MIT"
+maintainer: "maint@tain.er"
+name: "over-subpath"
+opam-version: "2.0"
+synopsis: "A word"
+version: "dev"
+x-subpath: "inner"
+url {
+src: "file://${BASEDIR}/over-subpath"
+}
+### :C:f:3: Env path rewrite
+### <pkg:dep-over-epr.1>
+opam-version: "2.0"
+### <pin:over-epr/over-epr.opam>
+opam-version: "2.0"
+depends: "dep-over-epr"
+x-env-path-rewrite: [
+  [ SOME_ENV ":" "target" ]
+]
+### opam pin ./over-epr
+[NOTE] Package over-epr does not exist in opam repositories registered in the current switch.
+over-epr is now pinned to file://${BASEDIR}/over-epr (version dev)
+
+The following actions will be performed:
+=== install 2 packages
+  - install dep-over-epr 1            [required by over-epr]
+  - install over-epr     dev (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed dep-over-epr.1
+-> retrieved over-epr.dev  (file://${BASEDIR}/over-epr)
+-> installed over-epr.dev
+Done.
+### opam-cat OPAM/overlays/.opam-switch/overlay/over-epr/opam
+authors: "the testing team"
+bug-reports: "https://nobug"
+depends: "dep-over-epr"
+description: "Two words."
+dev-repo: "hg+https://pkg@op.am"
+homepage: "egapemoh"
+license: "MIT"
+maintainer: "maint@tain.er"
+name: "over-epr"
+opam-version: "2.0"
+synopsis: "A word"
+version: "dev"
+x-env-path-rewrite: [[SOME_ENV ":" "target"]]
+url {
+src: "file://${BASEDIR}/over-epr"
+}
+### :C:g: behaviour of opam pin when confronted with a missing opam description
+### opam switch create --empty missing-opam
+### OPAMEDITOR="echo iNvAlId "
+### <pin-depends.sh>
+#!/bin/sh
+set -eu
+basedir=$(printf '%s' "$BASEDIR" | sed 's/\\/\\\\/g')
+cat << EOF >> "$1"
+pin-depends: [
+  ["$2" "file://$basedir/$3"]
+]
+EOF
+### :C:g:1: missing opam file in repo
+### <pin:missing-opam/pkg.opam>
+opam-version: "2.0"
+### opam pin pkg-with-typo ./missing-opam --no-action
+[NOTE] Package pkg-with-typo does not exist in opam repositories registered in the current switch.
+[pkg-with-typo.dev] synchronised (file://${BASEDIR}/missing-opam)
+[ERROR] No valid package definition found for pkg-with-typo
+# Return code 5 #
+### opam pin pkg-with-typo ./missing-opam
+[NOTE] Package pkg-with-typo does not exist in opam repositories registered in the current switch.
+[pkg-with-typo.dev] synchronised (no changes)
+[ERROR] No valid package definition found for pkg-with-typo
+# Return code 5 #
+### :C:g:2: missing opam file in pin depends without the package in dependencies
+### <pin:missing-opam/pkg.opam>
+opam-version: "2.0"
+### sh ./pin-depends.sh missing-opam/pkg.opam pin-pkg.dev missing-opam
+### opam pin ./missing-opam
+[NOTE] Package pkg does not exist in opam repositories registered in the current switch.
+The following additional pinnings are required by pkg.dev:
+  - pin-pkg.dev at file://${BASEDIR}/missing-opam
+Pin and install them? [Y/n] y
+[NOTE] Package pin-pkg does not exist in opam repositories registered in the current switch.
+[pin-pkg.dev] synchronised (no changes)
+[ERROR] No valid package definition found for pin-pkg
+# Return code 5 #
+### :C:g:3: missing opam file in pin depends with package in dependencies
+### <pin:missing-opam/pkg.opam>
+opam-version: "2.0"
+depends: [
+  "pin-pkg"
+]
+### sh ./pin-depends.sh missing-opam/pkg.opam pin-pkg.dev missing-opam
+### opam pin ./missing-opam
+[NOTE] Package pkg does not exist in opam repositories registered in the current switch.
+The following additional pinnings are required by pkg.dev:
+  - pin-pkg.dev at file://${BASEDIR}/missing-opam
+Pin and install them? [Y/n] y
+[NOTE] Package pin-pkg does not exist in opam repositories registered in the current switch.
+[pin-pkg.dev] synchronised (no changes)
+[ERROR] No valid package definition found for pin-pkg
+# Return code 5 #
+### :C:g:4: special case where the name of the pin-depend matches the name of the package itself (recursive)
+### <pin:missing-opam/pkg.opam>
+opam-version: "2.0"
+### sh ./pin-depends.sh missing-opam/pkg.opam pkg.dev missing-opam/empty-dir
+### mkdir missing-opam/empty-dir
+### opam pin ./missing-opam
+[NOTE] Package pkg does not exist in opam repositories registered in the current switch.
+The following additional pinnings are required by pkg.dev:
+  - pkg.dev at file://${BASEDIR}/missing-opam/empty-dir
+Pin and install them? [Y/n] y
+[NOTE] Package pkg does not exist in opam repositories registered in the current switch.
+[pkg.dev] synchronised (no changes)
+[ERROR] No valid package definition found for pkg
+# Return code 5 #
+### :C:h: Checking the opam file update reinstall trigger
+### <pkg:reinst.1>
+opam-version: "2.0"
+depends: "dep-reinst" { = "1" }
+### <pkg:dep-reinst.1>
+opam-version: "2.0"
+### <pkg:dep-reinst.2>
+opam-version: "2.0"
+### <pkg:dep-reinst.3>
+opam-version: "2.0"
+### :C:h:1: Update opam file and install again
+### # simulated pin test in simulated-pin:I:
+### opam switch create reinst-1 --empty
+### <pin:reinst/reinst.opam>
+opam-version: "2.0"
+depends: "dep-reinst" { = "1" }
+### opam install ./reinst
+reinst is now pinned to file://${BASEDIR}/reinst (version 1)
+The following actions will be performed:
+=== install 2 packages
+  - install dep-reinst 1          [required by reinst]
+  - install reinst     1 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed dep-reinst.1
+-> retrieved reinst.1  (file://${BASEDIR}/reinst)
+-> installed reinst.1
+Done.
+### <pin:reinst/reinst.opam>
+opam-version: "2.0"
+depends: "dep-reinst" { = "2" }
+### opam install ./reinst
+reinst is now pinned to file://${BASEDIR}/reinst (version 1)
+[reinst.1] synchronised (file://${BASEDIR}/reinst)
+The following actions will be performed:
+=== recompile 1 package
+  - recompile reinst     1 (pinned)
+=== upgrade 1 package
+  - upgrade   dep-reinst 1 to 2     [required by reinst]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   dep-reinst.1
+-> installed dep-reinst.2
+-> retrieved reinst.1  (no changes)
+-> removed   reinst.1
+-> installed reinst.1
+Done.
+### :C:i: Checking the opam file update reinstall trigger, changing only with-test dependencies (variables)
+### # simulated pin test in simulated-pin:II:
+### <pkg:reinst.1>
+opam-version: "2.0"
+depends: [ "dep-reinst" { = "1" } "dep-test-reinst" { with-test & = "1" } ]
+### <pkg:dep-reinst.1>
+opam-version: "2.0"
+### <pkg:dep-reinst.2>
+opam-version: "2.0"
+### <pkg:dep-test-reinst.1>
+opam-version: "2.0"
+### <pkg:dep-test-reinst.2>
+opam-version: "2.0"
+### :C:i:1: Update opam file and install again
+### opam switch create reinst-wt-1 --empty
+### <pin:reinst/reinst.opam>
+opam-version: "2.0"
+depends: [ "dep-reinst" { = "1" } "dep-test-reinst" { with-test & = "1" } ]
+### opam install ./reinst
+reinst is now pinned to file://${BASEDIR}/reinst (version 1)
+The following actions will be performed:
+=== install 2 packages
+  - install dep-reinst 1          [required by reinst]
+  - install reinst     1 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed dep-reinst.1
+-> retrieved reinst.1  (file://${BASEDIR}/reinst)
+-> installed reinst.1
+Done.
+### <pin:reinst/reinst.opam>
+opam-version: "2.0"
+depends: [ "dep-reinst" { = "1" } "dep-test-reinst" { with-test & = "2" } ]
+### opam install ./reinst --with-test
+reinst is now pinned to file://${BASEDIR}/reinst (version 1)
+[reinst.1] synchronised (file://${BASEDIR}/reinst)
+The following actions will be performed:
+=== recompile 1 package
+  - recompile reinst          1 (pinned)
+=== install 1 package
+  - install   dep-test-reinst 2          [required by reinst]
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed dep-test-reinst.2
+-> retrieved reinst.1  (no changes)
+-> removed   reinst.1
+-> installed reinst.1
+Done.
+### :C:j: Updating a pinned package by `opam install .` do not loose `opam pin edit` information
+### # from https://github.com/ocaml/opam/pull/2893/commits/02d1ea9bb604d680fd6910848f11c8a49583afb1
+### OPAMEDITOR='sed -i.bak "s/file1/file2/g" '
+### <pkg:tide.1>
+opam-version: "2.0"
+### <pin:tide/tide.opam>
+opam-version: "2.0"
+install: [
+  [ "mkdir" "%{lib}%/%{name}%" ]
+  [ "cp" "file1" "%{lib}%/%{name}%/file1" ]
+]
+### <tide/file1>
+The original one
+### <tide/file2>
+The edited one
+### :C:j:1: with pin edit
+### opam switch create pin-edit --empty
+### opam pin ./tide
+tide is now pinned to file://${BASEDIR}/tide (version 1)
+
+The following actions will be performed:
+=== install 1 package
+  - install tide 1 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved tide.1  (file://${BASEDIR}/tide)
+-> installed tide.1
+Done.
+### ls OPAM/pin-edit/lib/tide
+file1
+### opam-cat OPAM/pin-edit/.opam-switch/overlay/tide/opam | grep install
+install: [["mkdir" "%{lib}%/%{name}%"] ["cp" "file1" "%{lib}%/%{name}%/file1"]]
+### opam pin edit tide
+You can edit this file again with "opam pin edit tide", export it with "opam show tide --raw"
+Save the new opam file back to "${BASEDIR}/tide/tide.opam"? [Y/n] y
+The following actions will be performed:
+=== recompile 1 package
+  - recompile tide 1 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> retrieved tide.1  (file://${BASEDIR}/tide)
+-> removed   tide.1
+-> installed tide.1
+Done.
+### ls OPAM/pin-edit/lib/tide
+file2
+### opam-cat OPAM/pin-edit/.opam-switch/overlay/tide/opam | grep install
+install: [["mkdir" "%{lib}%/%{name}%"] ["cp" "file2" "%{lib}%/%{name}%/file2"]]
+### <tide/stuff>
+just passing
+### opam install ./tide
+[tide.1] synchronised (file://${BASEDIR}/tide)
+The following actions will be performed:
+=== recompile 1 package
+  - recompile tide 1 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   tide.1
+-> installed tide.1
+Done.
+### ls OPAM/pin-edit/lib/tide
+file2
+### opam-cat OPAM/pin-edit/.opam-switch/overlay/tide/opam | grep install
+install: [["mkdir" "%{lib}%/%{name}%"] ["cp" "file2" "%{lib}%/%{name}%/file2"]]
+### :C:j:2: with --edit
+### opam switch create flag-edit --empty
+### sed -i.bak "s/file2/file1/g" tide/tide.opam
+### opam pin ./tide
+tide is now pinned to file://${BASEDIR}/tide (version 1)
+
+The following actions will be performed:
+=== install 1 package
+  - install tide 1 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed tide.1
+Done.
+### ls OPAM/flag-edit/lib/tide
+file1
+### opam-cat OPAM/flag-edit/.opam-switch/overlay/tide/opam | grep install
+install: [["mkdir" "%{lib}%/%{name}%"] ["cp" "file1" "%{lib}%/%{name}%/file1"]]
+### opam pin ./tide --edit
+[NOTE] Package tide is already pinned to file://${BASEDIR}/tide (version 1).
+You can edit this file again with "opam pin edit tide", export it with "opam show tide --raw"
+tide is now pinned to file://${BASEDIR}/tide (version 1)
+
+The following actions will be performed:
+=== recompile 1 package
+  - recompile tide 1 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   tide.1
+-> installed tide.1
+Done.
+### ls OPAM/flag-edit/lib/tide
+file2
+### opam-cat OPAM/flag-edit/.opam-switch/overlay/tide/opam | grep install
+install: [["mkdir" "%{lib}%/%{name}%"] ["cp" "file2" "%{lib}%/%{name}%/file2"]]
+### <tide/stuff2>
+just passing
+### opam install ./tide
+tide is now pinned to file://${BASEDIR}/tide (version 1)
+[tide.1] synchronised (file://${BASEDIR}/tide)
+The following actions will be performed:
+=== recompile 1 package
+  - recompile tide 1 (pinned)
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   tide.1
+-> installed tide.1
+Done.
+### ls OPAM/flag-edit/lib/tide
+file1
+### opam-cat OPAM/flag-edit/.opam-switch/overlay/tide/opam | grep install
+install: [["mkdir" "%{lib}%/%{name}%"] ["cp" "file1" "%{lib}%/%{name}%/file1"]]
+### :C:k: opam pin doesn't upgrade outdated dependencies
+### opam switch create no-upgrade --empty
+### <pkg:dep.1>
+opam-version: "2.0"
+### <pkg:dep.2>
+opam-version: "2.0"
+### <pkg:pkg.1>
+opam-version: "2.0"
+depends: "dep"
+### opam install pkg dep.1
+The following actions will be performed:
+=== install 2 packages
+  - install dep 1
+  - install pkg 1
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> installed dep.1
+-> installed pkg.1
+Done.
+### opam pin add pkg 1
+pkg is now pinned to version 1
+
+Already up-to-date.
+Nothing to do.
+### opam upgrade
+The following actions will be performed:
+=== recompile 1 package
+  - recompile pkg 1 (pinned) [uses dep]
+=== upgrade 1 package
+  - upgrade   dep 1 to 2
+
+<><> Processing actions <><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+-> removed   pkg.1
+-> removed   dep.1
+-> installed dep.2
+-> installed pkg.1
+Done.
+### :C:l: make sure opam pin list works even when the source git directory is missing
+### opam switch create no-source-dir --empty
+### <no-source-dir/opam>
+opam-version: "2.0"
+name: "pinned-pkg"
+### git -C no-source-dir init -q --initial-branch=master
+### git -C no-source-dir config core.autocrlf false
+### git -C no-source-dir add opam
+### git -C no-source-dir commit -qm 'init'
+### opam pin add -n ./no-source-dir
+[NOTE] Package pinned-pkg does not exist in opam repositories registered in the current switch.
+pinned-pkg is now pinned to git+file://${BASEDIR}/no-source-dir#master (version dev)
+### rm -r OPAM/no-source-dir/.opam-switch/sources/pinned-pkg
+### opam pin
+pinned-pkg.dev  (uninstalled)  git  git+file://${BASEDIR}/no-source-dir#master  (error while fetching current revision)
+[[[Killing micro_httpd]]]

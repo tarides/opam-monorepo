@@ -1,0 +1,3 @@
+(cram
+ (applies_to remove-write-permissions)
+ (deps %{bin:bash}))

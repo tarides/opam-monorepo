@@ -1,0 +1,530 @@
+
+(* This generated code requires the following version of MenhirGLR: *)
+
+let () =
+  MenhirGLR.StaticVersion.require_unreleased
+
+module MenhirBasics = struct
+  
+  exception Error of (int, Obj.t) MenhirGLR.GSS.node list
+  
+  type token = 
+    | TIMES
+    | RPAREN
+    | PLUS
+    | MINUS
+    | LPAREN
+    | INT of 
+# 1 "demos/calc-GLR/parser.mly"
+       (int)
+# 21 "demos/calc-GLR/parser.ml"
+  
+    | EOL
+    | DIV
+  
+end
+
+include MenhirBasics
+
+# 14 "demos/calc-GLR/parser.mly"
+  
+  open Expr
+
+# 34 "demos/calc-GLR/parser.ml"
+
+module Tables = struct
+  
+  include MenhirBasics
+  
+  let semantic_action =
+    [|
+      (fun _menhir_input _menhir_path ->
+        (* main -> expr EOL *)
+        match _menhir_path with
+        | MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = e;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_0;
+          };
+        }, MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = _2;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_1;
+          };
+        }, MenhirGLR.Path.Empty {
+          MenhirGLR.GSS.date = _menhir_date_2;
+        })) ->
+            let e : (Expr.uexpr) = Obj.magic e in
+            let _2 : unit = Obj.magic _2 in
+            let _v : (Expr.uexpr) = 
+# 22 "demos/calc-GLR/parser.mly"
+    ( e )
+# 63 "demos/calc-GLR/parser.ml"
+             in
+            Obj.repr _v
+        | _ ->
+            assert false);
+      (fun _menhir_input _menhir_path ->
+        (* expr -> INT *)
+        match _menhir_path with
+        | MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = i;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_0;
+          };
+        }, MenhirGLR.Path.Empty {
+          MenhirGLR.GSS.date = _menhir_date_1;
+        }) ->
+            let i : 
+# 1 "demos/calc-GLR/parser.mly"
+       (int)
+# 82 "demos/calc-GLR/parser.ml"
+             = Obj.magic i in
+            let _v : (Expr.uexpr) = 
+# 29 "demos/calc-GLR/parser.mly"
+    ( make @@ EIntConst i )
+# 87 "demos/calc-GLR/parser.ml"
+             in
+            Obj.repr _v
+        | _ ->
+            assert false);
+      (fun _menhir_input _menhir_path ->
+        (* expr -> LPAREN expr RPAREN *)
+        match _menhir_path with
+        | MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = _1;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_0;
+          };
+        }, MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = e;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_1;
+          };
+        }, MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = _3;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_2;
+          };
+        }, MenhirGLR.Path.Empty {
+          MenhirGLR.GSS.date = _menhir_date_3;
+        }))) ->
+            let _1 : unit = Obj.magic _1 in
+            let e : (Expr.uexpr) = Obj.magic e in
+            let _3 : unit = Obj.magic _3 in
+            let _v : (Expr.uexpr) = 
+# 31 "demos/calc-GLR/parser.mly"
+    ( e )
+# 119 "demos/calc-GLR/parser.ml"
+             in
+            Obj.repr _v
+        | _ ->
+            assert false);
+      (fun _menhir_input _menhir_path ->
+        (* expr -> expr PLUS expr *)
+        match _menhir_path with
+        | MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = e1;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_0;
+          };
+        }, MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = _1;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_1;
+          };
+        }, MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = e2;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_2;
+          };
+        }, MenhirGLR.Path.Empty {
+          MenhirGLR.GSS.date = _menhir_date_3;
+        }))) ->
+            let e1 : (Expr.uexpr) = Obj.magic e1 in
+            let _1 : unit = Obj.magic _1 in
+            let e2 : (Expr.uexpr) = Obj.magic e2 in
+            let _v =
+              let op = 
+# 45 "demos/calc-GLR/parser.mly"
+        ( Add )
+# 152 "demos/calc-GLR/parser.ml"
+               in
+              (
+# 33 "demos/calc-GLR/parser.mly"
+    ( make @@ EBinOp (e1, op, e2) )
+# 157 "demos/calc-GLR/parser.ml"
+               : (Expr.uexpr))
+            in
+            Obj.repr _v
+        | _ ->
+            assert false);
+      (fun _menhir_input _menhir_path ->
+        (* expr -> expr MINUS expr *)
+        match _menhir_path with
+        | MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = e1;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_0;
+          };
+        }, MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = _1;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_1;
+          };
+        }, MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = e2;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_2;
+          };
+        }, MenhirGLR.Path.Empty {
+          MenhirGLR.GSS.date = _menhir_date_3;
+        }))) ->
+            let e1 : (Expr.uexpr) = Obj.magic e1 in
+            let _1 : unit = Obj.magic _1 in
+            let e2 : (Expr.uexpr) = Obj.magic e2 in
+            let _v =
+              let op = 
+# 46 "demos/calc-GLR/parser.mly"
+        ( Neg )
+# 191 "demos/calc-GLR/parser.ml"
+               in
+              (
+# 33 "demos/calc-GLR/parser.mly"
+    ( make @@ EBinOp (e1, op, e2) )
+# 196 "demos/calc-GLR/parser.ml"
+               : (Expr.uexpr))
+            in
+            Obj.repr _v
+        | _ ->
+            assert false);
+      (fun _menhir_input _menhir_path ->
+        (* expr -> expr TIMES expr *)
+        match _menhir_path with
+        | MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = e1;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_0;
+          };
+        }, MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = _1;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_1;
+          };
+        }, MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = e2;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_2;
+          };
+        }, MenhirGLR.Path.Empty {
+          MenhirGLR.GSS.date = _menhir_date_3;
+        }))) ->
+            let e1 : (Expr.uexpr) = Obj.magic e1 in
+            let _1 : unit = Obj.magic _1 in
+            let e2 : (Expr.uexpr) = Obj.magic e2 in
+            let _v =
+              let op = 
+# 47 "demos/calc-GLR/parser.mly"
+        ( Mul )
+# 230 "demos/calc-GLR/parser.ml"
+               in
+              (
+# 33 "demos/calc-GLR/parser.mly"
+    ( make @@ EBinOp (e1, op, e2) )
+# 235 "demos/calc-GLR/parser.ml"
+               : (Expr.uexpr))
+            in
+            Obj.repr _v
+        | _ ->
+            assert false);
+      (fun _menhir_input _menhir_path ->
+        (* expr -> expr DIV expr *)
+        match _menhir_path with
+        | MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = e1;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_0;
+          };
+        }, MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = _1;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_1;
+          };
+        }, MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = e2;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_2;
+          };
+        }, MenhirGLR.Path.Empty {
+          MenhirGLR.GSS.date = _menhir_date_3;
+        }))) ->
+            let e1 : (Expr.uexpr) = Obj.magic e1 in
+            let _1 : unit = Obj.magic _1 in
+            let e2 : (Expr.uexpr) = Obj.magic e2 in
+            let _v =
+              let op = 
+# 48 "demos/calc-GLR/parser.mly"
+        ( Div )
+# 269 "demos/calc-GLR/parser.ml"
+               in
+              (
+# 33 "demos/calc-GLR/parser.mly"
+    ( make @@ EBinOp (e1, op, e2) )
+# 274 "demos/calc-GLR/parser.ml"
+               : (Expr.uexpr))
+            in
+            Obj.repr _v
+        | _ ->
+            assert false);
+      (fun _menhir_input _menhir_path ->
+        (* expr -> MINUS expr *)
+        match _menhir_path with
+        | MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = _1;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_0;
+          };
+        }, MenhirGLR.Path.Edge ({
+          MenhirGLR.GSS.semv = e;
+          MenhirGLR.GSS.node = {
+            MenhirGLR.GSS.date = _menhir_date_1;
+          };
+        }, MenhirGLR.Path.Empty {
+          MenhirGLR.GSS.date = _menhir_date_2;
+        })) ->
+            let _1 : unit = Obj.magic _1 in
+            let e : (Expr.uexpr) = Obj.magic e in
+            let _v =
+              let op = 
+# 42 "demos/calc-GLR/parser.mly"
+        ( UNeg )
+# 302 "demos/calc-GLR/parser.ml"
+               in
+              (
+# 35 "demos/calc-GLR/parser.mly"
+    ( make @@ EUnOp (op, e) )
+# 307 "demos/calc-GLR/parser.ml"
+               : (Expr.uexpr))
+            in
+            Obj.repr _v
+        | _ ->
+            assert false);
+    |]
+  
+  let _menhir_nt_name =
+    [|
+      "main'";
+      "main";
+      "expr";
+    |]
+  
+  let merge : int -> Obj.t -> Obj.t -> token MenhirGLR.Input.input -> int -> int -> Obj.t =
+    fun _menhir_nt _menhir__v1 _menhir__v2 _menhir_input _menhir_date_0 _menhir_date_1 ->
+      match _menhir_nt with
+      | 2 ->
+          (* expr *)
+          let _startpos = MenhirGLR.Input.start_position _menhir_input _menhir_date_0 in
+          let _endpos = MenhirGLR.Input.end_position _menhir_input _menhir_date_1 in
+          let _menhir__v1 : (Expr.uexpr) = Obj.magic _menhir__v1 in
+          let _menhir__v2 : (Expr.uexpr) = Obj.magic _menhir__v2 in
+          let _v = 
+# 37 "demos/calc-GLR/parser.mly"
+    ( fun e1 e2 ->
+        let range = (_startpos, _endpos) in
+        make @@ disj range e1 e2 )
+# 336 "demos/calc-GLR/parser.ml"
+           _menhir__v1 _menhir__v2 in
+          Obj.repr (_v : (Expr.uexpr))
+      | 1 ->
+          (* main *)
+          let _menhir__v1 : (Expr.uexpr) = Obj.magic _menhir__v1 in
+          let _menhir__v2 : (Expr.uexpr) = Obj.magic _menhir__v2 in
+          let _v = 
+# 25 "demos/calc-GLR/parser.mly"
+       ( fun _e1 _e2 -> assert false )
+# 346 "demos/calc-GLR/parser.ml"
+           _menhir__v1 _menhir__v2 in
+          Obj.repr (_v : (Expr.uexpr))
+      | _ ->
+          assert false
+  
+  let token2terminal : token -> int =
+    fun _tok ->
+      match _tok with
+      | TIMES ->
+          1
+      | RPAREN ->
+          2
+      | PLUS ->
+          3
+      | MINUS ->
+          4
+      | LPAREN ->
+          5
+      | INT _ ->
+          6
+      | EOL ->
+          7
+      | DIV ->
+          8
+  
+  let token2value : token -> Obj.t =
+    fun _tok ->
+      match _tok with
+      | TIMES ->
+          Obj.repr ()
+      | RPAREN ->
+          Obj.repr ()
+      | PLUS ->
+          Obj.repr ()
+      | MINUS ->
+          Obj.repr ()
+      | LPAREN ->
+          Obj.repr ()
+      | INT _v ->
+          Obj.repr (_v : 
+# 1 "demos/calc-GLR/parser.mly"
+       (int)
+# 389 "demos/calc-GLR/parser.ml"
+          )
+      | EOL ->
+          Obj.repr ()
+      | DIV ->
+          Obj.repr ()
+  
+  let start =
+    1
+  
+  let lhs =
+    "\026\170\128"
+  
+  let[@inline] lhs =
+    fun i ->
+      MenhirGLR.PackedIntArray.get2 lhs i
+  
+  let length =
+    "g\255\128"
+  
+  let[@inline] length =
+    fun i ->
+      MenhirGLR.PackedIntArray.get2 length i
+  
+  let n =
+    18
+  
+  let default_reduction =
+    "\000\003\000\000\000\000\004\001\002"
+  
+  let[@inline] default_reduction =
+    fun i ->
+      MenhirGLR.PackedIntArray.get4 default_reduction i
+  
+  let unique_action_bitmap =
+    "\241\248\252\127\248w\142\025\227\134x\225\1588g\254\025\255\166\127\192"
+  
+  let[@inline] unique_action_bitmap =
+    fun i ->
+      MenhirGLR.PackedIntArray.get1 unique_action_bitmap i
+  
+  let[@inline] unique_action_bitmap =
+    fun i j ->
+      unique_action_bitmap (9 * i + j)
+  
+  let unique_action_displacement =
+    "XXX\000\003XNX>X\030X\014\000.\000\003\000"
+  
+  let[@inline] unique_action_displacement =
+    fun i ->
+      MenhirGLR.PackedIntArray.get8 unique_action_displacement i
+  
+  let unique_action_data =
+    "\0226\030&\000\000F.\003\029\003\003\000\000\029\003\003\021\003\003\000\000\021\003\003!\003\003\000\000!\003\003\017\003\003\000\000\017\003\003\025\003\003\000\000\025\003\006\n\014"
+  
+  let[@inline] unique_action_data =
+    fun i ->
+      MenhirGLR.PackedIntArray.get8 unique_action_data i
+  
+  let[@inline] unique_action =
+    fun i j ->
+      let k = MenhirGLR.RowDisplacementDecode.decode (unique_action_displacement i) in
+      unique_action_data (k + j)
+  
+  let shift_bitmap =
+    "\241\248\252\127\248w\142\157\227\167x\233\222:w\254\157\255\166\127\192"
+  
+  let[@inline] shift_bitmap =
+    fun i ->
+      MenhirGLR.PackedIntArray.get1 shift_bitmap i
+  
+  let[@inline] shift_bitmap =
+    fun i j ->
+      shift_bitmap (9 * i + j)
+  
+  let shift_displacement =
+    "\136\1288888000"
+  
+  let[@inline] shift_displacement =
+    fun i ->
+      MenhirGLR.PackedIntArray.get4 shift_displacement i
+  
+  let shift_data =
+    "\006\014\b\n\000\000\018\012\002\003\004"
+  
+  let[@inline] shift_data =
+    fun i ->
+      MenhirGLR.PackedIntArray.get8 shift_data i
+  
+  let[@inline] shift =
+    fun i j ->
+      let k = MenhirGLR.RowDisplacementDecode.decode (shift_displacement i) in
+      shift_data (k + j)
+  
+  let reductions_data =
+    "fffDDDUUUwww\136\136\136"
+  
+  let[@inline] reductions_data =
+    fun i ->
+      MenhirGLR.PackedIntArray.get4 reductions_data i
+  
+  let reductions_entry =
+    "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\001\002\003\004\004\004\005\006\006\006\006\006\006\006\006\006\006\006\007\b\t\n\n\n\011\012\012\012\012\012\012\012\012\012\012\012\r\014\015\016\016\016\017\018\018\018\018\018\018\018\018\018\018\018\019\020\021\022\022\022\023\024\024\024\024\024\024\024\024\024\024\024\025\026\027\028\028\028\029\030\030\030\030\030\030\030\030\030\030\030\030\030\030\030\030\030\030\030\030\030\030\030\030\030\030\030\030"
+  
+  let[@inline] reductions_entry =
+    fun i ->
+      MenhirGLR.PackedIntArray.get8 reductions_entry i
+  
+  let[@inline] reductions =
+    fun i ->
+      MenhirGLR.LinearizedArray.read_row_via reductions_data reductions_entry i
+  
+  let[@inline] reductions =
+    fun i j ->
+      reductions (9 * i + j)
+  
+  let goto_displacement =
+    "0\160\006\b\004\002\000\000\000"
+  
+  let[@inline] goto_displacement =
+    fun i ->
+      MenhirGLR.PackedIntArray.get4 goto_displacement i
+  
+  let goto_data =
+    "\016\017\015\r\011\007\t\005"
+  
+  let[@inline] goto_data =
+    fun i ->
+      MenhirGLR.PackedIntArray.get8 goto_data i
+  
+  let[@inline] goto =
+    fun i j ->
+      let k = MenhirGLR.RowDisplacementDecode.decode (goto_displacement i) in
+      goto_data (k + j)
+  
+end
+
+module MenhirInterpreter = MenhirGLR.GLR.Make (MenhirGLR.TableInterpreter.Make (Tables))
+
+let main =
+  fun lexer lexbuf ->
+    let input = MenhirGLR.Input.create lexer lexbuf in
+    (Obj.magic (MenhirInterpreter.start 0 input) : (Expr.uexpr))

@@ -1,0 +1,4 @@
+(test
+ (name ocaml_config_roundtrip_gh637)
+ (libraries stdune ocaml_config)
+ (deps Makefile.config))

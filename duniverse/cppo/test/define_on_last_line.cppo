@@ -1,0 +1,2 @@
+(* This #define is NOT ended by a new line, but is nevertheless accepted. *)
+#define TWICE(e) e + e

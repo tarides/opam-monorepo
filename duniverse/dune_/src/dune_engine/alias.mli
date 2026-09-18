@@ -1,0 +1,25 @@
+open Import
+
+module Name : sig
+  include module type of Stdune.Alias_name with type t = Stdune.Alias_name.t
+
+  val default : t
+
+  include Comparable_intf.S with type key := t
+end
+
+type t
+
+val equal : t -> t -> bool
+val hash : t -> int
+val compare : t -> t -> Ordering.t
+val make : Name.t -> dir:Path.Build.t -> t
+
+(** The following always holds: [make (name t) ~dir:(dir t) = t] *)
+val name : t -> Name.t
+
+val dir : t -> Path.Build.t
+val to_dyn : t -> Dyn.t
+val of_user_written_path : loc:Loc.t -> Path.t -> t
+val fully_qualified_name : t -> Path.Build.t
+val describe : ?loc:Loc.t -> t -> _ Pp.t

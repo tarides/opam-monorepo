@@ -1,0 +1,3 @@
+#include "define_on_last_line.cppo"
+(* Check that the definition of TWICE has been accepted: *)
+let f x = TWICE(x)

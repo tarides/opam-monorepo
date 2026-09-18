@@ -1,0 +1,116 @@
+Test that dune handles sources containing directory symlinks.
+
+Currently, directory symlinks in sources cause failures. This is substantially
+improved by resolving the symlinks during extraction.
+The non-tarball scenario (happening in case of local pins) isn't fixed however.
+
+--------------------------------------------------------------------------------
+
+Case 1: Local directory source containing a directory symlink.
+
+  $ mkdir _src_local
+  $ mkdir _src_local/real_dir
+  $ echo "content" > _src_local/real_dir/file.txt
+  $ ln -s real_dir _src_local/link_to_dir
+
+  $ make_lockdir
+
+  $ make_lockpkg foo <<EOF
+  > (version 0.0.1)
+  > (source
+  >  (fetch
+  >   (url file://$PWD/_src_local)))
+  > (build (run cat real_dir/file.txt))
+  > EOF
+
+CR-someday alizter: This fails because directory symlinks are not supported.
+We could potentially resolve them during the copy.
+
+  $ build_pkg foo 2>&1 | sanitize_pkg_digest foo.0.0.1
+  Error: Is a directory
+  -> required by
+     _build/_private/default/.pkg/foo.0.0.1-DIGEST_HASH/source/link_to_dir
+  -> required by
+     _build/_private/default/.pkg/foo.0.0.1-DIGEST_HASH/target
+  [1]
+
+Only the real directory was partially copied:
+
+  $ ls _build/_private/default/.pkg/foo.*/source
+  real_dir
+
+--------------------------------------------------------------------------------
+
+Case 2: Tarball source containing a directory symlink.
+
+  $ mkdir _src_tar
+  $ mkdir _src_tar/real_dir
+  $ echo "content" > _src_tar/real_dir/file.txt
+  $ ln -s real_dir _src_tar/link_to_dir
+  $ tar czf _src.tar.gz _src_tar
+
+  $ make_lockpkg bar <<EOF
+  > (version 0.0.1)
+  > (source
+  >  (fetch
+  >   (url file://$PWD/_src.tar.gz)))
+  > (build (run cat real_dir/file.txt))
+  > EOF
+
+This is now fixed
+  $ build_pkg bar
+  content
+
+
+The tarball was fully extracted (including the symlink):
+  $ ls _build/_private/default/.pkg/bar.*/source
+  link_to_dir
+  real_dir
+
+--------------------------------------------------------------------------------
+
+Case 3: Downloaded tarball containing a directory symlink (with checksum).
+
+  $ make_lockpkg baz <<EOF
+  > (version 0.0.1)
+  > (source
+  >  (fetch
+  >   (url http://0.0.0.0:1)
+  >   (checksum md5=$(md5sum $PWD/_src.tar.gz | cut -f1 -d' '))))
+  > (build (run cat real_dir/file.txt))
+  > EOF
+
+  $ echo $PWD/_src.tar.gz >> fake-curls
+
+This is now fixed
+  $ build_pkg baz
+  content
+
+--------------------------------------------------------------------------------
+
+Case 4: Git pinned sources
+
+  $ mkdir -p _src_git/real_dir
+  $ cd _src_git/
+  $ echo "content" > real_dir/file.txt
+  $ ln -s real_dir link_to_dir
+
+  $ git init --quiet
+  $ echo 'opam-version: "2.0"' > qux.opam
+  $ git add -A
+  $ git commit --quiet -m "Initial commit"
+
+  $ cd ..
+
+  $ make_lockpkg qux << EOF
+  > (version 0.0.1)
+  > (source
+  >  (fetch
+  >   (url git+file://$PWD/_src_git)))
+  > (build (run cat link_to_dir/file.txt))
+  > EOF
+
+This is also fixed
+  $ build_pkg qux
+  content
+

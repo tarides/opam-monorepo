@@ -1,0 +1,2 @@
+Error: File "already_defined.cppo", line 3, characters 0-17
+Error: "FOO" is already defined

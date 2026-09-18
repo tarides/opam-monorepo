@@ -1,0 +1,7 @@
+(library
+ (name checkseum)
+ (public_name checkseum)
+ (libraries optint)
+ (virtual_modules checkseum)
+ (default_implementation checkseum.c)
+ (wrapped false))

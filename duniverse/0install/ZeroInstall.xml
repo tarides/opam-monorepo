@@ -1,0 +1,39 @@
+<?xml version="1.0" ?>
+<?xml-stylesheet type='text/xsl' href='feed.xsl'?>
+<interface xmlns="http://zero-install.sourceforge.net/2004/injector/interface" xmlns:compile="http://zero-install.sourceforge.net/2006/namespaces/0compile">
+  <name>Zero Install - OCaml version</name>
+  <summary>OCaml version of 0install, the decentralized installation system</summary>
+  <description>This is the OCaml version of Zero Install. Zero Install is a cross-platform, decentralized installation system. Instead of having a central repository in which all software is placed under a naming scheme managed by some central authority, programs and libraries in Zero Install are identified by URIs. Anyone who can create a web-page can publish software. Anyone can install software (not just administrators).</description>
+
+  <homepage>https://0install.net/</homepage>
+
+  <icon href="https://0install.net/feed_icons/ZeroInstall.png" type="image/png"/>
+
+  <feed-for interface="https://apps.0install.net/0install/0install-ocaml.xml"/>
+  <category>System</category>
+
+  <release:management xmlns:release="http://zero-install.sourceforge.net/2007/namespaces/0release">
+    <!-- Update the copy of the version number -->
+    <release:update-version path="src/zeroinstall/about.ml">^let version = &quot;(.*)&quot;$</release:update-version>
+    <release:action phase="generate-archive">rm .gitignore</release:action>
+  </release:management>
+
+  <group arch="*-src" compile:dup-src="true" license="OSI Approved :: GNU Lesser General Public License (LGPL)">
+    <command name="compile">
+      <runner interface="https://apps.0install.net/devel/make.xml">
+        <arg>SRCDIR=${SRCDIR}</arg>
+        <arg>DISTDIR=${DISTDIR}</arg>
+      </runner>
+
+      <compile:implementation main="files/0install">
+        <command name="run" path="files/0install"/>
+
+        <requires interface="https://apps.0install.net/utils/gnupg.xml">
+          <executable-in-var name="ZEROINSTALL_GPG"/>
+        </requires>
+      </compile:implementation>
+    </command>
+
+    <implementation id="." version="2.18" released="2022-08-19"/>
+  </group>
+</interface>

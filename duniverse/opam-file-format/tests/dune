@@ -1,0 +1,6 @@
+(test
+  (name tests)
+  (deps sample.opam)
+  (libraries alcotest opam-file-format fmt))
+
+(rule (copy sample-opam sample.opam))

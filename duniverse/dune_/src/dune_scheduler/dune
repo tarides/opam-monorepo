@@ -1,0 +1,22 @@
+(library
+ (name dune_scheduler)
+ (library_flags
+  (:include flags/sexp))
+ (foreign_stubs
+  (language c)
+  (names fsevents_stubs fswatch_win_stubs))
+ (libraries
+  ocaml_inotify
+  lev
+  spawn
+  re
+  unix
+  csexp
+  stdune
+  dyn
+  fiber
+  memo
+  threads.posix
+  dune_trace
+  dune_util)
+ (synopsis "Internal Dune library, do not use!"))

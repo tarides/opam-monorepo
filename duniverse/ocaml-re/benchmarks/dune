@@ -1,0 +1,35 @@
+(env
+ (dev
+  (flags
+   (:standard -w -58))))
+
+(executables
+ (enabled_if
+  (not %{env:CI=false}))
+ (libraries
+  re
+  core
+  base
+  stdio
+  threads
+  core_bench
+  core_unix.command_unix
+  memtrace)
+ (modules :standard \ compare)
+ (names benchmark))
+
+(executable
+ (enabled_if
+  (not %{env:CI=false}))
+ (name compare)
+ (modules compare)
+ (libraries
+  core
+  csv
+  base
+  core_unix
+  core_unix.command_unix
+  core_unix.filename_unix
+  spawn
+  stdio
+  sexplib))

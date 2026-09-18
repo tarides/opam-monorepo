@@ -1,0 +1,73 @@
+open Import
+
+type t
+
+module Serializable : sig
+  type t
+
+  val encode : t -> Dune_lang.t list
+  val decode : t Decoder.t
+  val equal : t -> t -> bool
+  val to_dyn : t -> Dyn.t
+end
+
+val to_dyn : t -> Dyn.t
+val equal : t -> t -> bool
+
+(** [of_opam_repo_dir_path opam_repo_dir] creates a repo represented by a local
+    directory in the path given by [opam_repo_dir]. *)
+val of_opam_repo_dir_path : Loc.t -> Path.t -> t
+
+(** [of_git_repo git source] loads the opam repository located
+    at [source] from git. [source] can be any URL that [git remote add]
+    supports. *)
+val of_git_repo : Loc.t -> OpamUrl.t -> t Fiber.t
+
+(** [resolve_repositories ~available_repos ~repositories] resolves a list of
+    repository references by looking them up in [available_repos] and creating
+    appropriate [t] instances based on their URL types (git, local path, or
+    archive). Raises [User_error] if a repository is not found or if an archive
+    URL is encountered (not supported). *)
+val resolve_repositories
+  :  available_repos:Workspace.Repository.t Workspace.Repository.Name.Map.t
+  -> repositories:(Loc.t * Workspace.Repository.Name.t) list
+  -> t list Fiber.t
+
+val revision : t -> Rev_store.At_rev.t
+val serializable : t -> Serializable.t option
+
+(** [content_digest t] digests the contents of an opam repository. For a Git
+    repository, this is a digest of the commit SHA. For a directory-based
+    repository, this is a digest of the directory's contents.
+
+    Raises [User_error] in the directory case if the path cannot be accessed or
+    digested due to permission errors, the directory being deleted or modified
+    between stat and digest, or other filesystem errors. *)
+val content_digest : t -> Dune_digest.t
+
+module Key : sig
+  type t
+
+  val opam_package : t -> OpamPackage.t
+end
+
+val packages_in_repo : t -> OpamPackage.Name.t list
+
+val all_packages_versions_map
+  :  t list
+  -> OpamPackage.Name.t
+  -> (t * Key.t) OpamPackage.Version.Map.t
+
+val load_all_versions_by_keys
+  :  (t * Key.t) OpamPackage.Version.Map.t
+  -> Resolved_package.t OpamPackage.Version.Map.t Fiber.t
+
+(** Load package metadata for all versions of a package with a given name *)
+val load_all_versions
+  :  t list
+  -> OpamPackage.Name.t
+  -> Resolved_package.t OpamPackage.Version.Map.t Fiber.t
+
+module Private : sig
+  val create : source:string option -> t
+end

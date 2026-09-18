@@ -1,0 +1,33 @@
+;; The stage 2 version of Menhir is built here.
+
+(executable
+  (name main)
+  (libraries
+    unix
+    base
+    menhirSdk
+    front
+    middle
+    driver_stage2 ;; use the stage 2 parser
+    body
+  )
+)
+
+;; The dummy file main.ml is the same as in stage 1.
+
+(copy_files# ../stage1/main.ml)
+
+;; -----------------------------------------------------------------------------
+
+;; Install the Menhir executable under the "menhir" name. This would usually
+;; be achieved by adding a "public_name" field in the "executable" stanza
+;; above. However, we cannot do that here, because the public name "menhir"
+;; would clash with the binding of this name to the stage1 version of Menhir
+;; at the top of this file. Thus, we explicitly request its installation as
+;; follows.
+
+(install
+  (section bin)
+  (package menhir)
+  (files (./main.exe as menhir))
+)

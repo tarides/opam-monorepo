@@ -1,0 +1,7 @@
+(library
+ (name logs_threaded)
+ (public_name logs.threaded)
+ (libraries logs threads)
+ (modules logs_threaded)
+ (flags :standard -w -27 -safe-string)
+ (wrapped false))

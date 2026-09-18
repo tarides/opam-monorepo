@@ -1,0 +1,13 @@
+(library
+ (name dune_util)
+ (libraries
+  stdune
+  dune_trace
+  xdg
+  dyn
+  ordering
+  pp
+  build_path_prefix_map
+  dune_sexp
+  memo
+  unix))

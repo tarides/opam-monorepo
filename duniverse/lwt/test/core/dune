@@ -1,0 +1,4 @@
+(test
+ (name main)
+ (package lwt)
+ (libraries lwttester))

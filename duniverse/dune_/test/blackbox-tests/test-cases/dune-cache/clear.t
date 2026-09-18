@@ -1,0 +1,37 @@
+Test for the "dune cache clear" command.
+
+  $ export DUNE_CACHE=enabled
+  $ export DUNE_CACHE_ROOT=$PWD/dune-cache
+
+  $ make_dune_project 3.10
+
+  $ cat >dune <<EOF
+  > (rule (with-stdout-to foo (progn)))
+  > EOF
+
+  $ dune build
+
+  $ ls $DUNE_CACHE_ROOT/db | sort -u
+  files
+  meta
+  temp
+
+  $ dune cache clear
+
+  $ ! test -d $DUNE_CACHE_ROOT/db
+
+Next let us add some extra directories/files and check that they are not deleted
+by mistake.
+
+  $ dune build
+
+  $ mkdir -p $DUNE_CACHE_ROOT/db/extra; touch $DUNE_CACHE_ROOT/db/extra1 $DUNE_CACHE_ROOT/db/extra/extra2
+
+  $ dune cache clear
+  Error:
+  rmdir($TESTCASE_ROOT/dune-cache/db): Directory not empty
+  [1]
+
+  $ find $DUNE_CACHE_ROOT/db -type f | sort -u
+  $TESTCASE_ROOT/dune-cache/db/extra/extra2
+  $TESTCASE_ROOT/dune-cache/db/extra1

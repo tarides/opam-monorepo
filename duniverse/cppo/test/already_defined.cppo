@@ -1,0 +1,3 @@
+(* A macro is defined twice. *)
+#define FOO "oh"
+#define FOO "no"

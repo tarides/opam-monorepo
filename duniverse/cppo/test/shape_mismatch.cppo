@@ -1,0 +1,5 @@
+#define FOO 24
+#define APPLY(F : [.], X) F(X)
+APPLY(FOO, 42)
+  (* invalid because APPLY expects a macro of type [.]
+     but FOO has type . *)

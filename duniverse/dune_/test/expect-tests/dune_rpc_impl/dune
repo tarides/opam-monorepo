@@ -1,0 +1,19 @@
+(library
+ (name dune_rpc_impl_tests)
+ (inline_tests)
+ (libraries
+  ; ocaml_config
+  ; dune_util
+  dune_rpc
+  dune_rpc_impl
+  dune_engine
+  re
+  stdune
+  ;; This is because of the (implicit_transitive_deps false)
+  ;; in dune-project
+  ppx_expect.config
+  ppx_expect.config_types
+  base
+  ppx_inline_test.config)
+ (preprocess
+  (pps ppx_expect)))

@@ -1,0 +1,7 @@
+(test
+ (name test)
+ (package lwt_ppx__ppx_let_tests)
+ (build_if %{lib-available:ppx_let})
+ (preprocess
+  (pps ppx_let))
+ (libraries lwt lwt.unix))

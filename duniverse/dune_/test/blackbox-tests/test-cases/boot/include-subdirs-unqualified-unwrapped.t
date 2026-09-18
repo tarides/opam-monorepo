@@ -1,0 +1,38 @@
+Testing the bootstrap of an unwrapped include subdirs unqualified.
+
+  $ init_bootstrap
+
+  $ mkdir -p src/a/b/c
+
+  $ make_module src/a/x.ml
+  $ cat >> src/a/x.ml <<EOF
+  > let () = Printf.printf "Hello from unwrapped a/x.ml\n"
+  > EOF
+
+  $ cat > src/a/b/b.ml <<EOF
+  > let () = Printf.printf "Hello from unwrapped a/b/b.ml\n"
+  > EOF
+
+  $ cat > src/a/b/c/c.ml <<EOF
+  > let () = Printf.printf "Hello from unwrapped a/b/c/c.ml\n"
+  > EOF
+
+  $ cat > src/a/dune <<EOF
+  > (library
+  >  (name a)
+  >  (wrapped false))
+  > (include_subdirs unqualified)
+  > EOF
+
+  $ create_dune a <<EOF
+  > module M1 = X
+  > module M2 = B
+  > module M3 = C
+  > let () = Printf.printf "Hello from bootstrapped binary!"
+  > EOF
+  ocamllex -q -o boot/pps.ml boot/pps.mll
+  ocaml -I +unix unix.cma $DUNEBOOT
+  Hello from unwrapped a/b/b.ml
+  Hello from unwrapped a/b/c/c.ml
+  Hello from unwrapped a/x.ml
+  Hello from bootstrapped binary!

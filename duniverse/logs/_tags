@@ -1,0 +1,9 @@
+true : bin_annot, safe_string
+<_b0> : -traverse
+<src> : include
+<src/fmt/logs_fmt*> : package(fmt)
+<src/browser/logs_browser*> : package(js_of_ocaml-compiler.runtime)
+<src/cli/logs_cli*> : package(cmdliner)
+<src/lwt/logs_lwt*> : package(lwt)
+<src/top/logs_top*> : package(compiler-libs.toplevel)
+<src/threaded/logs_threaded*> : thread, package(threads)

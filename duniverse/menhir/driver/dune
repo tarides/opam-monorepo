@@ -1,0 +1,9 @@
+;; This is a virtual library:
+;; the file Driver.mli is present,
+;; but there is no file Driver.ml
+(library
+  (name driver)
+  (virtual_modules driver)
+  (libraries front)
+  (flags :standard -open Front)
+)

@@ -1,0 +1,351 @@
+module Style = struct
+  type t =
+    | Loc
+    | Error
+    | Warning
+    | Kwd
+    | Id
+    | Prompt
+    | Hint
+    | Details
+    | Ok
+    | Debug
+    | Success
+    | Ansi_styles of Ansi_color.Style.t list
+
+  let to_dyn =
+    let open Dyn in
+    function
+    | Loc -> variant "Loc" []
+    | Error -> variant "Error" []
+    | Warning -> variant "Warning" []
+    | Kwd -> variant "Kwd" []
+    | Id -> variant "Id" []
+    | Prompt -> variant "Prompt" []
+    | Hint -> variant "Hint" []
+    | Details -> variant "Details" []
+    | Ok -> variant "Ok" []
+    | Debug -> variant "Debug" []
+    | Success -> variant "Success" []
+    | Ansi_styles l -> variant "Ansi_styles" [ list Ansi_color.Style.to_dyn l ]
+  ;;
+
+  let compare t1 t2 : Ordering.t =
+    match t1, t2 with
+    | Loc, Loc -> Eq
+    | Loc, _ -> Lt
+    | _, Loc -> Gt
+    | Error, Error -> Eq
+    | Error, _ -> Lt
+    | _, Error -> Gt
+    | Warning, Warning -> Eq
+    | Warning, _ -> Lt
+    | _, Warning -> Gt
+    | Kwd, Kwd -> Eq
+    | Kwd, _ -> Lt
+    | _, Kwd -> Gt
+    | Id, Id -> Eq
+    | Id, _ -> Lt
+    | _, Id -> Gt
+    | Prompt, Prompt -> Eq
+    | Prompt, _ -> Lt
+    | _, Prompt -> Gt
+    | Hint, Hint -> Eq
+    | Hint, _ -> Lt
+    | _, Hint -> Gt
+    | Details, Details -> Eq
+    | Details, _ -> Lt
+    | _, Details -> Gt
+    | Ok, Ok -> Eq
+    | Ok, _ -> Lt
+    | _, Ok -> Gt
+    | Debug, Debug -> Eq
+    | Debug, _ -> Lt
+    | _, Debug -> Gt
+    | Success, Success -> Eq
+    | Success, _ -> Lt
+    | _, Success -> Gt
+    | Ansi_styles _, Ansi_styles _ -> Eq
+  ;;
+end
+
+module Print_config = struct
+  type t = Style.t -> Ansi_color.Style.t list
+
+  let default : t = function
+    | Loc -> [ `Bold ]
+    | Error -> [ `Bold; `Fg_red ]
+    | Warning -> [ `Bold; `Fg_magenta ]
+    | Kwd -> [ `Bold; `Fg_blue ]
+    | Id -> [ `Bold; `Fg_yellow ]
+    | Prompt -> [ `Bold; `Fg_green ]
+    | Hint -> [ `Italic ]
+    | Details -> [ `Dim ]
+    | Ok -> [ `Fg_green ]
+    | Debug -> [ `Underline; `Fg_bright_cyan ]
+    | Success -> [ `Bold; `Fg_green ]
+    | Ansi_styles l -> l
+  ;;
+end
+
+module Diff_annot = struct
+  type t =
+    { in_source : Path0.Source.t
+    ; in_build : Path0.Build.t
+    }
+
+  let to_dyn { in_source; in_build } =
+    let open Dyn in
+    record
+      [ "in_source", Path0.Local_gen.to_dyn in_source
+      ; "in_build", Path0.Local_gen.to_dyn in_build
+      ]
+  ;;
+end
+
+module Severity = struct
+  type t =
+    | Error
+    | Warning
+end
+
+type t =
+  { loc : Loc0.t option
+  ; paragraphs : Style.t Pp.t list
+  ; hints : Style.t Pp.t list
+  ; compound : compound list
+  ; context : string option
+  ; dir : string option
+  ; has_embedded_location : bool
+  ; needs_stack_trace : bool
+  ; promotion : Diff_annot.t option
+  }
+
+and compound =
+  { main : t
+  ; related : t list
+  ; severity : Severity.t
+  }
+
+module Compound = struct
+  type nonrec t = compound =
+    { main : t
+    ; related : t list
+    ; severity : Severity.t
+    }
+
+  let to_dyn = Dyn.opaque
+end
+
+let to_dyn
+      { loc
+      ; paragraphs
+      ; hints
+      ; compound
+      ; context
+      ; dir
+      ; has_embedded_location
+      ; needs_stack_trace
+      ; promotion
+      }
+  =
+  Dyn.record
+    [ "loc", Dyn.option Loc0.to_dyn loc
+    ; "paragraphs", Dyn.list (Pp.to_dyn Style.to_dyn) paragraphs
+    ; "hints", Dyn.list (Pp.to_dyn Style.to_dyn) hints
+    ; "compound", Dyn.opaque compound
+    ; "context", Dyn.option Dyn.string context
+    ; "dir", Dyn.option Dyn.string dir
+    ; "has_embedded_location", Dyn.bool has_embedded_location
+    ; "needs_stack_trace", Dyn.bool needs_stack_trace
+    ; "promotion", Dyn.option Diff_annot.to_dyn promotion
+    ]
+;;
+
+let compare
+      { loc
+      ; paragraphs
+      ; hints
+      ; compound = _
+      ; context = _
+      ; dir = _
+      ; has_embedded_location
+      ; needs_stack_trace
+      ; promotion = _
+      }
+      t
+  =
+  let open Ordering.O in
+  let= () = Option.compare Loc0.compare loc t.loc in
+  let compare = Pp.compare ~compare:Style.compare in
+  let= () = List.compare paragraphs t.paragraphs ~compare in
+  let= () = List.compare hints t.hints ~compare in
+  let= () = Bool.compare has_embedded_location t.has_embedded_location in
+  Bool.compare needs_stack_trace t.needs_stack_trace
+;;
+
+let equal a b = Ordering.is_eq (compare a b)
+
+let make
+      ?(has_embedded_location = false)
+      ?(needs_stack_trace = false)
+      ?loc
+      ?prefix
+      ?(hints = [])
+      ?(compound = [])
+      ?context
+      ?dir
+      ?promotion
+      paragraphs
+  =
+  let paragraphs =
+    match prefix, paragraphs with
+    | None, l -> l
+    | Some p, [] -> [ p ]
+    | Some p, x :: l -> Pp.concat ~sep:Pp.space [ p; x ] :: l
+  in
+  { loc
+  ; hints
+  ; paragraphs
+  ; compound
+  ; context
+  ; dir
+  ; has_embedded_location
+  ; needs_stack_trace
+  ; promotion
+  }
+;;
+
+let pp
+      { loc
+      ; paragraphs
+      ; hints
+      ; compound = _
+      ; context
+      ; dir = _
+      ; has_embedded_location = _
+      ; needs_stack_trace = _
+      ; promotion = _
+      }
+  =
+  let open Pp.O in
+  let paragraphs =
+    match hints with
+    | [] -> paragraphs
+    | _ ->
+      List.append
+        paragraphs
+        (List.map hints ~f:(fun hint ->
+           Pp.tag Style.Hint (Pp.verbatim "Hint:") ++ Pp.space ++ hint))
+  in
+  let paragraphs = List.map paragraphs ~f:Pp.box in
+  let paragraphs =
+    match loc with
+    | None -> paragraphs
+    | Some loc ->
+      let start = Loc0.start loc in
+      let stop = Loc0.stop loc in
+      let start_c = start.pos_cnum - start.pos_bol in
+      let stop_c = stop.pos_cnum - start.pos_bol in
+      let lnum =
+        if start.pos_lnum = stop.pos_lnum
+        then Printf.sprintf "line %d" start.pos_lnum
+        else Printf.sprintf "lines %d-%d" start.pos_lnum stop.pos_lnum
+      in
+      Pp.box
+        (Pp.tag
+           Style.Loc
+           (Pp.textf "File %S, %s, characters %d-%d:" start.pos_fname lnum start_c stop_c))
+      :: paragraphs
+  in
+  let paragraphs =
+    match context with
+    | None | Some "default" | Some ".sandbox" -> paragraphs
+    | Some context ->
+      Pp.box (Pp.tag Style.Loc (Pp.textf "Context: %s" context)) :: paragraphs
+  in
+  Pp.vbox (Pp.concat_map paragraphs ~sep:Pp.nop ~f:(fun pp -> Pp.seq pp Pp.cut))
+;;
+
+let print ?(config = Print_config.default) t =
+  Ansi_color.print (Pp.map_tags (pp t) ~f:config)
+;;
+
+let prerr ?(config = Print_config.default) t =
+  Ansi_color.prerr (Pp.map_tags (pp t) ~f:config)
+;;
+
+(* As found here http://rosettacode.org/wiki/Levenshtein_distance#OCaml *)
+let levenshtein_distance s t =
+  let m = String.length s
+  and n = String.length t in
+  (* for all i and j, d.(i).(j) will hold the Levenshtein distance between the
+     first i characters of s and the first j characters of t *)
+  let d = Array.make_matrix ~dimx:(m + 1) ~dimy:(n + 1) 0 in
+  for i = 0 to m do
+    (* the distance of any first string to an empty second string *)
+    d.(i).(0) <- i
+  done;
+  for j = 0 to n do
+    (* the distance of any second string to an empty first string *)
+    d.(0).(j) <- j
+  done;
+  for j = 1 to n do
+    for i = 1 to m do
+      if s.[i - 1] = t.[j - 1]
+      then d.(i).(j) <- d.(i - 1).(j - 1) (* no operation required *)
+      else
+        d.(i).(j)
+        <- min
+             (d.(i - 1).(j) + 1) (* a deletion *)
+             (min
+                (d.(i).(j - 1) + 1) (* an insertion *)
+                (d.(i - 1).(j - 1) + 1) (* a substitution *))
+    done
+  done;
+  d.(m).(n)
+;;
+
+let did_you_mean s ~candidates =
+  let candidates =
+    List.filter candidates ~f:(fun candidate ->
+      let distance = levenshtein_distance s candidate in
+      0 < distance && distance < 3)
+  in
+  match candidates with
+  | [] -> []
+  | l -> [ Pp.textf "did you mean %s?" (String.enumerate_or l) ]
+;;
+
+let to_string t =
+  let full_error = Format.asprintf "%a" Pp.to_fmt (pp { t with loc = None }) in
+  match String.drop_prefix ~prefix:"Error:" full_error with
+  | None -> full_error
+  | Some error -> String.trim error
+;;
+
+let is_loc_none loc =
+  match loc with
+  | None -> true
+  | Some loc -> loc = Loc0.none
+;;
+
+let has_embedded_location msg = msg.has_embedded_location
+let has_location msg = (not (is_loc_none msg.loc)) || has_embedded_location msg
+let needs_stack_trace msg = msg.needs_stack_trace
+
+let command cmd =
+  (* CR-someday rgrinberg: this should be its own tag, but that might bring
+     some backward compat issues with rpc. *)
+  Pp.concat
+    [ Pp.verbatim "'"
+    ; Pp.tag (Style.Ansi_styles [ `Underline ]) @@ Pp.verbatim cmd
+    ; Pp.verbatim "'"
+    ]
+;;
+
+let aligned_message ~left:(left_tag, left_string) ~right =
+  let open Pp.O in
+  let left_padded = Printf.sprintf "%12s" left_string in
+  Pp.tag left_tag (Pp.verbatim left_padded) ++ Pp.char ' ' ++ right
+;;

@@ -1,0 +1,198 @@
+---
+name: Build
+on:
+  push:
+    branches:
+      - master  # forall push/merge in master
+  pull_request:
+    branches:
+      - "**"  # forall submitted Pull Requests
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        setup-version:
+          - v2
+          - v3
+        os:
+          - macos-13
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
+        ocaml-version:
+          - 4.02.x
+          - 4.03.x
+          - 4.04.x
+          - 4.05.x
+          - 4.06.x
+          - 4.07.x
+          - 4.08.x
+          - 4.09.x
+          - 4.10.x
+          - 4.11.x
+          - 4.12.x
+          - 4.13.x
+          - 4.14.x
+          - 5.0.x
+          - 5.1.x
+          - 5.2.x
+        exclude:
+          - os: macos-13
+            setup-version: v3 # opam uninstall fails
+          - os: macos-latest
+            setup-version: v2
+          - os: macos-latest
+            ocaml-version: 4.02.x
+          - os: macos-latest
+            ocaml-version: 4.03.x
+          - os: macos-latest
+            ocaml-version: 4.04.x
+          - os: macos-latest
+            ocaml-version: 4.05.x
+          - os: macos-latest
+            ocaml-version: 4.06.x
+          - os: macos-latest
+            ocaml-version: 4.07.x
+          - os: macos-latest
+            ocaml-version: 4.08.x
+          - os: macos-latest
+            ocaml-version: 4.09.x
+          - os: macos-latest
+            ocaml-version: 4.11.x
+          - os: windows-latest
+            setup-version: v3
+            ocaml-version: 4.02.x
+          - os: windows-latest
+            setup-version: v3
+            ocaml-version: 4.03.x
+          - os: windows-latest
+            setup-version: v3
+            ocaml-version: 4.04.x
+          - os: windows-latest
+            setup-version: v3
+            ocaml-version: 4.05.x
+          - os: windows-latest
+            setup-version: v3
+            ocaml-version: 4.06.x
+          - os: windows-latest
+            setup-version: v3
+            ocaml-version: 4.07.x
+          - os: windows-latest
+            setup-version: v3
+            ocaml-version: 4.08.x
+          - os: windows-latest
+            setup-version: v3
+            ocaml-version: 4.09.x
+          - os: windows-latest
+            setup-version: v3
+            ocaml-version: 4.10.x
+          - os: windows-latest
+            setup-version: v3
+            ocaml-version: 4.11.x
+          - os: windows-latest
+            setup-version: v3
+            ocaml-version: 4.12.x
+          - os: windows-latest
+            setup-version: v2
+            ocaml-version: 5.0.x
+          - os: windows-latest
+            setup-version: v2
+            ocaml-version: 5.1.x
+          - os: windows-latest
+            setup-version: v2
+            ocaml-version: 5.2.x
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      SKIP_BUILD: |
+        dose
+        lilis
+        rotor
+        camlimages
+        freetds
+        frenetic
+        genprint
+        hdf5
+        ocp-index-top
+        pa_ppx
+        pla
+        ppx_deriving_rpc
+        reed-solomon-erasure
+        setr
+        stdcompat
+        uwt
+      OPAMAUTOREMOVE: true
+      SKIP_TEST: |
+        0install
+        bisect_ppx
+        cconv-ppx
+        decompress
+        extlib-compat
+        General
+
+    steps:
+      - name: Prepare git
+        run: |
+          git config --global core.autocrlf false
+          git config --global init.defaultBranch master
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup OCaml ${{ matrix.ocaml-version }} with v2
+        if: matrix.setup-version == 'v2'
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-version }}
+
+      - name: Setup OCaml ${{ matrix.ocaml-version }} with v3
+        if: matrix.setup-version == 'v3'
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-version }}
+
+      - name: Install dependencies
+        run: opam install --deps-only .
+
+      - name: List installed packages
+        run: opam list
+
+      - name: Build locally
+        run: opam exec -- make
+
+      - name: Upload the build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-${{ matrix.ocaml-version }}-cppo.exe
+          path: _build/default/src/cppo_main.exe
+          overwrite: true
+
+      - name: Build, test, and install package
+        run: opam install -t .
+
+      - name: Test dependants
+        if: >
+          (matrix.ocaml-version >= '4.05') && (matrix.os != 'windows-latest')
+        run: |
+          PACKAGES=`opam list -s --color=never --installable --depends-on cppo,cppo_ocamlbuild`
+          echo "Dependants:" $PACKAGES
+          for PACKAGE in $PACKAGES
+          do
+             echo $SKIP_BUILD | tr ' ' '\n' | grep ^$PACKAGE$ > /dev/null &&
+               echo Skip $PACKAGE && continue
+             OPAMWITHTEST=true
+             echo $SKIP_TEST | tr ' ' '\n' | grep ^$PACKAGE$ > /dev/null &&
+                 OPAMWITHTEST=false
+             ([ $OPAMWITHTEST == false ] &&
+              echo ::group::Build          $PACKAGE) ||
+              echo ::group::Build and test $PACKAGE
+             DEPS_FAILED=false
+             (opam depext $PACKAGE &&
+              opam install --deps-only $PACKAGE) || DEPS_FAILED=true
+             [ $DEPS_FAILED == false ] && opam install $PACKAGE
+             echo ::endgroup::
+             [ $DEPS_FAILED == false ] || echo Dependencies broken
+          done

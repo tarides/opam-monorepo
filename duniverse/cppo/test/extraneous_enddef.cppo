@@ -1,0 +1,4 @@
+#define FOO \
+  42
+(* The following #enddef is extraneous; it should not be there. *)
+#enddef

@@ -1,0 +1,5 @@
+diff -ruN a/create-newline-only b/create-newline-only
+--- a/create-newline-only	1970-01-01 01:00:00.000000000 +0100
++++ b/create-newline-only	2025-04-30 19:12:35.180584541 +0100
+@@ -0,0 +1 @@
++

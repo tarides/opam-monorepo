@@ -1,0 +1,6 @@
+(library
+ (name fmt_top)
+ (public_name fmt.top)
+ (libraries compiler-libs.toplevel fmt)
+ (modules fmt_top)
+ (wrapped false))

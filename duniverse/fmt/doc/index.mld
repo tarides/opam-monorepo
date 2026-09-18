@@ -1,0 +1,15 @@
+{0 Fmt {%html: <span class="version">v0.11.0+dune</span>%}}
+
+Fmt exposes combinators to devise {!Format} pretty-printing functions.
+
+{1:library_fmt Library [fmt]}
+
+{!modules: Fmt}
+
+{1:library_tty Library [fmt.tty]}
+
+{!modules: Fmt_tty}
+
+{1:library_tty Library [fmt.cli]}
+
+{!modules: Fmt_cli}

@@ -1,0 +1,3 @@
+#define ID(X) X
+#define APPLY(F : [.], X) F (* intentionally forgetting to apply F *)
+APPLY(ID, 42)

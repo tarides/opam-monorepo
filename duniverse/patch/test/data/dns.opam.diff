@@ -1,0 +1,24 @@
+From 685882a290abefe31adf75a2ae6f7cfa0516b38c Mon Sep 17 00:00:00 2001
+From: Hannes Mehnert <hannes@mehnert.org>
+Date: Thu, 21 Mar 2024 10:16:54 +0100
+Subject: [PATCH] minor
+
+---
+ dns.opam | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/dns.opam b/dns.opam
+index bae79cb..59083db 100644
+--- a/dns.opam
++++ b/dns.opam
+@@ -6,7 +6,6 @@ doc: "https://mirage.github.io/ocaml-dns/"
+ dev-repo: "git+https://github.com/mirage/ocaml-dns.git"
+ bug-reports: "https://github.com/mirage/ocaml-dns/issues"
+ license: "BSD-2-Clause"
+-
+ depends: [
+   "dune" {>= "2.0.0"}
+   "ocaml" {>= "4.08.0"}
+-- 
+2.42.0
+

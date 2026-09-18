@@ -1,0 +1,40 @@
+(executable
+ (name test)
+ (modules test test_ns)
+ (libraries fmt base64 camlzip bstr checkseum.c de zl gz lzo alcotest))
+
+(executable
+ (name test_deflate)
+ (modules test_deflate)
+ (libraries fmt de bstr alcotest))
+
+(executable
+ (name test_lzo)
+ (modules test_lzo)
+ (libraries fmt minilzo lzo bstr alcotest))
+
+(rule
+ (alias runtest)
+ (package decompress)
+ (deps
+  (:test test_deflate.exe)
+  (source_tree corpus))
+ (action
+  (run %{test} --color=always)))
+
+(rule
+ (alias runtest)
+ (package decompress)
+ (deps
+  (:test test.exe)
+  (source_tree corpus))
+ (action
+  (run %{test} --color=always)))
+
+(rule
+ (alias runtest)
+ (package decompress)
+ (deps
+  (:test test_lzo.exe))
+ (action
+  (run %{test} --color=always)))

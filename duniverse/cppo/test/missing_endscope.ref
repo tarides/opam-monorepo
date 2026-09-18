@@ -1,0 +1,2 @@
+Error: File "missing_endscope.cppo", line 3, characters 0-6
+Error: This #scope is never closed: perhaps #endscope is missing

@@ -1,0 +1,18 @@
+(lang dune 2.8)
+(name vendored_bitsets)
+(generate_opam_files true)
+(package
+  (name vendored_bitsets)
+  (authors "François Pottier <francois.pottier@inria.fr>")
+  (maintainers "François Pottier <francois.pottier@inria.fr>")
+  (source (uri git+https://github.com/fpottier/bitsets.git))
+  (homepage https://github.com/fpottier/bitsets/)
+  (bug_reports https://github.com/fpottier/bitsets/issues)
+  (synopsis "Several implementations of bit sets")
+  (license "LGPL-2.0-only WITH OCaml-LGPL-linking-exception")
+  (depends
+    (ocaml (>= 4.14))
+    (monolith (and :with-test (>= 20250922)))
+    (ocamlfind :with-test)
+  )
+)

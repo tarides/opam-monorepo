@@ -1,0 +1,19 @@
+(executable
+ (name fuzz)
+ (modules fuzz)
+ (libraries fmt crowbar optint))
+
+(alias
+ (name runtest)
+ (deps (:fuzz fuzz.exe))
+ (action (run %{fuzz})))
+
+(executable
+ (name fuzz_int63)
+ (modules fuzz_int63)
+ (libraries monolith optint))
+
+(alias
+ (name monolith)
+ (deps (:fuzz fuzz_int63.exe))
+ (action (run %{fuzz})))

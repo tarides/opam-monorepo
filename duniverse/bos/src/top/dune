@@ -1,0 +1,7 @@
+(library
+ (name bos_top)
+ (public_name bos.top)
+ (libraries compiler-libs.toplevel rresult.top astring.top fpath.top fmt.top
+   logs.top bos)
+ (modules bos_top)
+ (wrapped false))

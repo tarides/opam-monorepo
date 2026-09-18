@@ -1,0 +1,60 @@
+This expression has DAG size 151.
+The number of disjunction nodes in this expression is 29.
+At line 1, characters 0-17: ambiguous subexpression (2 readings):
+(22 + 33) / 5 * 2
+At line 1, characters 12-22: ambiguous subexpression (2 readings):
+5 * 2 - -3
+At line 1, characters 0-22: ambiguous subexpression (3 readings):
+(22 + 33) / 5 * 2 - -3
+At line 1, characters 20-27: ambiguous subexpression (2 readings):
+-3 - -2
+At line 1, characters 16-27: ambiguous subexpression (2 readings):
+2 - -3 - -2
+At line 1, characters 12-27: ambiguous subexpression (3 readings):
+5 * 2 - -3 - -2
+At line 1, characters 0-27: ambiguous subexpression (4 readings):
+(22 + 33) / 5 * 2 - -3 - -2
+At line 1, characters 25-32: ambiguous subexpression (2 readings):
+-2 + 12
+At line 1, characters 26-37: ambiguous subexpression (2 readings):
+2 + 12 * -2
+At line 1, characters 25-37: ambiguous subexpression (3 readings):
+-2 + 12 * -2
+At line 1, characters 21-32: ambiguous subexpression (2 readings):
+3 - -2 + 12
+At line 1, characters 20-32: ambiguous subexpression (3 readings):
+-3 - -2 + 12
+At line 1, characters 21-37: ambiguous subexpression (3 readings):
+3 - -2 + 12 * -2
+At line 1, characters 20-37: ambiguous subexpression (4 readings):
+-3 - -2 + 12 * -2
+At line 1, characters 16-32: ambiguous subexpression (3 readings):
+2 - -3 - -2 + 12
+At line 1, characters 12-32: ambiguous subexpression (4 readings):
+5 * 2 - -3 - -2 + 12
+At line 1, characters 0-32: ambiguous subexpression (5 readings):
+(22 + 33) / 5 * 2 - -3 - -2 + 12
+At line 1, characters 16-37: ambiguous subexpression (4 readings):
+2 - -3 - -2 + 12 * -2
+At line 1, characters 12-37: ambiguous subexpression (5 readings):
+5 * 2 - -3 - -2 + 12 * -2
+At line 1, characters 0-37: ambiguous subexpression (6 readings):
+(22 + 33) / 5 * 2 - -3 - -2 + 12 * -2
+At line 1, characters 35-41: ambiguous subexpression (2 readings):
+-2 + 5
+At line 1, characters 30-41: ambiguous subexpression (2 readings):
+12 * -2 + 5
+At line 1, characters 26-41: ambiguous subexpression (3 readings):
+2 + 12 * -2 + 5
+At line 1, characters 25-41: ambiguous subexpression (4 readings):
+-2 + 12 * -2 + 5
+At line 1, characters 21-41: ambiguous subexpression (4 readings):
+3 - -2 + 12 * -2 + 5
+At line 1, characters 20-41: ambiguous subexpression (5 readings):
+-3 - -2 + 12 * -2 + 5
+At line 1, characters 16-41: ambiguous subexpression (5 readings):
+2 - -3 - -2 + 12 * -2 + 5
+At line 1, characters 12-41: ambiguous subexpression (6 readings):
+5 * 2 - -3 - -2 + 12 * -2 + 5
+At line 1, characters 0-41: ambiguous subexpression (7 readings):
+(22 + 33) / 5 * 2 - -3 - -2 + 12 * -2 + 5

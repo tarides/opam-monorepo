@@ -1,0 +1,155 @@
+open Stdune
+
+module type Desc = sig
+  type t
+
+  val name : string
+  val sharing : bool
+  val version : int
+  val repr : t Repr.t
+end
+
+type data = ..
+
+module type Desc_with_data = sig
+  include Desc
+
+  type data += T of t
+end
+
+let registry = String.Table.create 16
+let max_magic_length = 128
+
+let register (module D : Desc_with_data) =
+  match String.Table.add registry D.name (module D : Desc_with_data) with
+  | Ok () -> ()
+  | Error _ ->
+    Code_error.raise
+      "Persistent file kind registered for the second time"
+      [ "name", String D.name ]
+;;
+
+module Make (D : Desc) = struct
+  let magic = sprintf "DUNE-%sv%d:" D.name D.version
+
+  let () =
+    if String.length magic > max_magic_length
+    then
+      Code_error.raise
+        "Persistent.Make: magic string too long"
+        [ "magic", String magic; "max_magic_length", Int max_magic_length ]
+  ;;
+
+  type data += T of D.t
+
+  let () =
+    register
+      (module struct
+        include D
+
+        type data += T = T
+      end : Desc_with_data)
+  ;;
+
+  let to_string (v : D.t) =
+    Printf.sprintf "%s%s" magic (Marshal.to_string v ~sharing:D.sharing)
+  ;;
+
+  let with_record what ~file ~f =
+    let start = Time.now () in
+    let res = Result.try_with f in
+    Dune_trace.emit Persistent (fun () ->
+      Dune_trace.Event.persistent ~file ~module_:D.name what ~start ~stop:(Time.now ()));
+    Result.ok_exn res
+  ;;
+
+  let dump =
+    let dump file v =
+      Io.with_file_out file ~f:(fun oc ->
+        output_string oc magic;
+        match Marshal.to_channel oc v ~sharing:D.sharing with
+        | s -> s
+        | exception Invalid_argument s ->
+          raise (Invalid_argument (sprintf "%s (%s)" s D.name)))
+    in
+    let dump file v = with_record `Save ~file ~f:(fun () -> dump file v) in
+    fun file (v : D.t) -> dump file v
+  ;;
+
+  let load =
+    let read_file file =
+      Io.with_file_in file ~f:(fun ic ->
+        match really_input_string ic (String.length magic) with
+        | exception End_of_file -> None
+        | s ->
+          if s = magic
+          then (
+            match (Marshal.from_channel ic : D.t) with
+            | exception Failure f ->
+              Log.warn
+                "Failed to load corrupted file"
+                [ "file", Dyn.string (Path.to_string file); "error", Dyn.string f ];
+              None
+            | d -> Some d)
+          else None)
+    in
+    let read_file =
+      lazy
+        (match Dune_trace.global () with
+         | None -> read_file
+         | Some _ -> fun file -> with_record `Load ~file ~f:(fun () -> read_file file))
+    in
+    fun file ->
+      if Fpath.exists (Path.to_string file) then (Lazy.force read_file) file else None
+  ;;
+end
+
+type t = T : (module Desc with type t = 'a) * 'a -> t
+
+let load_exn path =
+  Io.with_file_in path ~f:(fun ic ->
+    let buf = Buffer.create max_magic_length in
+    let rec read_magic n =
+      if n = max_magic_length
+      then None
+      else (
+        match Stdlib.input_char ic with
+        | exception End_of_file -> None
+        | ':' -> Some (Buffer.contents buf)
+        | c ->
+          Buffer.add_char buf c;
+          read_magic (n + 1))
+    in
+    let magic =
+      let open Option.O in
+      let* s = read_magic 0 in
+      let* s = String.drop_prefix s ~prefix:"DUNE-" in
+      let* name, version = String.rsplit2 s ~on:'v' in
+      let* version = Int.of_string version in
+      Some (name, version)
+    in
+    match magic with
+    | None ->
+      User_error.raise
+        ~loc:(Loc.in_file path)
+        [ Pp.text "This file is not a persistent dune file." ]
+    | Some (name, version) ->
+      (match String.Table.find registry name with
+       | None ->
+         User_error.raise
+           ~loc:(Loc.in_file path)
+           [ Pp.textf "Unknown type of persistent dune file: %s." (String.escaped name) ]
+       | Some (module D : Desc_with_data) ->
+         if D.version <> version
+         then
+           User_error.raise
+             ~loc:(Loc.in_file path)
+             [ Pp.textf
+                 "Unsupported version of dune '%s' file: %d."
+                 (String.escaped name)
+                 version
+             ; Pp.textf "I only know how to read version %d." D.version
+             ];
+         let data : D.t = Marshal.from_channel ic in
+         T ((module D), data)))
+;;

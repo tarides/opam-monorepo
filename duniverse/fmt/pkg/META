@@ -1,0 +1,46 @@
+description = "OCaml Format pretty-printer combinators"
+version = "0.11.0+dune"
+requires = ""
+archive(byte) = "fmt.cma"
+archive(native) = "fmt.cmxa"
+plugin(byte) = "fmt.cma"
+plugin(native) = "fmt.cmxs"
+exists_if = "fmt.cma fmt.cmxa"
+
+package "cli" (
+  directory = "cli"
+  description = "The fmt.cli library"
+  version = "0.11.0+dune"
+  requires = "cmdliner fmt"
+  exports = "fmt"
+  archive(byte) = "fmt_cli.cma"
+  archive(native) = "fmt_cli.cmxa"
+  plugin(byte) = "fmt_cli.cma"
+  plugin(native) = "fmt_cli.cmxs"
+  exists_if = "fmt_cli.cma fmt_cli.cmxa"
+)
+
+package "top" (
+  directory = "top"
+  description = "The fmt.top library"
+  version = "0.11.0+dune"
+  requires = "fmt fmt.tty"
+  archive(byte) = "fmt_top.cma"
+  archive(native) = "fmt_top.cmxa"
+  plugin(byte) = "fmt_top.cma"
+  plugin(native) = "fmt_top.cmxs"
+  exists_if = "fmt_top.cma fmt_top.cmxa"
+)
+
+package "tty" (
+  directory = "tty"
+  description = "The fmt.tty library"
+  version = "0.11.0+dune"
+  requires = "unix fmt"
+  exports = "fmt"
+  archive(byte) = "fmt_tty.cma"
+  archive(native) = "fmt_tty.cmxa"
+  plugin(byte) = "fmt_tty.cma"
+  plugin(native) = "fmt_tty.cmxs"
+  exists_if = "fmt_tty.cma fmt_tty.cmxa"
+)
