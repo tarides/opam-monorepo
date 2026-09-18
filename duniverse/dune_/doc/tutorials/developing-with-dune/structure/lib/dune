@@ -1,8 +1,0 @@
-(library
- (name calc)
- (libraries cmdliner))
-
-(ocamllex lexer)
-
-(menhir
- (modules parser))

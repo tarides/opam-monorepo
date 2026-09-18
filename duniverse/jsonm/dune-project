@@ -1,3 +1,0 @@
-(lang dune 1.0)
-(name jsonm)
-(version v1.0.2+dune)

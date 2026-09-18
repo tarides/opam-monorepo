@@ -1,5 +1,0 @@
-(library
- (name dune_site_dynlink_linker)
- (public_name dune-site.dynlink)
- (implements dune-site.linker)
- (libraries dynlink))

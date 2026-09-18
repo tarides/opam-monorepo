@@ -1,1 +1,0 @@
-module Vcs = Vcs

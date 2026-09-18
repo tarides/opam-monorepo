@@ -1,7 +1,0 @@
-(library
- (name minilzo)
- (foreign_stubs
-  (language c)
-  (names stubs minilzo)
-  (flags
-   (:standard -I.))))

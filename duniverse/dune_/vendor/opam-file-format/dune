@@ -1,6 +1,0 @@
-(library
- (name opam_file_format)
- (wrapped false))
-
-(ocamllex opamLexer)
-(ocamlyacc opamBaseParser)

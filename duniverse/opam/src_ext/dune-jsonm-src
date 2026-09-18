@@ -1,6 +1,0 @@
-(library
-  (name jsonm)
-  (public_name jsonm)
-  (flags :standard -w -3)
-  (libraries uutf)
-  (wrapped false))

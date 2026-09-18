@@ -1,4 +1,0 @@
-(test
- (name main)
- (package lwt_react)
- (libraries lwt_react lwttester))

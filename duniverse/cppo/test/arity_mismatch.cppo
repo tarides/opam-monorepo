@@ -1,3 +1,0 @@
-(* This test shows an arity mismatch error. *)
-#define INCR(x) x+1
-INCR(x, y)

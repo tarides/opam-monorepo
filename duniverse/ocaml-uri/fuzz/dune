@@ -1,5 +1,0 @@
-(tests
- (names fuzz)
- (package uri-re)
- (libraries uri uri-re crowbar)
- (deps (source_tree input)))

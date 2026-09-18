@@ -1,3 +1,0 @@
-[submodule "test/data/external"]
-	path = test/data/external
-	url = https://codeberg.org/kit-ty-kate/ocaml-patch-tests.git

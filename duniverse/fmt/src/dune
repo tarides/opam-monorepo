@@ -1,6 +1,0 @@
-(library
- (name fmt)
- (public_name fmt)
- (modules fmt)
- (flags :standard -w -3-6-27-32-34-50)
- (wrapped false))

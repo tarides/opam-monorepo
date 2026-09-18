@@ -1,2 +1,0 @@
-(* A parameterized macro cannot have zero arguments. *)
-#define FOO() "not ok"

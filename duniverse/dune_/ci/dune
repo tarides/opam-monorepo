@@ -1,3 +1,0 @@
-(executable
- (name update_version)
- (libraries stdune dune_rpc re))

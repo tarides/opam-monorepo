@@ -1,4 +1,0 @@
-(library
- (public_name dune-action-trace)
- (name dune_action_trace)
- (libraries csexp))

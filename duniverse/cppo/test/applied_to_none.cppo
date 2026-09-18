@@ -1,3 +1,0 @@
-(* A parameterized macro is applied to no arguments. *)
-#define FOO(x) x
-FOO + 1

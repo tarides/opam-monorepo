@@ -1,6 +1,0 @@
-(library
- (name bos_setup)
- (public_name bos.setup)
- (libraries fmt.tty logs.fmt bos)
- (modules bos_setup)
- (wrapped false))

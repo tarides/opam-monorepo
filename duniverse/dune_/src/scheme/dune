@@ -1,3 +1,0 @@
-(library
- (name scheme)
- (libraries stdune dune_engine memo))

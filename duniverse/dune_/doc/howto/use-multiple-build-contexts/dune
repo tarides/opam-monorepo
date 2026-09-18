@@ -1,3 +1,0 @@
-(executable
- (name tsan_check)
- (modes native))

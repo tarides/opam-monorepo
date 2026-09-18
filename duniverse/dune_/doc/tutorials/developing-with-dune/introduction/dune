@@ -1,7 +1,0 @@
-(executable
- (public_name calc))
-
-(ocamllex lexer)
-
-(menhir
- (modules parser))

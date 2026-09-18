@@ -1,7 +1,0 @@
--Q . MiniCalc
-
--arg -w -arg -notation-overridden
-
-Parser.v
-Lexer.v
-MiniCalc.v

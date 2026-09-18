@@ -1,3 +1,0 @@
-(lang dune 1.0)
-(name logs)
-(version v0.10.0+dune)

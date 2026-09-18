@@ -1,8 +1,0 @@
-(library
- (name fmt_cli)
- (public_name fmt.cli)
- (optional)
- (libraries fmt cmdliner)
- (modules fmt_cli)
- (flags :standard -w -3-6-27)
- (wrapped false))

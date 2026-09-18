@@ -1,1 +1,0 @@
-let () = Calc.Cli.main ()

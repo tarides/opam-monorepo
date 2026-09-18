@@ -1,3 +1,0 @@
-(library
- (public_name top-closure)
- (name top_closure))

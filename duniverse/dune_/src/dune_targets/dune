@@ -1,3 +1,0 @@
-(library
- (name dune_targets)
- (libraries stdune fiber dyn dune_digest unix))

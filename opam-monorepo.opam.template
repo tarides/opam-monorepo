@@ -1,2 +1,2 @@
-build: [ "dune" "build" "-p" name "-j" jobs "@install" "@test/lib/runtest" {with-test} ]
+build: [ "dune" "build" "-p" name "-j" jobs "@install" "@runtest" {with-test} ]
 flags: [ plugin ]
